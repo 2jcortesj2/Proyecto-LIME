@@ -1,0 +1,3005 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LIME - Sistema Completo de Inventario</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f5f5f5; overflow: hidden; height: 100vh; }
+.header { background: linear-gradient(135deg, #006633 0%, #2d5016 100%); color: white; padding: 20px 40px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 100; }
+.logo-container { display: flex; align-items: center; gap: 20px; background: white; padding: 10px 20px; border-radius: 8px; }
+.logo-divider { width: 2px; height: 40px; background: #ddd; }
+.container { display: flex; height: calc(100vh - 90px); }
+.sidebar { width: 260px; background: white; padding: 20px 0; box-shadow: 2px 0 10px rgba(0,0,0,0.05); }
+.menu-item { padding: 15px 25px; cursor: pointer; border-left: 4px solid transparent; transition: all 0.3s; }
+.menu-item:hover { background: #f5f5f5; border-left-color: #006633; }
+.menu-item.active { background: rgba(0,102,51,0.1); border-left-color: #006633; font-weight: 600; color: #006633; }
+.main-content { flex: 1; padding: 30px; overflow-y: auto; max-height: calc(100vh - 90px); min-height: calc(100vh - 90px); }
+.page-title { font-size: 28px; color: #006633; font-weight: 600; margin-bottom: 30px; }
+.btn { padding: 12px 24px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; transition: all 0.3s; }
+.btn-primary { background: #006633; color: white; }
+.btn-primary:hover { background: #2d5016; transform: translateY(-2px); }
+.btn-sm { padding: 8px 16px; font-size: 13px; }
+.btn-info { background: #00a99d; color: white; }
+.btn-secondary { background: #e0e0e0; }
+.btn-danger { background: #f44336; color: white; }
+.btn-success { background: #4CAF50; color: white; }
+.btn-warning { background: #ff9800; color: white; }
+.stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 30px; }
+.stat-card { background: white; padding: 20px; border-radius: 10px; border-left: 4px solid #006633; box-shadow: 0 2px 8px rgba(0,0,0,0.08); transition: transform 0.3s; }
+.stat-card:hover { transform: translateY(-5px); }
+.stat-value { font-size: 32px; font-weight: bold; color: #006633; }
+.content-card { background: white; border-radius: 10px; padding: 25px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 25px; }
+.search-filter-container { display: flex; gap: 20px; margin-bottom: 25px; }
+.search-section { flex: 1; }
+.search-input { width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; }
+.search-input:focus { outline: none; border-color: #006633; }
+.filter-button { padding: 12px 24px; background: white; border: 2px solid #006633; color: #006633; border-radius: 8px; cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 8px; transition: all 0.3s; }
+.filter-button:hover { background: #006633; color: white; }
+table { width: 100%; border-collapse: collapse; }
+thead { background: linear-gradient(135deg, #006633 0%, #2d5016 100%); color: white; }
+th { padding: 15px; text-align: left; font-size: 13px; text-transform: uppercase; }
+td { padding: 15px; border-bottom: 1px solid #e0e0e0; font-size: 14px; }
+tbody tr:hover { background: rgba(0,102,51,0.04); }
+tbody tr[data-equipo] { cursor: pointer; transition: all 0.2s; position: relative; }
+tbody tr[data-equipo]:hover { background: rgba(0,102,51,0.08); }
+tbody tr[data-equipo]:hover td:first-child { font-weight: 600; }
+tbody tr[data-equipo].row-active { background: rgba(0,102,51,0.12); border-left: 4px solid #006633; }
+tbody tr[data-equipo] td:last-child { cursor: default; }
+.badge { padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+.badge-success { background: rgba(76, 175, 80, 0.1); color: #4CAF50; }
+.badge-danger { background: rgba(244, 67, 54, 0.1); color: #f44336; }
+.badge-warning { background: rgba(255, 152, 0, 0.1); color: #ff9800; }
+.modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; backdrop-filter: blur(4px); }
+.modal.active { display: flex; align-items: center; justify-content: center; }
+.modal-content { background: white; border-radius: 12px; width: 95%; max-width: 1100px; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 10px 40px rgba(0,0,0,0.3); }
+.modal-header { padding: 25px; border-bottom: 2px solid #e0e0e0; display: flex; justify-content: space-between; align-items: center; background: linear-gradient(90deg, rgba(0,102,51,0.05) 0%, transparent 100%); flex-shrink: 0; }
+.modal-title { font-size: 22px; color: #006633; font-weight: 600; }
+.close-btn { background: none; border: none; font-size: 28px; cursor: pointer; color: #616161; }
+.close-btn:hover { color: #f44336; }
+.modal-body { padding: 25px; overflow-y: auto; flex: 1; }
+.tabs { display: flex; border-bottom: 2px solid #e0e0e0; margin-bottom: 25px; flex-shrink: 0; flex-wrap: wrap; }
+.tab { padding: 12px 20px; cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -2px; transition: all 0.3s; font-weight: 500; white-space: nowrap; }
+.tab:hover { color: #006633; }
+.tab.active { color: #006633; border-bottom-color: #006633; font-weight: 600; }
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+.form-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+.form-group { margin-bottom: 20px; }
+.form-group.full-width { grid-column: 1 / -1; }
+.form-label { display: block; margin-bottom: 8px; font-weight: 600; font-size: 14px; color: #212121; }
+.form-label.required::after { content: " *"; color: #f44336; }
+.form-input, .form-select, .form-textarea { width: 100%; padding: 12px 15px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 14px; font-family: inherit; transition: border-color 0.3s; }
+.form-input:focus, .form-select:focus, .form-textarea:focus { outline: none; border-color: #006633; box-shadow: 0 0 0 3px rgba(0,102,51,0.1); }
+.form-input:disabled, .form-select:disabled, .form-textarea:disabled { background: #f5f5f5; color: #616161; cursor: not-allowed; }
+.form-input.locked { background: #fff9e6; border-color: #ff9800; }
+.form-input.locked::placeholder { color: #ff9800; }
+.form-textarea { resize: vertical; min-height: 80px; }
+.checkbox-group { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; }
+.checkbox-input { width: 18px; height: 18px; cursor: pointer; }
+.section-divider { margin: 30px 0; padding-top: 25px; border-top: 2px solid #e0e0e0; }
+.section-title { font-size: 18px; color: #006633; font-weight: 600; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 0.5px; }
+.modal-footer { padding: 20px 25px; border-top: 1px solid #e0e0e0; display: flex; justify-content: flex-end; gap: 12px; background: #f5f5f5; flex-shrink: 0; }
+.alert { padding: 15px 20px; border-radius: 8px; margin-bottom: 20px; display: flex; align-items: center; gap: 12px; cursor: pointer; transition: all 0.3s; }
+.alert:hover { transform: translateX(5px); }
+.alert-warning { background: rgba(255, 152, 0, 0.1); color: #ff9800; border-left: 4px solid #ff9800; }
+.alert-danger { background: rgba(244, 67, 54, 0.1); color: #f44336; border-left: 4px solid #f44336; }
+.alert-info { background: rgba(0, 169, 157, 0.1); color: #00a99d; border-left: 4px solid #00a99d; }
+.alert-success { background: rgba(76, 175, 80, 0.1); color: #4CAF50; border-left: 4px solid #4CAF50; }
+.alert a { color: inherit; text-decoration: underline; cursor: pointer; font-weight: 600; }
+.detail-view { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+.detail-section { background: #f5f5f5; padding: 20px; border-radius: 8px; border-left: 4px solid #006633; }
+.detail-item { display: flex; margin-bottom: 12px; font-size: 14px; }
+.detail-label { font-weight: 600; color: #616161; min-width: 200px; }
+.detail-value { color: #212121; }
+.info-box { background: rgba(0,102,51,0.05); border-left: 4px solid #006633; padding: 15px; border-radius: 4px; margin-bottom: 20px; }
+.info-box-title { font-weight: 600; color: #006633; margin-bottom: 8px; }
+.edit-note { background: rgba(0,169,157,0.1); padding: 10px 15px; border-radius: 6px; border-left: 3px solid #00a99d; margin-bottom: 20px; font-size: 13px; color: #616161; }
+.lock-icon { display: inline-block; margin-left: 5px; color: #ff9800; font-size: 12px; }
+.password-group { background: rgba(244,67,54,0.05); padding: 20px; border-radius: 8px; border: 2px solid #f44336; margin-top: 15px; }
+.sede-card { background: white; padding: 25px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 20px; }
+.sede-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #e0e0e0; }
+.sede-title { font-size: 20px; color: #006633; font-weight: 600; }
+.servicio-item { padding: 15px; background: #f5f5f5; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+.servicio-name { font-weight: 600; color: #212121; }
+.servicio-stats { font-size: 13px; color: #616161; }
+.info-card { background: linear-gradient(135deg, rgba(0,102,51,0.05) 0%, rgba(0,102,51,0.02) 100%); border-left: 4px solid #006633; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
+.empty-state { text-align: center; padding: 60px 20px; color: #616161; }
+.detalle-row { display: none; }
+.detalle-row.active { display: table-row; }
+.detalle-cell { padding: 0 !important; background: #f9f9f9; border-bottom: 3px solid #006633 !important; }
+.detalle-container { padding: 30px; animation: slideDown 0.3s ease; position: relative; }
+@keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+.detalle-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #e0e0e0; }
+.detalle-title { font-size: 20px; color: #006633; font-weight: 600; }
+.detalle-tabs { display: flex; gap: 10px; margin-bottom: 25px; border-bottom: 2px solid #e0e0e0; padding-bottom: 0; }
+.detalle-tab { padding: 12px 20px; cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -2px; transition: all 0.3s; font-weight: 500; background: white; border-radius: 8px 8px 0 0; }
+.detalle-tab:hover { background: #f5f5f5; color: #006633; }
+.detalle-tab.active { color: #006633; border-bottom-color: #006633; font-weight: 600; background: #f9f9f9; }
+.detalle-content { display: none; }
+.detalle-content.active { display: block; }
+.detalle-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+.detalle-section { background: white; padding: 20px; border-radius: 8px; border-left: 4px solid #006633; }
+.detalle-section-title { font-size: 16px; color: #006633; font-weight: 600; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 0.5px; }
+.detalle-item { display: flex; margin-bottom: 10px; font-size: 14px; }
+.detalle-label { font-weight: 600; color: #616161; min-width: 180px; }
+.detalle-value { color: #212121; }
+.btn-ver.active { background: #006633; color: white; }
+.filtro-panel { position: fixed; top: 0; right: -400px; width: 400px; height: 100vh; background: white; box-shadow: -2px 0 10px rgba(0,0,0,0.2); z-index: 1001; transition: right 0.3s ease; overflow-y: auto; }
+.filtro-panel.active { right: 0; }
+.filtro-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: rgba(0,0,0,0.5); z-index: 1000; }
+.filtro-overlay.active { display: block; }
+.filtro-header { padding: 25px; border-bottom: 2px solid #e0e0e0; background: linear-gradient(90deg, rgba(0,102,51,0.05) 0%, transparent 100%); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; background: white; z-index: 10; }
+.filtro-title { font-size: 20px; color: #2d5016; font-weight: 600; }
+.filtro-body { padding: 25px; }
+.filtro-section { margin-bottom: 30px; }
+.filtro-section-title { font-size: 14px; font-weight: 700; color: #212121; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 0.5px; }
+.filtro-checkbox-group { display: flex; flex-direction: column; gap: 12px; }
+.filtro-checkbox-item { display: flex; align-items: center; gap: 10px; padding: 8px 0; }
+.filtro-checkbox-item input[type="checkbox"] { width: 20px; height: 20px; cursor: pointer; accent-color: #006633; }
+.filtro-checkbox-item label { cursor: pointer; font-size: 15px; color: #212121; }
+.filtro-radio-group { display: flex; flex-direction: column; gap: 12px; }
+.filtro-radio-item { display: flex; align-items: center; gap: 10px; padding: 8px 0; }
+.filtro-radio-item input[type="radio"] { width: 20px; height: 20px; cursor: pointer; accent-color: #006633; }
+.filtro-radio-item label { cursor: pointer; font-size: 15px; color: #212121; }
+.btn-borrar-filtros { width: 100%; padding: 12px; background: #f44336; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; margin-bottom: 25px; transition: all 0.3s; }
+.btn-borrar-filtros:hover { background: #d32f2f; transform: translateY(-2px); }
+.date-selector-container { display: flex; align-items: center; gap: 12px; background: white; padding: 12px 20px; border-radius: 8px; border: 2px solid #e0e0e0; transition: all 0.3s; }
+.date-selector-container:hover { border-color: #006633; }
+.date-selector-label { font-size: 14px; color: #616161; font-weight: 600; }
+.date-selector { padding: 8px 12px; border: 1px solid #e0e0e0; border-radius: 6px; font-size: 14px; color: #212121; background: #f5f5f5; cursor: pointer; transition: all 0.3s; font-weight: 500; }
+.date-selector:hover { background: white; border-color: #006633; }
+.date-selector:focus { outline: none; border-color: #006633; box-shadow: 0 0 0 3px rgba(0,102,51,0.1); }
+.traslados-header-controls { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; flex-wrap: wrap; gap: 15px; }
+.traslados-left-controls { display: flex; gap: 15px; align-items: center; flex: 1; }
+</style>
+</head>
+<body>
+
+<header class="header">
+<!-- Izquierda: Logo container -->
+<div class="logo-container">
+<div style="text-align: center;">
+<div style="font-size: 32px; font-weight: 800; color: #006633; line-height: 1;">LIME</div>
+<div style="font-size: 7px; color: #006633; text-transform: uppercase;">Laboratorio Integrado de Medicina Especializada</div>
+</div>
+<div class="logo-divider"></div>
+<div style="text-align: center;">
+<div style="font-size: 20px; font-weight: 700; color: #003d6b;">Hospital</div>
+<div><span style="font-size: 24px; font-weight: 800; color: #003d6b;">Alma</span><span style="font-size: 24px; font-weight: 800; color: #00a99d;">Máter</span></div>
+</div>
+<div class="logo-divider"></div>
+<div style="font-size: 14px; font-weight: 700; color: #006633; line-height: 1.3;">UNIVERSIDAD<br>DE ANTIOQUIA</div>
+</div>
+
+<!-- Centro: Título del sistema -->
+<div style="text-align: center; flex: 1; margin: 0 30px;">
+<h1 style="font-size: 24px; margin-bottom: 5px;">Sistema de Inventario de Equipos</h1>
+<p style="font-size: 13px; opacity: 0.9;">Gestión y control de activos tecnológicos y médicos</p>
+</div>
+
+<!-- Derecha: Usuario -->
+<div style="display: flex; align-items: center; gap: 15px;">
+<div style="text-align: right;">
+<div style="font-weight: 600; font-size: 14px;">Admin LIME</div>
+<div style="font-size: 12px; opacity: 0.8;">Administrador del Sistema</div>
+</div>
+<div style="width: 45px; height: 45px; border-radius: 50%; background: white; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #006633; font-size: 18px;">JL</div>
+</div>
+</header>
+
+<!-- Overlay para el panel de filtros -->
+<div class="filtro-overlay" id="filtroOverlay" onclick="toggleFiltroPanel()"></div>
+
+<!-- Panel lateral de filtros -->
+<div class="filtro-panel" id="filtroPanel">
+<div class="filtro-header">
+<div class="filtro-title">FILTRAR Y ORDENAR</div>
+<button class="close-btn" onclick="toggleFiltroPanel()" style="font-size: 24px;">✕</button>
+</div>
+<div class="filtro-body">
+<button class="btn-borrar-filtros" onclick="borrarTodosFiltros()">Borrar todo</button>
+
+<!-- SEDE -->
+<div class="filtro-section">
+<div class="filtro-section-title">SEDE</div>
+<div class="filtro-checkbox-group">
+<div class="filtro-checkbox-item">
+<input type="checkbox" id="sede-prado" name="sede" value="Prado">
+<label for="sede-prado">Prado</label>
+</div>
+<div class="filtro-checkbox-item">
+<input type="checkbox" id="sede-2" name="sede" value="Sede 2">
+<label for="sede-2">Sede 2</label>
+</div>
+<div class="filtro-checkbox-item">
+<input type="checkbox" id="sede-3" name="sede" value="Sede 3">
+<label for="sede-3">Sede 3</label>
+</div>
+</div>
+</div>
+
+<!-- ESTADO -->
+<div class="filtro-section">
+<div class="filtro-section-title">ESTADO</div>
+<div class="filtro-checkbox-group">
+<div class="filtro-checkbox-item">
+<input type="checkbox" id="estado-activo" name="estado" value="Activo">
+<label for="estado-activo">Activo</label>
+</div>
+<div class="filtro-checkbox-item">
+<input type="checkbox" id="estado-desactivado" name="estado" value="Desactivado">
+<label for="estado-desactivado">Desactivado</label>
+</div>
+</div>
+</div>
+
+<!-- SERVICIO -->
+<div class="filtro-section">
+<div class="filtro-section-title">SERVICIO</div>
+<div class="filtro-checkbox-group">
+<div class="filtro-checkbox-item">
+<input type="checkbox" id="servicio-lime" name="servicio" value="LIME Central">
+<label for="servicio-lime">LIME Central</label>
+</div>
+<div class="filtro-checkbox-item">
+<input type="checkbox" id="servicio-hematologia" name="servicio" value="Hematología">
+<label for="servicio-hematologia">Hematología</label>
+</div>
+<div class="filtro-checkbox-item">
+<input type="checkbox" id="servicio-fotoderma" name="servicio" value="Fotodermatología">
+<label for="servicio-fotoderma">Fotodermatología</label>
+</div>
+<div class="filtro-checkbox-item">
+<input type="checkbox" id="servicio-resonador" name="servicio" value="Resonador">
+<label for="servicio-resonador">Resonador</label>
+</div>
+<div class="filtro-checkbox-item">
+<input type="checkbox" id="servicio-oftalmologia" name="servicio" value="Oftalmología">
+<label for="servicio-oftalmologia">Oftalmología</label>
+</div>
+</div>
+</div>
+
+<!-- ORDENAR POR -->
+<div class="filtro-section">
+<div class="filtro-section-title">ORDENAR POR</div>
+<div class="filtro-radio-group">
+<div class="filtro-radio-item">
+<input type="radio" id="orden-recientes" name="orden" value="recientes" checked>
+<label for="orden-recientes">Más recientes</label>
+</div>
+<div class="filtro-radio-item">
+<input type="radio" id="orden-antiguos" name="orden" value="antiguos">
+<label for="orden-antiguos">Más antiguos</label>
+</div>
+<div class="filtro-radio-item">
+<input type="radio" id="orden-nombre" name="orden" value="nombre">
+<label for="orden-nombre">Nombre (A-Z)</label>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- Overlay para el panel de filtros de traslados -->
+<div class="filtro-overlay" id="filtroTrasladosOverlay" onclick="toggleFiltroTrasladosPanel()"></div>
+
+<!-- Panel lateral de filtros para traslados -->
+<div class="filtro-panel" id="filtroTrasladosPanel">
+<div class="filtro-header">
+<div class="filtro-title">FILTRAR Y ORDENAR</div>
+<button class="close-btn" onclick="toggleFiltroTrasladosPanel()" style="font-size: 24px;">✕</button>
+</div>
+<div class="filtro-body">
+<button class="btn-borrar-filtros" onclick="borrarTodosFiltrosTraslados()">Borrar todo</button>
+
+<!-- SEDE ORIGEN -->
+<div class="filtro-section">
+<div class="filtro-section-title">SEDE ORIGEN</div>
+<div class="filtro-checkbox-group">
+<div class="filtro-checkbox-item">
+<input type="checkbox" id="traslado-origen-prado" name="traslado-origen" value="Prado">
+<label for="traslado-origen-prado">Prado</label>
+</div>
+<div class="filtro-checkbox-item">
+<input type="checkbox" id="traslado-origen-2" name="traslado-origen" value="Sede 2">
+<label for="traslado-origen-2">Sede 2</label>
+</div>
+<div class="filtro-checkbox-item">
+<input type="checkbox" id="traslado-origen-3" name="traslado-origen" value="Sede 3">
+<label for="traslado-origen-3">Sede 3</label>
+</div>
+</div>
+</div>
+
+<!-- SEDE DESTINO -->
+<div class="filtro-section">
+<div class="filtro-section-title">SEDE DESTINO</div>
+<div class="filtro-checkbox-group">
+<div class="filtro-checkbox-item">
+<input type="checkbox" id="traslado-destino-prado" name="traslado-destino" value="Prado">
+<label for="traslado-destino-prado">Prado</label>
+</div>
+<div class="filtro-checkbox-item">
+<input type="checkbox" id="traslado-destino-2" name="traslado-destino" value="Sede 2">
+<label for="traslado-destino-2">Sede 2</label>
+</div>
+<div class="filtro-checkbox-item">
+<input type="checkbox" id="traslado-destino-3" name="traslado-destino" value="Sede 3">
+<label for="traslado-destino-3">Sede 3</label>
+</div>
+</div>
+</div>
+
+<!-- RESPONSABLE -->
+<div class="filtro-section">
+<div class="filtro-section-title">RESPONSABLE</div>
+<div class="filtro-checkbox-group">
+<div class="filtro-checkbox-item">
+<input type="checkbox" id="traslado-resp-gloria" name="traslado-responsable" value="Gloria Zapata">
+<label for="traslado-resp-gloria">Gloria Zapata</label>
+</div>
+<div class="filtro-checkbox-item">
+<input type="checkbox" id="traslado-resp-carlos" name="traslado-responsable" value="Carlos Ramírez">
+<label for="traslado-resp-carlos">Carlos Ramírez</label>
+</div>
+<div class="filtro-checkbox-item">
+<input type="checkbox" id="traslado-resp-sofia" name="traslado-responsable" value="Sofía Martínez">
+<label for="traslado-resp-sofia">Sofía Martínez</label>
+</div>
+<div class="filtro-checkbox-item">
+<input type="checkbox" id="traslado-resp-andrea" name="traslado-responsable" value="Andrea López">
+<label for="traslado-resp-andrea">Andrea López</label>
+</div>
+</div>
+</div>
+
+<!-- ORDENAR POR -->
+<div class="filtro-section">
+<div class="filtro-section-title">ORDENAR POR</div>
+<div class="filtro-radio-group">
+<div class="filtro-radio-item">
+<input type="radio" id="traslado-orden-recientes" name="traslado-orden" value="recientes" checked>
+<label for="traslado-orden-recientes">Más recientes</label>
+</div>
+<div class="filtro-radio-item">
+<input type="radio" id="traslado-orden-antiguos" name="traslado-orden" value="antiguos">
+<label for="traslado-orden-antiguos">Más antiguos</label>
+</div>
+<div class="filtro-radio-item">
+<input type="radio" id="traslado-orden-equipo" name="traslado-orden" value="equipo">
+<label for="traslado-orden-equipo">Por equipo (A-Z)</label>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<div class="container">
+<aside class="sidebar">
+<div class="menu-item active" onclick="showPage('Información General')">📊 Información General</div>
+<div class="menu-item" onclick="showPage('equipos')">🔧 Inventario de Equipos</div>
+<div class="menu-item" onclick="showPage('traslados')">🔄 Traslados</div>
+<div class="menu-item" onclick="showPage('mantenimientos')">🛠️ Mantenimientos</div>
+<div style="height: 1px; background: #e0e0e0; margin: 15px 25px;"></div>
+<div class="menu-item" onclick="showPage('sedes')">🏢 Sedes y Servicios</div>
+<div class="menu-item" onclick="showPage('usuarios')">👥 Usuarios</div>
+<div style="height: 1px; background: #e0e0e0; margin: 15px 25px;"></div>
+<div class="menu-item" onclick="showPage('reportes')">📈 Reportes</div>
+<div class="menu-item" onclick="showPage('configuracion')">⚙️ Configuración</div>
+</aside>
+
+<main class="main-content">
+<!-- Información General -->
+<div id="Información General-page">
+<h2 class="page-title">Información General</h2>
+<div class="stats-grid">
+<div class="stat-card"><div style="color: #616161; margin-bottom: 8px;">Total Equipos</div><div class="stat-value">284</div><div style="font-size: 12px; color: #4CAF50; margin-top: 8px;">↑ 12 nuevos este mes</div></div>
+<div class="stat-card" style="border-left-color: #00a99d;"><div style="color: #616161; margin-bottom: 8px;">Equipos Activos</div><div class="stat-value">267</div><div style="font-size: 12px; color: #4CAF50; margin-top: 8px;">94% del total</div></div>
+<div class="stat-card" style="border-left-color: #003d6b;"><div style="color: #616161; margin-bottom: 8px;">Mantenimientos Pendientes</div><div class="stat-value">18</div><div style="font-size: 12px; color: #ff9800; margin-top: 8px;">Próximos 30 días</div></div>
+<div class="stat-card" style="border-left-color: #4CAF50;"><div style="color: #616161; margin-bottom: 8px;">Calibraciones Próximas</div><div class="stat-value">7</div><div style="font-size: 12px; color: #ff9800; margin-top: 8px;">Este mes</div></div>
+</div>
+<div class="alert alert-danger" onclick="irAMantenimientos()">
+<span style="font-size: 20px;">⚠️</span>
+<div><strong>Atención:</strong> Hay 5 equipos con mantenimiento vencido. <strong>Clic aquí para ver detalles</strong></div>
+</div>
+<div class="alert alert-warning" onclick="irAMantenimientos()" style="cursor: pointer;">
+<span style="font-size: 20px;">📅</span>
+<div><strong>Próximos mantenimientos:</strong> 18 equipos requieren mantenimiento en los próximos 30 días. <strong>Clic aquí para ver detalles</strong></div>
+</div>
+<div class="content-card">
+<h3 style="color: #006633; margin-bottom: 20px;">Equipos Agregados Recientemente</h3>
+<table>
+<thead><tr><th>Código</th><th>Nombre</th><th>Marca</th><th>Modelo</th><th>Sede</th><th>Estado</th><th>Fecha</th></tr></thead>
+<tbody>
+<tr><td><strong>135306</strong></td><td>Congelador</td><td>Challenger</td><td>CV430</td><td>Prado - LIME Central</td><td><span class="badge badge-success">Activo</span></td><td>2025-11-15</td></tr>
+<tr><td><strong>119325</strong></td><td>Agregómetro</td><td>Helena Labs</td><td>AGGRAM</td><td>Prado - Hematología</td><td><span class="badge badge-success">Activo</span></td><td>2025-11-14</td></tr>
+<tr><td><strong>142789</strong></td><td>Espectrofotómetro</td><td>Thermo Scientific</td><td>Evolution 201</td><td>Prado - LIME Central</td><td><span class="badge badge-success">Activo</span></td><td>2025-11-13</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+
+<!-- EQUIPOS -->
+<div id="equipos-page" style="display: none;">
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+<div><h2 class="page-title" style="margin: 0;">Inventario de Equipos</h2><div style="color: #616161; font-size: 14px; margin-top: 5px;">Inicio / Equipos / Lista</div></div>
+<button class="btn btn-primary" onclick="abrirCrearEquipo()">➕ Nuevo Equipo</button>
+</div>
+<div class="content-card">
+<div class="search-filter-container">
+<div class="search-section"><input type="text" class="search-input" placeholder="🔍 Buscar por código, nombre, marca, modelo o serie..." id="searchInput" onkeyup="filterTable()"></div>
+<button class="filter-button" onclick="toggleFiltroPanel()">☰ Filtrar y Ordenar</button>
+</div>
+<table id="equiposTable">
+<thead><tr><th>Código</th><th>Nombre</th><th>Marca</th><th>Modelo</th><th>Serie</th><th>Sede / Servicio</th><th>Estado</th><th>Acciones</th></tr></thead>
+<tbody>
+<!-- EQUIPO 1: Congelador -->
+<tr data-equipo="135306">
+<td><strong>135306</strong></td><td>Congelador</td><td>Challenger</td><td>CV430</td><td>9053127</td><td>Prado / LIME Central</td><td><span class="badge badge-success">Activo</span></td>
+<td>
+<button class="btn btn-info btn-sm btn-ver" onclick="toggleDetalleEquipo('135306')" id="btn-ver-135306">👁️</button>
+<button class="btn btn-secondary btn-sm" onclick="editarEquipo('135306')">✏️</button>
+<button class="btn btn-danger btn-sm" onclick="abrirModalBaja('135306')">🗑️</button>
+</td>
+</tr>
+<tr class="detalle-row" id="detalle-135306">
+<td colspan="8" class="detalle-cell">
+<div class="detalle-container">
+<div class="detalle-header">
+<div class="detalle-title">📋 Detalle del Equipo - Congelador (135306)</div>
+<button class="btn btn-secondary btn-sm" onclick="toggleDetalleEquipo('135306')">✕ Cerrar</button>
+</div>
+<div class="detalle-tabs">
+<div class="detalle-tab active" onclick="mostrarTabDetalleEquipo('135306', 1)">Información General</div>
+<div class="detalle-tab" onclick="mostrarTabDetalleEquipo('135306', 2)">Metrología</div>
+<div class="detalle-tab" onclick="mostrarTabDetalleEquipo('135306', 3)">Historial Traslados</div>
+<div class="detalle-tab" onclick="mostrarTabDetalleEquipo('135306', 4)">Mantenimientos</div>
+</div>
+<div class="detalle-content active" id="detalle-tab-135306-1">
+<div class="detalle-grid">
+<div class="detalle-section">
+<h4 class="detalle-section-title">A. Información General</h4>
+<div class="detalle-item"><span class="detalle-label">Proceso:</span><span class="detalle-value">LIME</span></div>
+<div class="detalle-item"><span class="detalle-label">Código Interno:</span><span class="detalle-value"><strong>135306</strong></span></div>
+<div class="detalle-item"><span class="detalle-label">Código IPS:</span><span class="detalle-value">IND-135306</span></div>
+<div class="detalle-item"><span class="detalle-label">Responsable:</span><span class="detalle-value">Gloria Zapata</span></div>
+<div class="detalle-item"><span class="detalle-label">Ubicación:</span><span class="detalle-value">Procesamiento Sección C</span></div>
+<div class="detalle-item"><span class="detalle-label">Sede:</span><span class="detalle-value">Prado</span></div>
+<div class="detalle-item"><span class="detalle-label">Servicio:</span><span class="detalle-value">LIME Central</span></div>
+</div>
+<div class="detalle-section">
+<h4 class="detalle-section-title">B. Información del Equipo</h4>
+<div class="detalle-item"><span class="detalle-label">Nombre:</span><span class="detalle-value">Congelador</span></div>
+<div class="detalle-item"><span class="detalle-label">Marca:</span><span class="detalle-value">Challenger</span></div>
+<div class="detalle-item"><span class="detalle-label">Modelo:</span><span class="detalle-value">CV430</span></div>
+<div class="detalle-item"><span class="detalle-label">Serie:</span><span class="detalle-value">9053127</span></div>
+<div class="detalle-item"><span class="detalle-label">Clasif. IPS:</span><span class="detalle-value">IND - Industrial</span></div>
+<div class="detalle-item"><span class="detalle-label">Registro INVIMA:</span><span class="detalle-value">N/A</span></div>
+</div>
+<div class="detalle-section" style="grid-column: 1 / -1;">
+<h4 class="detalle-section-title">C. Registro Histórico</h4>
+<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;">
+<div class="detalle-item"><span class="detalle-label">Fecha Adquisición:</span><span class="detalle-value">10/12/2009</span></div>
+<div class="detalle-item"><span class="detalle-label">Propietario:</span><span class="detalle-value">UdeA</span></div>
+<div class="detalle-item"><span class="detalle-label">Forma Adquisición:</span><span class="detalle-value">Compra</span></div>
+<div class="detalle-item"><span class="detalle-label">Proveedor:</span><span class="detalle-value">Almacén Navarro Ospina S.A.</span></div>
+<div class="detalle-item"><span class="detalle-label">En Garantía:</span><span class="detalle-value">No</span></div>
+<div class="detalle-item"><span class="detalle-label">Documento:</span><span class="detalle-value">Factura #47736</span></div>
+</div>
+</div>
+<div class="detalle-section" style="grid-column: 1 / -1;">
+<h4 class="detalle-section-title">D. Inventario de Documentos</h4>
+<div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; font-size: 13px;">
+<div>✅ Hoja de Vida</div>
+<div>❌ Registro Importación</div>
+<div>✅ Manual Operación (Esp)</div>
+<div>❌ Manual Servicio</div>
+<div>❌ Guía Rápida</div>
+<div>❌ Instructivo Manejo</div>
+<div>❌ Protocolo Mto Prev</div>
+<div>❌ Frecuencia Metrológica</div>
+</div>
+</div>
+</div>
+</div>
+<div class="detalle-content" id="detalle-tab-135306-2">
+<div class="detalle-grid">
+<div class="detalle-section">
+<h4 class="detalle-section-title">E. Info Metrológica Administrativa</h4>
+<div class="detalle-item"><span class="detalle-label">Requiere Mantenimiento:</span><span class="detalle-value">✅ Sí</span></div>
+<div class="detalle-item"><span class="detalle-label">Frecuencia Anual:</span><span class="detalle-value">1 vez por año</span></div>
+<div class="detalle-item"><span class="detalle-label">Último Mantenimiento:</span><span class="detalle-value">15/11/2024</span></div>
+<div class="detalle-item"><span class="detalle-label">Próximo Mantenimiento:</span><span class="detalle-value">15/12/2025</span></div>
+<div class="detalle-item"><span class="detalle-label">Requiere Calibración:</span><span class="detalle-value">✅ Sí</span></div>
+<div class="detalle-item"><span class="detalle-label">Tipo Calibración:</span><span class="detalle-value">Calificación</span></div>
+</div>
+<div class="detalle-section">
+<h4 class="detalle-section-title">F. Info Metrológica Técnica</h4>
+<div class="detalle-item"><span class="detalle-label">Magnitud:</span><span class="detalle-value">Temperatura</span></div>
+<div class="detalle-item"><span class="detalle-label">Rango del Equipo:</span><span class="detalle-value">T -18</span></div>
+<div class="detalle-item"><span class="detalle-label">Rango de Trabajo:</span><span class="detalle-value">0 a -33°C</span></div>
+<div class="detalle-item"><span class="detalle-label">Resolución:</span><span class="detalle-value">NI</span></div>
+<div class="detalle-item"><span class="detalle-label">Error Máximo:</span><span class="detalle-value">NI</span></div>
+</div>
+<div class="detalle-section" style="grid-column: 1 / -1;">
+<h4 class="detalle-section-title">G. Condiciones de Funcionamiento</h4>
+<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;">
+<div class="detalle-item"><span class="detalle-label">Voltaje:</span><span class="detalle-value">115 VAC</span></div>
+<div class="detalle-item"><span class="detalle-label">Temperatura:</span><span class="detalle-value">Max 38°C</span></div>
+<div class="detalle-item"><span class="detalle-label">Dimensiones:</span><span class="detalle-value">53,5 x 53 x 142 cm</span></div>
+<div class="detalle-item"><span class="detalle-label">Peso:</span><span class="detalle-value">55,5 kg</span></div>
+</div>
+</div>
+</div>
+</div>
+<div class="detalle-content" id="detalle-tab-135306-3">
+<div class="detalle-section" style="grid-column: 1 / -1;">
+<h4 class="detalle-section-title">Historial de Traslados</h4>
+<table style="margin-top: 15px;">
+<thead style="background: #006633;"><tr><th style="color: white;">Fecha</th><th style="color: white;">Origen</th><th style="color: white;">Destino</th><th style="color: white;">Responsable</th><th style="color: white;">Justificación</th></tr></thead>
+<tbody>
+<tr><td>15/11/2025</td><td>Prado - Hematología</td><td>Prado - LIME Central</td><td>Gloria Zapata</td><td>Reasignación por necesidad del servicio</td></tr>
+<tr><td>10/12/2024</td><td>Sede 2 - Lab General</td><td>Prado - Hematología</td><td>Carlos Ramírez</td><td>Optimización de recursos</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="detalle-content" id="detalle-tab-135306-4">
+<div class="detalle-section" style="grid-column: 1 / -1;">
+<h4 class="detalle-section-title">Historial de Mantenimientos</h4>
+<table style="margin-top: 15px;">
+<thead style="background: #006633;"><tr><th style="color: white;">Fecha</th><th style="color: white;">Tipo</th><th style="color: white;">Descripción</th><th style="color: white;">Realizado Por</th><th style="color: white;">Costo</th></tr></thead>
+<tbody>
+<tr><td>15/11/2024</td><td><span class="badge badge-success">Preventivo</span></td><td>Limpieza general y verificación de temperatura</td><td>TecnoFrío SAS</td><td>$250.000</td></tr>
+<tr><td>20/05/2024</td><td><span class="badge" style="background: rgba(76,175,80,0.1); color: #4CAF50;">Calibración</span></td><td>Calibración de sensor de temperatura</td><td>Metrología UdeA</td><td>$180.000</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</td>
+</tr>
+
+<!-- EQUIPO 2: Agregómetro -->
+<tr data-equipo="119325">
+<td><strong>119325</strong></td><td>Agregómetro</td><td>Helena Labs</td><td>AGGRAM</td><td>630604801</td><td>Prado / Hematología</td><td><span class="badge badge-success">Activo</span></td>
+<td>
+<button class="btn btn-info btn-sm btn-ver" onclick="toggleDetalleEquipo('119325')" id="btn-ver-119325">👁️</button>
+<button class="btn btn-secondary btn-sm" onclick="editarEquipo('119325')">✏️</button>
+<button class="btn btn-danger btn-sm" onclick="abrirModalBaja('119325')">🗑️</button>
+</td>
+</tr>
+<tr class="detalle-row" id="detalle-119325">
+<td colspan="8" class="detalle-cell">
+<div class="detalle-container">
+<div class="detalle-header">
+<div class="detalle-title">📋 Detalle del Equipo - Agregómetro (119325)</div>
+<button class="btn btn-secondary btn-sm" onclick="toggleDetalleEquipo('119325')">✕ Cerrar</button>
+</div>
+<div class="detalle-tabs">
+<div class="detalle-tab active" onclick="mostrarTabDetalleEquipo('119325', 1)">Información General</div>
+<div class="detalle-tab" onclick="mostrarTabDetalleEquipo('119325', 2)">Metrología</div>
+<div class="detalle-tab" onclick="mostrarTabDetalleEquipo('119325', 3)">Historial Traslados</div>
+<div class="detalle-tab" onclick="mostrarTabDetalleEquipo('119325', 4)">Mantenimientos</div>
+</div>
+<div class="detalle-content active" id="detalle-tab-119325-1">
+<div class="detalle-grid">
+<div class="detalle-section">
+<h4 class="detalle-section-title">A. Información General</h4>
+<div class="detalle-item"><span class="detalle-label">Proceso:</span><span class="detalle-value">LIME</span></div>
+<div class="detalle-item"><span class="detalle-label">Código Interno:</span><span class="detalle-value"><strong>119325</strong></span></div>
+<div class="detalle-item"><span class="detalle-label">Código IPS:</span><span class="detalle-value">BIO-119325</span></div>
+<div class="detalle-item"><span class="detalle-label">Responsable:</span><span class="detalle-value">Gloria Zapata</span></div>
+<div class="detalle-item"><span class="detalle-label">Ubicación:</span><span class="detalle-value">Hematología - Área Principal</span></div>
+<div class="detalle-item"><span class="detalle-label">Sede:</span><span class="detalle-value">Prado</span></div>
+<div class="detalle-item"><span class="detalle-label">Servicio:</span><span class="detalle-value">Hematología</span></div>
+</div>
+<div class="detalle-section">
+<h4 class="detalle-section-title">B. Información del Equipo</h4>
+<div class="detalle-item"><span class="detalle-label">Nombre:</span><span class="detalle-value">Agregómetro</span></div>
+<div class="detalle-item"><span class="detalle-label">Marca:</span><span class="detalle-value">Helena Labs</span></div>
+<div class="detalle-item"><span class="detalle-label">Modelo:</span><span class="detalle-value">AGGRAM</span></div>
+<div class="detalle-item"><span class="detalle-label">Serie:</span><span class="detalle-value">630604801</span></div>
+<div class="detalle-item"><span class="detalle-label">Clasif. IPS:</span><span class="detalle-value">BIO - Biomédico</span></div>
+<div class="detalle-item"><span class="detalle-label">Registro INVIMA:</span><span class="detalle-value">2018DM-0012345</span></div>
+</div>
+<div class="detalle-section" style="grid-column: 1 / -1;">
+<h4 class="detalle-section-title">C. Registro Histórico</h4>
+<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;">
+<div class="detalle-item"><span class="detalle-label">Fecha Adquisición:</span><span class="detalle-value">15/03/2018</span></div>
+<div class="detalle-item"><span class="detalle-label">Propietario:</span><span class="detalle-value">UdeA</span></div>
+<div class="detalle-item"><span class="detalle-label">Forma Adquisición:</span><span class="detalle-value">Compra</span></div>
+<div class="detalle-item"><span class="detalle-label">Proveedor:</span><span class="detalle-value">Biocare Médica Ltda.</span></div>
+<div class="detalle-item"><span class="detalle-label">En Garantía:</span><span class="detalle-value">No</span></div>
+<div class="detalle-item"><span class="detalle-label">Documento:</span><span class="detalle-value">Factura #28493</span></div>
+</div>
+</div>
+<div class="detalle-section" style="grid-column: 1 / -1;">
+<h4 class="detalle-section-title">D. Inventario de Documentos</h4>
+<div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; font-size: 13px;">
+<div>✅ Hoja de Vida</div>
+<div>✅ Registro Importación</div>
+<div>✅ Manual Operación (Ing)</div>
+<div>✅ Manual Servicio</div>
+<div>✅ Guía Rápida</div>
+<div>✅ Instructivo Manejo</div>
+<div>✅ Protocolo Mto Prev</div>
+<div>✅ Frecuencia Metrológica</div>
+</div>
+</div>
+</div>
+</div>
+<div class="detalle-content" id="detalle-tab-119325-2">
+<div class="detalle-grid">
+<div class="detalle-section">
+<h4 class="detalle-section-title">E. Info Metrológica Administrativa</h4>
+<div class="detalle-item"><span class="detalle-label">Requiere Mantenimiento:</span><span class="detalle-value">✅ Sí</span></div>
+<div class="detalle-item"><span class="detalle-label">Frecuencia Anual:</span><span class="detalle-value">2 veces por año</span></div>
+<div class="detalle-item"><span class="detalle-label">Último Mantenimiento:</span><span class="detalle-value">10/07/2025</span></div>
+<div class="detalle-item"><span class="detalle-label">Próximo Mantenimiento:</span><span class="detalle-value">20/12/2025</span></div>
+<div class="detalle-item"><span class="detalle-label">Requiere Calibración:</span><span class="detalle-value">✅ Sí</span></div>
+<div class="detalle-item"><span class="detalle-label">Tipo Calibración:</span><span class="detalle-value">Verificación Externa</span></div>
+</div>
+<div class="detalle-section">
+<h4 class="detalle-section-title">F. Info Metrológica Técnica</h4>
+<div class="detalle-item"><span class="detalle-label">Magnitud:</span><span class="detalle-value">Tiempo y Temperatura</span></div>
+<div class="detalle-item"><span class="detalle-label">Rango del Equipo:</span><span class="detalle-value">0-10 min / 20-40°C</span></div>
+<div class="detalle-item"><span class="detalle-label">Rango de Trabajo:</span><span class="detalle-value">0-6 min / 37°C</span></div>
+<div class="detalle-item"><span class="detalle-label">Resolución:</span><span class="detalle-value">0.1 min</span></div>
+<div class="detalle-item"><span class="detalle-label">Error Máximo:</span><span class="detalle-value">±5%</span></div>
+</div>
+<div class="detalle-section" style="grid-column: 1 / -1;">
+<h4 class="detalle-section-title">G. Condiciones de Funcionamiento</h4>
+<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;">
+<div class="detalle-item"><span class="detalle-label">Voltaje:</span><span class="detalle-value">110-120 VAC</span></div>
+<div class="detalle-item"><span class="detalle-label">Temperatura:</span><span class="detalle-value">15-30°C</span></div>
+<div class="detalle-item"><span class="detalle-label">Dimensiones:</span><span class="detalle-value">42 x 35 x 18 cm</span></div>
+<div class="detalle-item"><span class="detalle-label">Peso:</span><span class="detalle-value">8.5 kg</span></div>
+</div>
+</div>
+</div>
+</div>
+<div class="detalle-content" id="detalle-tab-119325-3">
+<div class="detalle-section" style="grid-column: 1 / -1;">
+<h4 class="detalle-section-title">Historial de Traslados</h4>
+<table style="margin-top: 15px;">
+<thead style="background: #006633;"><tr><th style="color: white;">Fecha</th><th style="color: white;">Origen</th><th style="color: white;">Destino</th><th style="color: white;">Responsable</th><th style="color: white;">Justificación</th></tr></thead>
+<tbody>
+<tr><td>12/11/2025</td><td>Prado - LIME Central</td><td>Prado - Hematología</td><td>Gloria Zapata</td><td>Optimización de recursos del laboratorio</td></tr>
+<tr><td>15/03/2018</td><td>Almacén General</td><td>Prado - LIME Central</td><td>Carlos Ramírez</td><td>Instalación inicial</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="detalle-content" id="detalle-tab-119325-4">
+<div class="detalle-section" style="grid-column: 1 / -1;">
+<h4 class="detalle-section-title">Historial de Mantenimientos</h4>
+<table style="margin-top: 15px;">
+<thead style="background: #006633;"><tr><th style="color: white;">Fecha</th><th style="color: white;">Tipo</th><th style="color: white;">Descripción</th><th style="color: white;">Realizado Por</th><th style="color: white;">Costo</th></tr></thead>
+<tbody>
+<tr><td>10/07/2025</td><td><span class="badge badge-success">Preventivo</span></td><td>Limpieza, calibración y verificación de canales</td><td>Biocare Médica Ltda.</td><td>$420.000</td></tr>
+<tr><td>22/01/2025</td><td><span class="badge badge-success">Preventivo</span></td><td>Mantenimiento preventivo semestral</td><td>Biocare Médica Ltda.</td><td>$380.000</td></tr>
+<tr><td>18/06/2024</td><td><span class="badge" style="background: rgba(76,175,80,0.1); color: #4CAF50;">Calibración</span></td><td>Calibración de canales y temperatura</td><td>Metrología UdeA</td><td>$290.000</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</td>
+</tr>
+
+<!-- EQUIPO 3: Centrífuga -->
+<tr data-equipo="120458">
+<td><strong>120458</strong></td><td>Centrífuga</td><td>Eppendorf</td><td>5810R</td><td>5810-0123</td><td>Prado / LIME Central</td><td><span class="badge badge-success">Activo</span></td>
+<td>
+<button class="btn btn-info btn-sm btn-ver" onclick="toggleDetalleEquipo('120458')" id="btn-ver-120458">👁️</button>
+<button class="btn btn-secondary btn-sm" onclick="editarEquipo('120458')">✏️</button>
+<button class="btn btn-danger btn-sm" onclick="abrirModalBaja('120458')">🗑️</button>
+</td>
+</tr>
+<tr class="detalle-row" id="detalle-120458">
+<td colspan="8" class="detalle-cell">
+<div class="detalle-container">
+<div class="detalle-header">
+<div class="detalle-title">📋 Detalle del Equipo - Centrífuga (120458)</div>
+<button class="btn btn-secondary btn-sm" onclick="toggleDetalleEquipo('120458')">✕ Cerrar</button>
+</div>
+<div class="detalle-tabs">
+<div class="detalle-tab active" onclick="mostrarTabDetalleEquipo('120458', 1)">Información General</div>
+<div class="detalle-tab" onclick="mostrarTabDetalleEquipo('120458', 2)">Metrología</div>
+<div class="detalle-tab" onclick="mostrarTabDetalleEquipo('120458', 3)">Historial Traslados</div>
+<div class="detalle-tab" onclick="mostrarTabDetalleEquipo('120458', 4)">Mantenimientos</div>
+</div>
+<div class="detalle-content active" id="detalle-tab-120458-1">
+<div class="detalle-grid">
+<div class="detalle-section">
+<h4 class="detalle-section-title">A. Información General</h4>
+<div class="detalle-item"><span class="detalle-label">Proceso:</span><span class="detalle-value">LIME</span></div>
+<div class="detalle-item"><span class="detalle-label">Código Interno:</span><span class="detalle-value"><strong>120458</strong></span></div>
+<div class="detalle-item"><span class="detalle-label">Código IPS:</span><span class="detalle-value">BIO-120458</span></div>
+<div class="detalle-item"><span class="detalle-label">Responsable:</span><span class="detalle-value">Gloria Zapata</span></div>
+<div class="detalle-item"><span class="detalle-label">Ubicación:</span><span class="detalle-value">Procesamiento Sección A</span></div>
+<div class="detalle-item"><span class="detalle-label">Sede:</span><span class="detalle-value">Prado</span></div>
+<div class="detalle-item"><span class="detalle-label">Servicio:</span><span class="detalle-value">LIME Central</span></div>
+</div>
+<div class="detalle-section">
+<h4 class="detalle-section-title">B. Información del Equipo</h4>
+<div class="detalle-item"><span class="detalle-label">Nombre:</span><span class="detalle-value">Centrífuga</span></div>
+<div class="detalle-item"><span class="detalle-label">Marca:</span><span class="detalle-value">Eppendorf</span></div>
+<div class="detalle-item"><span class="detalle-label">Modelo:</span><span class="detalle-value">5810R</span></div>
+<div class="detalle-item"><span class="detalle-label">Serie:</span><span class="detalle-value">5810-0123</span></div>
+<div class="detalle-item"><span class="detalle-label">Clasif. IPS:</span><span class="detalle-value">BIO - Biomédico</span></div>
+<div class="detalle-item"><span class="detalle-label">Registro INVIMA:</span><span class="detalle-value">2016DM-0008921</span></div>
+</div>
+<div class="detalle-section" style="grid-column: 1 / -1;">
+<h4 class="detalle-section-title">C. Registro Histórico</h4>
+<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;">
+<div class="detalle-item"><span class="detalle-label">Fecha Adquisición:</span><span class="detalle-value">22/08/2016</span></div>
+<div class="detalle-item"><span class="detalle-label">Propietario:</span><span class="detalle-value">UdeA</span></div>
+<div class="detalle-item"><span class="detalle-label">Forma Adquisición:</span><span class="detalle-value">Compra</span></div>
+<div class="detalle-item"><span class="detalle-label">Proveedor:</span><span class="detalle-value">Tecno Lab SAS</span></div>
+<div class="detalle-item"><span class="detalle-label">En Garantía:</span><span class="detalle-value">No</span></div>
+<div class="detalle-item"><span class="detalle-label">Documento:</span><span class="detalle-value">Factura #15892</span></div>
+</div>
+</div>
+<div class="detalle-section" style="grid-column: 1 / -1;">
+<h4 class="detalle-section-title">D. Inventario de Documentos</h4>
+<div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; font-size: 13px;">
+<div>✅ Hoja de Vida</div>
+<div>✅ Registro Importación</div>
+<div>✅ Manual Operación (Esp/Ing)</div>
+<div>✅ Manual Servicio</div>
+<div>✅ Guía Rápida</div>
+<div>✅ Instructivo Manejo</div>
+<div>✅ Protocolo Mto Prev</div>
+<div>✅ Frecuencia Metrológica</div>
+</div>
+</div>
+</div>
+</div>
+<div class="detalle-content" id="detalle-tab-120458-2">
+<div class="detalle-grid">
+<div class="detalle-section">
+<h4 class="detalle-section-title">E. Info Metrológica Administrativa</h4>
+<div class="detalle-item"><span class="detalle-label">Requiere Mantenimiento:</span><span class="detalle-value">✅ Sí</span></div>
+<div class="detalle-item"><span class="detalle-label">Frecuencia Anual:</span><span class="detalle-value">2 veces por año</span></div>
+<div class="detalle-item"><span class="detalle-label">Último Mantenimiento:</span><span class="detalle-value">08/05/2025</span></div>
+<div class="detalle-item"><span class="detalle-label">Próximo Mantenimiento:</span><span class="detalle-value">05/11/2025</span></div>
+<div class="detalle-item"><span class="detalle-label">Requiere Calibración:</span><span class="detalle-value">✅ Sí</span></div>
+<div class="detalle-item"><span class="detalle-label">Tipo Calibración:</span><span class="detalle-value">Verificación Interna</span></div>
+</div>
+<div class="detalle-section">
+<h4 class="detalle-section-title">F. Info Metrológica Técnica</h4>
+<div class="detalle-item"><span class="detalle-label">Magnitud:</span><span class="detalle-value">Velocidad y Temperatura</span></div>
+<div class="detalle-item"><span class="detalle-label">Rango del Equipo:</span><span class="detalle-value">200-14000 RPM / 4-40°C</span></div>
+<div class="detalle-item"><span class="detalle-label">Rango de Trabajo:</span><span class="detalle-value">1000-6000 RPM / 4°C</span></div>
+<div class="detalle-item"><span class="detalle-label">Resolución:</span><span class="detalle-value">10 RPM / 0.1°C</span></div>
+<div class="detalle-item"><span class="detalle-label">Error Máximo:</span><span class="detalle-value">±50 RPM / ±1°C</span></div>
+</div>
+<div class="detalle-section" style="grid-column: 1 / -1;">
+<h4 class="detalle-section-title">G. Condiciones de Funcionamiento</h4>
+<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;">
+<div class="detalle-item"><span class="detalle-label">Voltaje:</span><span class="detalle-value">230 VAC</span></div>
+<div class="detalle-item"><span class="detalle-label">Temperatura:</span><span class="detalle-value">18-28°C</span></div>
+<div class="detalle-item"><span class="detalle-label">Dimensiones:</span><span class="detalle-value">68 x 49 x 35 cm</span></div>
+<div class="detalle-item"><span class="detalle-label">Peso:</span><span class="detalle-value">78 kg</span></div>
+</div>
+</div>
+</div>
+</div>
+<div class="detalle-content" id="detalle-tab-120458-3">
+<div class="detalle-section" style="grid-column: 1 / -1;">
+<h4 class="detalle-section-title">Historial de Traslados</h4>
+<table style="margin-top: 15px;">
+<thead style="background: #006633;"><tr><th style="color: white;">Fecha</th><th style="color: white;">Origen</th><th style="color: white;">Destino</th><th style="color: white;">Responsable</th><th style="color: white;">Justificación</th></tr></thead>
+<tbody>
+<tr><td>22/08/2016</td><td>Almacén General</td><td>Prado - LIME Central</td><td>Carlos Ramírez</td><td>Instalación inicial</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="detalle-content" id="detalle-tab-120458-4">
+<div class="detalle-section" style="grid-column: 1 / -1;">
+<h4 class="detalle-section-title">Historial de Mantenimientos</h4>
+<table style="margin-top: 15px;">
+<thead style="background: #006633;"><tr><th style="color: white;">Fecha</th><th style="color: white;">Tipo</th><th style="color: white;">Descripción</th><th style="color: white;">Realizado Por</th><th style="color: white;">Costo</th></tr></thead>
+<tbody>
+<tr><td>08/05/2025</td><td><span class="badge badge-success">Preventivo</span></td><td>Limpieza general, lubricación y verificación de velocidades</td><td>Tecno Lab SAS</td><td>$550.000</td></tr>
+<tr><td>12/11/2024</td><td><span class="badge badge-success">Preventivo</span></td><td>Mantenimiento preventivo semestral</td><td>Tecno Lab SAS</td><td>$520.000</td></tr>
+<tr><td>28/04/2024</td><td><span class="badge" style="background: rgba(76,175,80,0.1); color: #4CAF50;">Calibración</span></td><td>Calibración de velocidad y temperatura</td><td>Metrología UdeA</td><td>$340.000</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</td>
+</tr>
+
+<!-- EQUIPO 4: Espectrofotómetro -->
+<tr data-equipo="142789">
+<td><strong>142789</strong></td><td>Espectrofotómetro</td><td>Thermo Scientific</td><td>Evolution 201</td><td>E201-4567</td><td>Prado / LIME Central</td><td><span class="badge badge-success">Activo</span></td>
+<td>
+<button class="btn btn-info btn-sm btn-ver" onclick="toggleDetalleEquipo('142789')" id="btn-ver-142789">👁️</button>
+<button class="btn btn-secondary btn-sm" onclick="editarEquipo('142789')">✏️</button>
+<button class="btn btn-danger btn-sm" onclick="abrirModalBaja('142789')">🗑️</button>
+</td>
+</tr>
+<tr class="detalle-row" id="detalle-142789">
+<td colspan="8" class="detalle-cell">
+<div class="detalle-container">
+<div class="detalle-header">
+<div class="detalle-title">📋 Detalle del Equipo - Espectrofotómetro (142789)</div>
+<button class="btn btn-secondary btn-sm" onclick="toggleDetalleEquipo('142789')">✕ Cerrar</button>
+</div>
+<div class="detalle-tabs">
+<div class="detalle-tab active" onclick="mostrarTabDetalleEquipo('142789', 1)">Información General</div>
+<div class="detalle-tab" onclick="mostrarTabDetalleEquipo('142789', 2)">Metrología</div>
+<div class="detalle-tab" onclick="mostrarTabDetalleEquipo('142789', 3)">Historial Traslados</div>
+<div class="detalle-tab" onclick="mostrarTabDetalleEquipo('142789', 4)">Mantenimientos</div>
+</div>
+<div class="detalle-content active" id="detalle-tab-142789-1">
+<div class="detalle-grid">
+<div class="detalle-section">
+<h4 class="detalle-section-title">A. Información General</h4>
+<div class="detalle-item"><span class="detalle-label">Proceso:</span><span class="detalle-value">LIME</span></div>
+<div class="detalle-item"><span class="detalle-label">Código Interno:</span><span class="detalle-value"><strong>142789</strong></span></div>
+<div class="detalle-item"><span class="detalle-label">Código IPS:</span><span class="detalle-value">BIO-142789</span></div>
+<div class="detalle-item"><span class="detalle-label">Responsable:</span><span class="detalle-value">Gloria Zapata</span></div>
+<div class="detalle-item"><span class="detalle-label">Ubicación:</span><span class="detalle-value">Química Analítica - Mesón 2</span></div>
+<div class="detalle-item"><span class="detalle-label">Sede:</span><span class="detalle-value">Prado</span></div>
+<div class="detalle-item"><span class="detalle-label">Servicio:</span><span class="detalle-value">LIME Central</span></div>
+</div>
+<div class="detalle-section">
+<h4 class="detalle-section-title">B. Información del Equipo</h4>
+<div class="detalle-item"><span class="detalle-label">Nombre:</span><span class="detalle-value">Espectrofotómetro</span></div>
+<div class="detalle-item"><span class="detalle-label">Marca:</span><span class="detalle-value">Thermo Scientific</span></div>
+<div class="detalle-item"><span class="detalle-label">Modelo:</span><span class="detalle-value">Evolution 201</span></div>
+<div class="detalle-item"><span class="detalle-label">Serie:</span><span class="detalle-value">E201-4567</span></div>
+<div class="detalle-item"><span class="detalle-label">Clasif. IPS:</span><span class="detalle-value">BIO - Biomédico</span></div>
+<div class="detalle-item"><span class="detalle-label">Registro INVIMA:</span><span class="detalle-value">2019DM-0015673</span></div>
+</div>
+<div class="detalle-section" style="grid-column: 1 / -1;">
+<h4 class="detalle-section-title">C. Registro Histórico</h4>
+<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;">
+<div class="detalle-item"><span class="detalle-label">Fecha Adquisición:</span><span class="detalle-value">18/06/2019</span></div>
+<div class="detalle-item"><span class="detalle-label">Propietario:</span><span class="detalle-value">UdeA</span></div>
+<div class="detalle-item"><span class="detalle-label">Forma Adquisición:</span><span class="detalle-value">Compra</span></div>
+<div class="detalle-item"><span class="detalle-label">Proveedor:</span><span class="detalle-value">Científica Sena S.A.</span></div>
+<div class="detalle-item"><span class="detalle-label">En Garantía:</span><span class="detalle-value">No</span></div>
+<div class="detalle-item"><span class="detalle-label">Documento:</span><span class="detalle-value">Factura #32104</span></div>
+</div>
+</div>
+<div class="detalle-section" style="grid-column: 1 / -1;">
+<h4 class="detalle-section-title">D. Inventario de Documentos</h4>
+<div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; font-size: 13px;">
+<div>✅ Hoja de Vida</div>
+<div>✅ Registro Importación</div>
+<div>✅ Manual Operación (Ing)</div>
+<div>✅ Manual Servicio</div>
+<div>✅ Guía Rápida</div>
+<div>✅ Instructivo Manejo</div>
+<div>✅ Protocolo Mto Prev</div>
+<div>✅ Frecuencia Metrológica</div>
+</div>
+</div>
+</div>
+</div>
+<div class="detalle-content" id="detalle-tab-142789-2">
+<div class="detalle-grid">
+<div class="detalle-section">
+<h4 class="detalle-section-title">E. Info Metrológica Administrativa</h4>
+<div class="detalle-item"><span class="detalle-label">Requiere Mantenimiento:</span><span class="detalle-value">✅ Sí</span></div>
+<div class="detalle-item"><span class="detalle-label">Frecuencia Anual:</span><span class="detalle-value">1 vez por año</span></div>
+<div class="detalle-item"><span class="detalle-label">Último Mantenimiento:</span><span class="detalle-value">02/08/2024</span></div>
+<div class="detalle-item"><span class="detalle-label">Próximo Mantenimiento:</span><span class="detalle-value">20/10/2025</span></div>
+<div class="detalle-item"><span class="detalle-label">Requiere Calibración:</span><span class="detalle-value">✅ Sí</span></div>
+<div class="detalle-item"><span class="detalle-label">Tipo Calibración:</span><span class="detalle-value">Verificación Externa</span></div>
+</div>
+<div class="detalle-section">
+<h4 class="detalle-section-title">F. Info Metrológica Técnica</h4>
+<div class="detalle-item"><span class="detalle-label">Magnitud:</span><span class="detalle-value">Longitud de onda / Absorbancia</span></div>
+<div class="detalle-item"><span class="detalle-label">Rango del Equipo:</span><span class="detalle-value">190-1100 nm</span></div>
+<div class="detalle-item"><span class="detalle-label">Rango de Trabajo:</span><span class="detalle-value">200-800 nm</span></div>
+<div class="detalle-item"><span class="detalle-label">Resolución:</span><span class="detalle-value">0.1 nm / 0.001 A</span></div>
+<div class="detalle-item"><span class="detalle-label">Error Máximo:</span><span class="detalle-value">±1 nm / ±0.003 A</span></div>
+</div>
+<div class="detalle-section" style="grid-column: 1 / -1;">
+<h4 class="detalle-section-title">G. Condiciones de Funcionamiento</h4>
+<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;">
+<div class="detalle-item"><span class="detalle-label">Voltaje:</span><span class="detalle-value">100-240 VAC</span></div>
+<div class="detalle-item"><span class="detalle-label">Temperatura:</span><span class="detalle-value">15-35°C</span></div>
+<div class="detalle-item"><span class="detalle-label">Dimensiones:</span><span class="detalle-value">52 x 38 x 21 cm</span></div>
+<div class="detalle-item"><span class="detalle-label">Peso:</span><span class="detalle-value">18 kg</span></div>
+</div>
+</div>
+</div>
+</div>
+<div class="detalle-content" id="detalle-tab-142789-3">
+<div class="detalle-section" style="grid-column: 1 / -1;">
+<h4 class="detalle-section-title">Historial de Traslados</h4>
+<table style="margin-top: 15px;">
+<thead style="background: #006633;"><tr><th style="color: white;">Fecha</th><th style="color: white;">Origen</th><th style="color: white;">Destino</th><th style="color: white;">Responsable</th><th style="color: white;">Justificación</th></tr></thead>
+<tbody>
+<tr><td>18/06/2019</td><td>Almacén General</td><td>Prado - LIME Central</td><td>Gloria Zapata</td><td>Instalación inicial</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="detalle-content" id="detalle-tab-142789-4">
+<div class="detalle-section" style="grid-column: 1 / -1;">
+<h4 class="detalle-section-title">Historial de Mantenimientos</h4>
+<table style="margin-top: 15px;">
+<thead style="background: #006633;"><tr><th style="color: white;">Fecha</th><th style="color: white;">Tipo</th><th style="color: white;">Descripción</th><th style="color: white;">Realizado Por</th><th style="color: white;">Costo</th></tr></thead>
+<tbody>
+<tr><td>02/08/2024</td><td><span class="badge badge-success">Preventivo</span></td><td>Limpieza óptica, verificación de lámpara y calibración</td><td>Científica Sena S.A.</td><td>$680.000</td></tr>
+<tr><td>15/03/2024</td><td><span class="badge" style="background: rgba(76,175,80,0.1); color: #4CAF50;">Calibración</span></td><td>Calibración con estándares certificados</td><td>Metrología UdeA</td><td>$420.000</td></tr>
+<tr><td>22/07/2023</td><td><span class="badge badge-success">Preventivo</span></td><td>Mantenimiento preventivo anual</td><td>Científica Sena S.A.</td><td>$650.000</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</td>
+</tr>
+
+<!-- EQUIPO 5: Autoclave -->
+<tr data-equipo="138921">
+<td><strong>138921</strong></td><td>Autoclave</td><td>Tuttnauer</td><td>EZ10</td><td>TT-2023-891</td><td>Sede 2 / Laboratorio</td><td><span class="badge badge-success">Activo</span></td>
+<td>
+<button class="btn btn-info btn-sm btn-ver" onclick="toggleDetalleEquipo('138921')" id="btn-ver-138921">👁️</button>
+<button class="btn btn-secondary btn-sm" onclick="editarEquipo('138921')">✏️</button>
+<button class="btn btn-danger btn-sm" onclick="abrirModalBaja('138921')">🗑️</button>
+</td>
+</tr>
+<tr class="detalle-row" id="detalle-138921">
+<td colspan="8" class="detalle-cell">
+<div class="detalle-container">
+<div class="detalle-header">
+<div class="detalle-title">📋 Detalle del Equipo - Autoclave (138921)</div>
+<button class="btn btn-secondary btn-sm" onclick="toggleDetalleEquipo('138921')">✕ Cerrar</button>
+</div>
+<div class="detalle-tabs">
+<div class="detalle-tab active" onclick="mostrarTabDetalleEquipo('138921', 1)">Información General</div>
+<div class="detalle-tab" onclick="mostrarTabDetalleEquipo('138921', 2)">Metrología</div>
+<div class="detalle-tab" onclick="mostrarTabDetalleEquipo('138921', 3)">Historial Traslados</div>
+<div class="detalle-tab" onclick="mostrarTabDetalleEquipo('138921', 4)">Mantenimientos</div>
+</div>
+<div class="detalle-content active" id="detalle-tab-138921-1">
+<div class="detalle-grid">
+<div class="detalle-section">
+<h4 class="detalle-section-title">A. Información General</h4>
+<div class="detalle-item"><span class="detalle-label">Proceso:</span><span class="detalle-value">LIME</span></div>
+<div class="detalle-item"><span class="detalle-label">Código Interno:</span><span class="detalle-value"><strong>138921</strong></span></div>
+<div class="detalle-item"><span class="detalle-label">Código IPS:</span><span class="detalle-value">BIO-138921</span></div>
+<div class="detalle-item"><span class="detalle-label">Responsable:</span><span class="detalle-value">Sofía Martínez</span></div>
+<div class="detalle-item"><span class="detalle-label">Ubicación:</span><span class="detalle-value">Esterilización - Sala 1</span></div>
+<div class="detalle-item"><span class="detalle-label">Sede:</span><span class="detalle-value">Sede 2</span></div>
+<div class="detalle-item"><span class="detalle-label">Servicio:</span><span class="detalle-value">Laboratorio</span></div>
+</div>
+<div class="detalle-section">
+<h4 class="detalle-section-title">B. Información del Equipo</h4>
+<div class="detalle-item"><span class="detalle-label">Nombre:</span><span class="detalle-value">Autoclave</span></div>
+<div class="detalle-item"><span class="detalle-label">Marca:</span><span class="detalle-value">Tuttnauer</span></div>
+<div class="detalle-item"><span class="detalle-label">Modelo:</span><span class="detalle-value">EZ10</span></div>
+<div class="detalle-item"><span class="detalle-label">Serie:</span><span class="detalle-value">TT-2023-891</span></div>
+<div class="detalle-item"><span class="detalle-label">Clasif. IPS:</span><span class="detalle-value">BIO - Biomédico</span></div>
+<div class="detalle-item"><span class="detalle-label">Registro INVIMA:</span><span class="detalle-value">2023DM-0019832</span></div>
+</div>
+<div class="detalle-section" style="grid-column: 1 / -1;">
+<h4 class="detalle-section-title">C. Registro Histórico</h4>
+<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;">
+<div class="detalle-item"><span class="detalle-label">Fecha Adquisición:</span><span class="detalle-value">10/05/2023</span></div>
+<div class="detalle-item"><span class="detalle-label">Propietario:</span><span class="detalle-value">UdeA</span></div>
+<div class="detalle-item"><span class="detalle-label">Forma Adquisición:</span><span class="detalle-value">Compra</span></div>
+<div class="detalle-item"><span class="detalle-label">Proveedor:</span><span class="detalle-value">Medical Solutions Colombia</span></div>
+<div class="detalle-item"><span class="detalle-label">En Garantía:</span><span class="detalle-value">Sí - Hasta 05/2026</span></div>
+<div class="detalle-item"><span class="detalle-label">Documento:</span><span class="detalle-value">Factura #78231</span></div>
+</div>
+</div>
+<div class="detalle-section" style="grid-column: 1 / -1;">
+<h4 class="detalle-section-title">D. Inventario de Documentos</h4>
+<div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; font-size: 13px;">
+<div>✅ Hoja de Vida</div>
+<div>✅ Registro Importación</div>
+<div>✅ Manual Operación (Esp)</div>
+<div>✅ Manual Servicio</div>
+<div>✅ Guía Rápida</div>
+<div>✅ Instructivo Manejo</div>
+<div>✅ Protocolo Mto Prev</div>
+<div>✅ Frecuencia Metrológica</div>
+</div>
+</div>
+</div>
+</div>
+<div class="detalle-content" id="detalle-tab-138921-2">
+<div class="detalle-grid">
+<div class="detalle-section">
+<h4 class="detalle-section-title">E. Info Metrológica Administrativa</h4>
+<div class="detalle-item"><span class="detalle-label">Requiere Mantenimiento:</span><span class="detalle-value">✅ Sí</span></div>
+<div class="detalle-item"><span class="detalle-label">Frecuencia Anual:</span><span class="detalle-value">2 veces por año</span></div>
+<div class="detalle-item"><span class="detalle-label">Último Mantenimiento:</span><span class="detalle-value">20/04/2025</span></div>
+<div class="detalle-item"><span class="detalle-label">Próximo Mantenimiento:</span><span class="detalle-value">15/10/2025</span></div>
+<div class="detalle-item"><span class="detalle-label">Requiere Calibración:</span><span class="detalle-value">✅ Sí</span></div>
+<div class="detalle-item"><span class="detalle-label">Tipo Calibración:</span><span class="detalle-value">Calificación de Operación</span></div>
+</div>
+<div class="detalle-section">
+<h4 class="detalle-section-title">F. Info Metrológica Técnica</h4>
+<div class="detalle-item"><span class="detalle-label">Magnitud:</span><span class="detalle-value">Presión y Temperatura</span></div>
+<div class="detalle-item"><span class="detalle-label">Rango del Equipo:</span><span class="detalle-value">0-2 Bar / 105-138°C</span></div>
+<div class="detalle-item"><span class="detalle-label">Rango de Trabajo:</span><span class="detalle-value">1 Bar / 121-134°C</span></div>
+<div class="detalle-item"><span class="detalle-label">Resolución:</span><span class="detalle-value">0.01 Bar / 0.1°C</span></div>
+<div class="detalle-item"><span class="detalle-label">Error Máximo:</span><span class="detalle-value">±0.1 Bar / ±1°C</span></div>
+</div>
+<div class="detalle-section" style="grid-column: 1 / -1;">
+<h4 class="detalle-section-title">G. Condiciones de Funcionamiento</h4>
+<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;">
+<div class="detalle-item"><span class="detalle-label">Voltaje:</span><span class="detalle-value">220 VAC</span></div>
+<div class="detalle-item"><span class="detalle-label">Temperatura:</span><span class="detalle-value">15-32°C</span></div>
+<div class="detalle-item"><span class="detalle-label">Dimensiones:</span><span class="detalle-value">50 x 62 x 70 cm</span></div>
+<div class="detalle-item"><span class="detalle-label">Peso:</span><span class="detalle-value">65 kg</span></div>
+</div>
+</div>
+</div>
+</div>
+<div class="detalle-content" id="detalle-tab-138921-3">
+<div class="detalle-section" style="grid-column: 1 / -1;">
+<h4 class="detalle-section-title">Historial de Traslados</h4>
+<table style="margin-top: 15px;">
+<thead style="background: #006633;"><tr><th style="color: white;">Fecha</th><th style="color: white;">Origen</th><th style="color: white;">Destino</th><th style="color: white;">Responsable</th><th style="color: white;">Justificación</th></tr></thead>
+<tbody>
+<tr><td>10/05/2023</td><td>Almacén General</td><td>Sede 2 - Laboratorio</td><td>Sofía Martínez</td><td>Instalación inicial del equipo</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="detalle-content" id="detalle-tab-138921-4">
+<div class="detalle-section" style="grid-column: 1 / -1;">
+<h4 class="detalle-section-title">Historial de Mantenimientos</h4>
+<table style="margin-top: 15px;">
+<thead style="background: #006633;"><tr><th style="color: white;">Fecha</th><th style="color: white;">Tipo</th><th style="color: white;">Descripción</th><th style="color: white;">Realizado Por</th><th style="color: white;">Costo</th></tr></thead>
+<tbody>
+<tr><td>20/04/2025</td><td><span class="badge badge-success">Preventivo</span></td><td>Limpieza, verificación de juntas y calibración de sensores</td><td>Medical Solutions Colombia</td><td>$780.000</td></tr>
+<tr><td>08/11/2024</td><td><span class="badge badge-success">Preventivo</span></td><td>Mantenimiento preventivo semestral</td><td>Medical Solutions Colombia</td><td>$750.000</td></tr>
+<tr><td>15/05/2024</td><td><span class="badge" style="background: rgba(76,175,80,0.1); color: #4CAF50;">Calibración</span></td><td>Calificación de operación con validación de ciclos</td><td>Metrología UdeA</td><td>$950.000</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</td>
+</tr>
+
+<!-- EQUIPO 6: Balanza Analítica -->
+<tr data-equipo="145612">
+<td><strong>145612</strong></td><td>Balanza Analítica</td><td>Mettler Toledo</td><td>XPE204</td><td>MT-XPE-1234</td><td>Prado / LIME Central</td><td><span class="badge badge-success">Activo</span></td>
+<td>
+<button class="btn btn-info btn-sm btn-ver" onclick="toggleDetalleEquipo('145612')" id="btn-ver-145612">👁️</button>
+<button class="btn btn-secondary btn-sm" onclick="editarEquipo('145612')">✏️</button>
+<button class="btn btn-danger btn-sm" onclick="abrirModalBaja('145612')">🗑️</button>
+</td>
+</tr>
+<tr class="detalle-row" id="detalle-145612">
+<td colspan="8" class="detalle-cell">
+<div class="detalle-container">
+<div class="detalle-header">
+<div class="detalle-title">📋 Detalle del Equipo - Balanza Analítica (145612)</div>
+<button class="btn btn-secondary btn-sm" onclick="toggleDetalleEquipo('145612')">✕ Cerrar</button>
+</div>
+<div class="detalle-tabs">
+<div class="detalle-tab active" onclick="mostrarTabDetalleEquipo('145612', 1)">Información General</div>
+<div class="detalle-tab" onclick="mostrarTabDetalleEquipo('145612', 2)">Metrología</div>
+<div class="detalle-tab" onclick="mostrarTabDetalleEquipo('145612', 3)">Historial Traslados</div>
+<div class="detalle-tab" onclick="mostrarTabDetalleEquipo('145612', 4)">Mantenimientos</div>
+</div>
+<div class="detalle-content active" id="detalle-tab-145612-1">
+<div class="detalle-grid">
+<div class="detalle-section">
+<h4 class="detalle-section-title">A. Información General</h4>
+<div class="detalle-item"><span class="detalle-label">Proceso:</span><span class="detalle-value">LIME</span></div>
+<div class="detalle-item"><span class="detalle-label">Código Interno:</span><span class="detalle-value"><strong>145612</strong></span></div>
+<div class="detalle-item"><span class="detalle-label">Código IPS:</span><span class="detalle-value">BIO-145612</span></div>
+<div class="detalle-item"><span class="detalle-label">Responsable:</span><span class="detalle-value">Gloria Zapata</span></div>
+<div class="detalle-item"><span class="detalle-label">Ubicación:</span><span class="detalle-value">Preparación de Reactivos</span></div>
+<div class="detalle-item"><span class="detalle-label">Sede:</span><span class="detalle-value">Prado</span></div>
+<div class="detalle-item"><span class="detalle-label">Servicio:</span><span class="detalle-value">LIME Central</span></div>
+</div>
+<div class="detalle-section">
+<h4 class="detalle-section-title">B. Información del Equipo</h4>
+<div class="detalle-item"><span class="detalle-label">Nombre:</span><span class="detalle-value">Balanza Analítica</span></div>
+<div class="detalle-item"><span class="detalle-label">Marca:</span><span class="detalle-value">Mettler Toledo</span></div>
+<div class="detalle-item"><span class="detalle-label">Modelo:</span><span class="detalle-value">XPE204</span></div>
+<div class="detalle-item"><span class="detalle-label">Serie:</span><span class="detalle-value">MT-XPE-1234</span></div>
+<div class="detalle-item"><span class="detalle-label">Clasif. IPS:</span><span class="detalle-value">BIO - Biomédico</span></div>
+<div class="detalle-item"><span class="detalle-label">Registro INVIMA:</span><span class="detalle-value">2017DM-0011234</span></div>
+</div>
+<div class="detalle-section" style="grid-column: 1 / -1;">
+<h4 class="detalle-section-title">C. Registro Histórico</h4>
+<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;">
+<div class="detalle-item"><span class="detalle-label">Fecha Adquisición:</span><span class="detalle-value">25/09/2017</span></div>
+<div class="detalle-item"><span class="detalle-label">Propietario:</span><span class="detalle-value">UdeA</span></div>
+<div class="detalle-item"><span class="detalle-label">Forma Adquisición:</span><span class="detalle-value">Compra</span></div>
+<div class="detalle-item"><span class="detalle-label">Proveedor:</span><span class="detalle-value">Instrumentos y Medidas Ltda.</span></div>
+<div class="detalle-item"><span class="detalle-label">En Garantía:</span><span class="detalle-value">No</span></div>
+<div class="detalle-item"><span class="detalle-label">Documento:</span><span class="detalle-value">Factura #21678</span></div>
+</div>
+</div>
+<div class="detalle-section" style="grid-column: 1 / -1;">
+<h4 class="detalle-section-title">D. Inventario de Documentos</h4>
+<div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; font-size: 13px;">
+<div>✅ Hoja de Vida</div>
+<div>✅ Registro Importación</div>
+<div>✅ Manual Operación (Esp/Ing)</div>
+<div>✅ Manual Servicio</div>
+<div>✅ Guía Rápida</div>
+<div>✅ Instructivo Manejo</div>
+<div>✅ Protocolo Mto Prev</div>
+<div>✅ Frecuencia Metrológica</div>
+</div>
+</div>
+</div>
+</div>
+<div class="detalle-content" id="detalle-tab-145612-2">
+<div class="detalle-grid">
+<div class="detalle-section">
+<h4 class="detalle-section-title">E. Info Metrológica Administrativa</h4>
+<div class="detalle-item"><span class="detalle-label">Requiere Mantenimiento:</span><span class="detalle-value">✅ Sí</span></div>
+<div class="detalle-item"><span class="detalle-label">Frecuencia Anual:</span><span class="detalle-value">1 vez por año</span></div>
+<div class="detalle-item"><span class="detalle-label">Último Mantenimiento:</span><span class="detalle-value">15/09/2024</span></div>
+<div class="detalle-item"><span class="detalle-label">Próximo Mantenimiento:</span><span class="detalle-value">01/10/2025</span></div>
+<div class="detalle-item"><span class="detalle-label">Requiere Calibración:</span><span class="detalle-value">✅ Sí</span></div>
+<div class="detalle-item"><span class="detalle-label">Tipo Calibración:</span><span class="detalle-value">Calibración Interna y Externa</span></div>
+</div>
+<div class="detalle-section">
+<h4 class="detalle-section-title">F. Info Metrológica Técnica</h4>
+<div class="detalle-item"><span class="detalle-label">Magnitud:</span><span class="detalle-value">Masa</span></div>
+<div class="detalle-item"><span class="detalle-label">Rango del Equipo:</span><span class="detalle-value">0-220 g</span></div>
+<div class="detalle-item"><span class="detalle-label">Rango de Trabajo:</span><span class="detalle-value">0.1-200 g</span></div>
+<div class="detalle-item"><span class="detalle-label">Resolución:</span><span class="detalle-value">0.1 mg (0.0001 g)</span></div>
+<div class="detalle-item"><span class="detalle-label">Error Máximo:</span><span class="detalle-value">±0.2 mg</span></div>
+</div>
+<div class="detalle-section" style="grid-column: 1 / -1;">
+<h4 class="detalle-section-title">G. Condiciones de Funcionamiento</h4>
+<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;">
+<div class="detalle-item"><span class="detalle-label">Voltaje:</span><span class="detalle-value">100-240 VAC</span></div>
+<div class="detalle-item"><span class="detalle-label">Temperatura:</span><span class="detalle-value">18-28°C</span></div>
+<div class="detalle-item"><span class="detalle-label">Dimensiones:</span><span class="detalle-value">23 x 35 x 33 cm</span></div>
+<div class="detalle-item"><span class="detalle-label">Peso:</span><span class="detalle-value">5.2 kg</span></div>
+</div>
+</div>
+</div>
+</div>
+<div class="detalle-content" id="detalle-tab-145612-3">
+<div class="detalle-section" style="grid-column: 1 / -1;">
+<h4 class="detalle-section-title">Historial de Traslados</h4>
+<table style="margin-top: 15px;">
+<thead style="background: #006633;"><tr><th style="color: white;">Fecha</th><th style="color: white;">Origen</th><th style="color: white;">Destino</th><th style="color: white;">Responsable</th><th style="color: white;">Justificación</th></tr></thead>
+<tbody>
+<tr><td>25/09/2017</td><td>Almacén General</td><td>Prado - LIME Central</td><td>Gloria Zapata</td><td>Instalación inicial del equipo</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="detalle-content" id="detalle-tab-145612-4">
+<div class="detalle-section" style="grid-column: 1 / -1;">
+<h4 class="detalle-section-title">Historial de Mantenimientos</h4>
+<table style="margin-top: 15px;">
+<thead style="background: #006633;"><tr><th style="color: white;">Fecha</th><th style="color: white;">Tipo</th><th style="color: white;">Descripción</th><th style="color: white;">Realizado Por</th><th style="color: white;">Costo</th></tr></thead>
+<tbody>
+<tr><td>15/09/2024</td><td><span class="badge badge-success">Preventivo</span></td><td>Limpieza, calibración y verificación de linealidad</td><td>Instrumentos y Medidas Ltda.</td><td>$380.000</td></tr>
+<tr><td>20/09/2023</td><td><span class="badge badge-success">Preventivo</span></td><td>Mantenimiento preventivo anual</td><td>Instrumentos y Medidas Ltda.</td><td>$360.000</td></tr>
+<tr><td>05/03/2023</td><td><span class="badge" style="background: rgba(76,175,80,0.1); color: #4CAF50;">Calibración</span></td><td>Calibración con masas patrón certificadas</td><td>Metrología UdeA</td><td>$280.000</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</td>
+</tr>
+
+<!-- EQUIPO 7: Microscopio -->
+<tr data-equipo="118903">
+<td><strong>118903</strong></td><td>Microscopio</td><td>Olympus</td><td>CX43</td><td>OLY-CX43-789</td><td>Prado / Fotodermatología</td><td><span class="badge badge-success">Activo</span></td>
+<td>
+<button class="btn btn-info btn-sm btn-ver" onclick="toggleDetalleEquipo('118903')" id="btn-ver-118903">👁️</button>
+<button class="btn btn-secondary btn-sm" onclick="editarEquipo('118903')">✏️</button>
+<button class="btn btn-danger btn-sm" onclick="abrirModalBaja('118903')">🗑️</button>
+</td>
+</tr>
+<tr class="detalle-row" id="detalle-118903">
+<td colspan="8" class="detalle-cell">
+<div class="detalle-container">
+<div class="detalle-header">
+<div class="detalle-title">📋 Detalle del Equipo - Microscopio (118903)</div>
+<button class="btn btn-secondary btn-sm" onclick="toggleDetalleEquipo('118903')">✕ Cerrar</button>
+</div>
+<div class="detalle-tabs">
+<div class="detalle-tab active" onclick="mostrarTabDetalleEquipo('118903', 1)">Información General</div>
+<div class="detalle-tab" onclick="mostrarTabDetalleEquipo('118903', 2)">Metrología</div>
+<div class="detalle-tab" onclick="mostrarTabDetalleEquipo('118903', 3)">Historial Traslados</div>
+<div class="detalle-tab" onclick="mostrarTabDetalleEquipo('118903', 4)">Mantenimientos</div>
+</div>
+<div class="detalle-content active" id="detalle-tab-118903-1">
+<div class="detalle-grid">
+<div class="detalle-section">
+<h4 class="detalle-section-title">A. Información General</h4>
+<div class="detalle-item"><span class="detalle-label">Proceso:</span><span class="detalle-value">LIME</span></div>
+<div class="detalle-item"><span class="detalle-label">Código Interno:</span><span class="detalle-value"><strong>118903</strong></span></div>
+<div class="detalle-item"><span class="detalle-label">Código IPS:</span><span class="detalle-value">BIO-118903</span></div>
+<div class="detalle-item"><span class="detalle-label">Responsable:</span><span class="detalle-value">Carlos Ramírez</span></div>
+<div class="detalle-item"><span class="detalle-label">Ubicación:</span><span class="detalle-value">Consultorio 3 - Mesa Auxiliar</span></div>
+<div class="detalle-item"><span class="detalle-label">Sede:</span><span class="detalle-value">Prado</span></div>
+<div class="detalle-item"><span class="detalle-label">Servicio:</span><span class="detalle-value">Fotodermatología</span></div>
+</div>
+<div class="detalle-section">
+<h4 class="detalle-section-title">B. Información del Equipo</h4>
+<div class="detalle-item"><span class="detalle-label">Nombre:</span><span class="detalle-value">Microscopio</span></div>
+<div class="detalle-item"><span class="detalle-label">Marca:</span><span class="detalle-value">Olympus</span></div>
+<div class="detalle-item"><span class="detalle-label">Modelo:</span><span class="detalle-value">CX43</span></div>
+<div class="detalle-item"><span class="detalle-label">Serie:</span><span class="detalle-value">OLY-CX43-789</span></div>
+<div class="detalle-item"><span class="detalle-label">Clasif. IPS:</span><span class="detalle-value">BIO - Biomédico</span></div>
+<div class="detalle-item"><span class="detalle-label">Registro INVIMA:</span><span class="detalle-value">2020DM-0017542</span></div>
+</div>
+<div class="detalle-section" style="grid-column: 1 / -1;">
+<h4 class="detalle-section-title">C. Registro Histórico</h4>
+<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;">
+<div class="detalle-item"><span class="detalle-label">Fecha Adquisición:</span><span class="detalle-value">12/02/2020</span></div>
+<div class="detalle-item"><span class="detalle-label">Propietario:</span><span class="detalle-value">UdeA</span></div>
+<div class="detalle-item"><span class="detalle-label">Forma Adquisición:</span><span class="detalle-value">Compra</span></div>
+<div class="detalle-item"><span class="detalle-label">Proveedor:</span><span class="detalle-value">Óptica Médica Colombia S.A.</span></div>
+<div class="detalle-item"><span class="detalle-label">En Garantía:</span><span class="detalle-value">No</span></div>
+<div class="detalle-item"><span class="detalle-label">Documento:</span><span class="detalle-value">Factura #42819</span></div>
+</div>
+</div>
+<div class="detalle-section" style="grid-column: 1 / -1;">
+<h4 class="detalle-section-title">D. Inventario de Documentos</h4>
+<div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; font-size: 13px;">
+<div>✅ Hoja de Vida</div>
+<div>✅ Registro Importación</div>
+<div>✅ Manual Operación (Ing)</div>
+<div>✅ Manual Servicio</div>
+<div>✅ Guía Rápida</div>
+<div>✅ Instructivo Manejo</div>
+<div>✅ Protocolo Mto Prev</div>
+<div>❌ Frecuencia Metrológica</div>
+</div>
+</div>
+</div>
+</div>
+<div class="detalle-content" id="detalle-tab-118903-2">
+<div class="detalle-grid">
+<div class="detalle-section">
+<h4 class="detalle-section-title">E. Info Metrológica Administrativa</h4>
+<div class="detalle-item"><span class="detalle-label">Requiere Mantenimiento:</span><span class="detalle-value">✅ Sí</span></div>
+<div class="detalle-item"><span class="detalle-label">Frecuencia Anual:</span><span class="detalle-value">1 vez por año</span></div>
+<div class="detalle-item"><span class="detalle-label">Último Mantenimiento:</span><span class="detalle-value">18/09/2024</span></div>
+<div class="detalle-item"><span class="detalle-label">Próximo Mantenimiento:</span><span class="detalle-value">25/10/2025</span></div>
+<div class="detalle-item"><span class="detalle-label">Requiere Calibración:</span><span class="detalle-value">✅ Sí</span></div>
+<div class="detalle-item"><span class="detalle-label">Tipo Calibración:</span><span class="detalle-value">Verificación Óptica</span></div>
+</div>
+<div class="detalle-section">
+<h4 class="detalle-section-title">F. Info Metrológica Técnica</h4>
+<div class="detalle-item"><span class="detalle-label">Magnitud:</span><span class="detalle-value">Aumentos / Resolución</span></div>
+<div class="detalle-item"><span class="detalle-label">Rango del Equipo:</span><span class="detalle-value">40X - 1000X</span></div>
+<div class="detalle-item"><span class="detalle-label">Rango de Trabajo:</span><span class="detalle-value">100X - 400X</span></div>
+<div class="detalle-item"><span class="detalle-label">Resolución:</span><span class="detalle-value">0.2 μm (objetivo 100X)</span></div>
+<div class="detalle-item"><span class="detalle-label">Error Máximo:</span><span class="detalle-value">±2% magnificación</span></div>
+</div>
+<div class="detalle-section" style="grid-column: 1 / -1;">
+<h4 class="detalle-section-title">G. Condiciones de Funcionamiento</h4>
+<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;">
+<div class="detalle-item"><span class="detalle-label">Voltaje:</span><span class="detalle-value">110 VAC / LED 3W</span></div>
+<div class="detalle-item"><span class="detalle-label">Temperatura:</span><span class="detalle-value">10-35°C</span></div>
+<div class="detalle-item"><span class="detalle-label">Dimensiones:</span><span class="detalle-value">22 x 20 x 42 cm</span></div>
+<div class="detalle-item"><span class="detalle-label">Peso:</span><span class="detalle-value">6.8 kg</span></div>
+</div>
+</div>
+</div>
+</div>
+<div class="detalle-content" id="detalle-tab-118903-3">
+<div class="detalle-section" style="grid-column: 1 / -1;">
+<h4 class="detalle-section-title">Historial de Traslados</h4>
+<table style="margin-top: 15px;">
+<thead style="background: #006633;"><tr><th style="color: white;">Fecha</th><th style="color: white;">Origen</th><th style="color: white;">Destino</th><th style="color: white;">Responsable</th><th style="color: white;">Justificación</th></tr></thead>
+<tbody>
+<tr><td>08/11/2025</td><td>Sede 2 - Laboratorio</td><td>Prado - Fotodermatología</td><td>Carlos Ramírez</td><td>Solicitud del servicio de dermatología</td></tr>
+<tr><td>12/02/2020</td><td>Almacén General</td><td>Sede 2 - Laboratorio</td><td>Sofía Martínez</td><td>Instalación inicial</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="detalle-content" id="detalle-tab-118903-4">
+<div class="detalle-section" style="grid-column: 1 / -1;">
+<h4 class="detalle-section-title">Historial de Mantenimientos</h4>
+<table style="margin-top: 15px;">
+<thead style="background: #006633;"><tr><th style="color: white;">Fecha</th><th style="color: white;">Tipo</th><th style="color: white;">Descripción</th><th style="color: white;">Realizado Por</th><th style="color: white;">Costo</th></tr></thead>
+<tbody>
+<tr><td>18/09/2024</td><td><span class="badge badge-success">Preventivo</span></td><td>Limpieza óptica completa, ajuste de iluminación y verificación mecánica</td><td>Óptica Médica Colombia S.A.</td><td>$320.000</td></tr>
+<tr><td>22/09/2023</td><td><span class="badge badge-success">Preventivo</span></td><td>Mantenimiento preventivo anual</td><td>Óptica Médica Colombia S.A.</td><td>$310.000</td></tr>
+<tr><td>10/03/2023</td><td><span class="badge" style="background: rgba(76,175,80,0.1); color: #4CAF50;">Calibración</span></td><td>Verificación de magnificación y resolución con micrómetro patrón</td><td>Metrología UdeA</td><td>$250.000</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+
+<!-- TRASLADOS -->
+<div id="traslados-page" style="display: none;">
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+<div><h2 class="page-title" style="margin: 0;">Gestión de Traslados</h2><div style="color: #616161; font-size: 14px; margin-top: 5px;">Inicio / Traslados</div></div>
+<button class="btn btn-primary" onclick="openModal('modal-traslado')">➕ Registrar Traslado</button>
+</div>
+
+<div class="info-card"><div class="info-box-title">📋 ¿Qué son los traslados?</div><div style="font-size: 14px; color: #616161; margin-top: 8px;">Los traslados permiten registrar el movimiento de equipos entre diferentes sedes, servicios o responsables. Cada traslado queda registrado en el historial con fecha, justificación y usuario que realizó el cambio.</div></div>
+
+<div class="content-card">
+<div class="traslados-header-controls">
+<div class="traslados-left-controls">
+<div class="date-selector-container">
+<span class="date-selector-label">📅</span>
+<select class="date-selector" id="traslado-mes" onchange="filtrarTrasladosPorFecha()">
+<option value="todos">Todos los meses</option>
+<option value="1">Enero</option>
+<option value="2">Febrero</option>
+<option value="3">Marzo</option>
+<option value="4">Abril</option>
+<option value="5">Mayo</option>
+<option value="6">Junio</option>
+<option value="7">Julio</option>
+<option value="8">Agosto</option>
+<option value="9">Septiembre</option>
+<option value="10">Octubre</option>
+<option value="11" selected>Noviembre</option>
+<option value="12">Diciembre</option>
+</select>
+<select class="date-selector" id="traslado-año" onchange="filtrarTrasladosPorFecha()">
+<option value="2023">2023</option>
+<option value="2024">2024</option>
+<option value="2025" selected>2025</option>
+</select>
+</div>
+</div>
+</div>
+
+<div class="search-filter-container">
+<div class="search-section"><input type="text" class="search-input" placeholder="🔍 Buscar por equipo, código, sede, responsable o justificación..." id="searchTrasladosInput" onkeyup="filterTrasladosTable()"></div>
+<button class="filter-button" onclick="toggleFiltroTrasladosPanel()">☰ Filtrar y Ordenar</button>
+</div>
+
+<h3 style="color: #006633; margin-bottom: 20px; margin-top: 25px;">Historial de Traslados</h3>
+<table id="trasladosTable">
+<thead><tr><th>Fecha</th><th>Equipo</th><th>Origen</th><th>Destino</th><th>Responsable</th><th>Justificación</th><th>Usuario</th></tr></thead>
+<tbody>
+<tr><td>17/11/2025 09:20</td><td>Analizador Hematológico (147823)</td><td>Prado - LIME Central</td><td>Sede 2 - Laboratorio</td><td>Sofía Martínez</td><td>Redistribución de carga de trabajo</td><td>admin@lime.udea</td></tr>
+<tr><td>15/11/2025 14:30</td><td>Congelador (135306)</td><td>Prado - Hematología</td><td>Prado - LIME Central</td><td>Gloria Zapata</td><td>Reasignación por necesidad del servicio</td><td>gloria.z@lime.udea</td></tr>
+<tr><td>12/11/2025 10:15</td><td>Agregómetro (119325)</td><td>Prado - LIME Central</td><td>Prado - Hematología</td><td>Gloria Zapata</td><td>Optimización de recursos del laboratorio</td><td>gloria.z@lime.udea</td></tr>
+<tr><td>08/11/2025 16:45</td><td>Microscopio (118903)</td><td>Sede 2 - Laboratorio</td><td>Prado - Fotodermatología</td><td>Carlos Ramírez</td><td>Solicitud del servicio de dermatología</td><td>carlos.r@lime.udea</td></tr>
+<tr><td>05/11/2025 11:30</td><td>Autoclave (138921)</td><td>Prado - LIME Central</td><td>Sede 2 - Laboratorio</td><td>Sofía Martínez</td><td>Reemplazo temporal por mantenimiento</td><td>sofia.m@lime.udea</td></tr>
+<tr><td>02/11/2025 08:15</td><td>Equipo PCR (152674)</td><td>Sede 3 - Microbiología</td><td>Prado - LIME Central</td><td>Gloria Zapata</td><td>Ampliación de capacidad diagnóstica</td><td>admin@lime.udea</td></tr>
+<tr><td>28/10/2025 15:45</td><td>Incubadora (129847)</td><td>Sede 2 - Laboratorio</td><td>Prado - Hematología</td><td>Gloria Zapata</td><td>Requerimiento de servicio especializado</td><td>gloria.z@lime.udea</td></tr>
+<tr><td>25/10/2025 13:20</td><td>Balanza Analítica (145612)</td><td>Sede 3 - Química</td><td>Prado - LIME Central</td><td>Gloria Zapata</td><td>Optimización de área de preparación</td><td>gloria.z@lime.udea</td></tr>
+<tr><td>22/10/2025 10:00</td><td>Espectrofotómetro (142789)</td><td>Prado - Hematología</td><td>Prado - LIME Central</td><td>Gloria Zapata</td><td>Centralización de equipos de química</td><td>carlos.r@lime.udea</td></tr>
+<tr><td>18/10/2025 14:10</td><td>Microscopio Óptico (134592)</td><td>Prado - LIME Central</td><td>Prado - Fotodermatología</td><td>Carlos Ramírez</td><td>Necesidad del servicio de dermatología</td><td>carlos.r@lime.udea</td></tr>
+<tr><td>12/10/2025 09:30</td><td>Centrífuga (120458)</td><td>Sede 2 - Laboratorio</td><td>Prado - LIME Central</td><td>Gloria Zapata</td><td>Redistribución por volumen de muestras</td><td>gloria.z@lime.udea</td></tr>
+<tr><td>08/10/2025 16:20</td><td>Lector ELISA (156231)</td><td>Prado - LIME Central</td><td>Sede 3 - Inmunología</td><td>Andrea López</td><td>Instalación de servicio de inmunología</td><td>admin@lime.udea</td></tr>
+<tr><td>02/10/2025 11:45</td><td>Coagulómetro (148567)</td><td>Sede 2 - Laboratorio</td><td>Prado - Hematología</td><td>Gloria Zapata</td><td>Concentración de equipos hematológicos</td><td>gloria.z@lime.udea</td></tr>
+<tr><td>28/09/2025 08:50</td><td>Agitador Magnético (139284)</td><td>Prado - LIME Central</td><td>Sede 2 - Laboratorio</td><td>Sofía Martínez</td><td>Equipamiento de laboratorio satélite</td><td>sofia.m@lime.udea</td></tr>
+<tr><td>24/09/2025 15:15</td><td>pH Metro (127398)</td><td>Sede 3 - Química</td><td>Prado - LIME Central</td><td>Gloria Zapata</td><td>Calibración y mantenimiento centralizado</td><td>admin@lime.udea</td></tr>
+<tr><td>19/09/2025 10:30</td><td>Pipeta Multicanal (141523)</td><td>Prado - Hematología</td><td>Prado - LIME Central</td><td>Gloria Zapata</td><td>Reorganización de área de pipeteo</td><td>gloria.z@lime.udea</td></tr>
+<tr><td>15/09/2025 13:40</td><td>Baño María (133647)</td><td>Sede 2 - Laboratorio</td><td>Prado - LIME Central</td><td>Gloria Zapata</td><td>Consolidación de equipamiento</td><td>carlos.r@lime.udea</td></tr>
+<tr><td>10/09/2025 09:15</td><td>Analizador Bioquímico (158392)</td><td>Prado - LIME Central</td><td>Sede 3 - Bioquímica</td><td>Andrea López</td><td>Apertura de nuevo servicio</td><td>admin@lime.udea</td></tr>
+<tr><td>05/09/2025 14:55</td><td>Refrigerador (136428)</td><td>Sede 3 - Almacén</td><td>Prado - Hematología</td><td>Gloria Zapata</td><td>Almacenamiento de reactivos hematológicos</td><td>gloria.z@lime.udea</td></tr>
+<tr><td>01/09/2025 11:20</td><td>Contador de Células (149573)</td><td>Prado - LIME Central</td><td>Prado - Hematología</td><td>Gloria Zapata</td><td>Especialización de área hematológica</td><td>gloria.z@lime.udea</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+
+<!-- MANTENIMIENTOS -->
+<div id="mantenimientos-page" style="display: none;">
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+<div><h2 class="page-title" style="margin: 0;">Mantenimientos y Calibraciones</h2><div style="color: #616161; font-size: 14px; margin-top: 5px;">Inicio / Mantenimientos</div></div>
+<button class="btn btn-success" onclick="openModal('modal-mantenimiento')">➕ Registrar Mantenimiento</button>
+</div>
+
+<div class="alert alert-warning"><span style="font-size: 20px;">⚠️</span><div><strong>18 equipos</strong> requieren mantenimiento en los próximos 30 días.</div></div>
+
+<div class="stats-grid" style="grid-template-columns: repeat(3, 1fr); margin-bottom: 30px;">
+<div class="stat-card"><div style="color: #616161; margin-bottom: 8px;">Mantenimientos Este Mes</div><div class="stat-value">12</div></div>
+<div class="stat-card" style="border-left-color: #ff9800;"><div style="color: #616161; margin-bottom: 8px;">Vencidos</div><div class="stat-value" style="color: #ff9800;">5</div></div>
+<div class="stat-card" style="border-left-color: #4CAF50;"><div style="color: #616161; margin-bottom: 8px;">Completados</div><div class="stat-value" style="color: #4CAF50;">45</div></div>
+</div>
+
+<!-- TABLA DE MANTENIMIENTOS VENCIDOS -->
+<div class="content-card" style="background: rgba(244, 67, 54, 0.05); border-left: 4px solid #f44336;">
+<h3 style="color: #f44336; margin-bottom: 20px;">⚠️ Mantenimientos Vencidos</h3>
+<table>
+<thead style="background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);"><tr><th>Equipo</th><th>Código</th><th>Tipo</th><th>Fecha Vencimiento</th><th>Días Vencidos</th><th>Sede</th><th>Acciones</th></tr></thead>
+<tbody>
+<tr><td>Balanza Analítica</td><td>145612</td><td><span class="badge badge-success">Preventivo</span></td><td>01/10/2025</td><td style="color: #f44336; font-weight: 600;">47 días</td><td>Prado</td><td><button class="btn btn-warning btn-sm">Programar</button></td></tr>
+<tr><td>Autoclave</td><td>138921</td><td><span class="badge" style="background: rgba(76,175,80,0.1); color: #4CAF50;">Calibración</span></td><td>15/10/2025</td><td style="color: #f44336; font-weight: 600;">33 días</td><td>Sede 2</td><td><button class="btn btn-warning btn-sm">Programar</button></td></tr>
+<tr><td>Espectrofotómetro</td><td>142789</td><td><span class="badge badge-success">Preventivo</span></td><td>20/10/2025</td><td style="color: #f44336; font-weight: 600;">28 días</td><td>Prado</td><td><button class="btn btn-warning btn-sm">Programar</button></td></tr>
+<tr><td>Microscopio</td><td>118903</td><td><span class="badge" style="background: rgba(76,175,80,0.1); color: #4CAF50;">Calibración</span></td><td>25/10/2025</td><td style="color: #f44336; font-weight: 600;">23 días</td><td>Prado</td><td><button class="btn btn-warning btn-sm">Programar</button></td></tr>
+<tr><td>Centrífuga</td><td>120458</td><td><span class="badge badge-success">Preventivo</span></td><td>05/11/2025</td><td style="color: #f44336; font-weight: 600;">12 días</td><td>Prado</td><td><button class="btn btn-warning btn-sm">Programar</button></td></tr>
+</tbody>
+</table>
+</div>
+
+<!-- TABLA DE PRÓXIMOS MANTENIMIENTOS -->
+<div class="content-card">
+<h3 style="color: #006633; margin-bottom: 20px;">Próximos Mantenimientos</h3>
+<table>
+<thead><tr><th>Equipo</th><th>Código</th><th>Tipo</th><th>Fecha Programada</th><th>Sede</th><th>Estado</th><th>Acciones</th></tr></thead>
+<tbody>
+<tr><td>Congelador</td><td>135306</td><td><span class="badge badge-success">Preventivo</span></td><td>15/12/2025</td><td>Prado</td><td><span class="badge" style="background: rgba(0,169,157,0.1); color: #00a99d;">Pendiente</span></td><td><button class="btn btn-info btn-sm" onclick="verDetalleMantenimiento(1)">Ver</button></td></tr>
+<tr><td>Agregómetro</td><td>119325</td><td><span class="badge" style="background: rgba(76,175,80,0.1); color: #4CAF50;">Calibración</span></td><td>20/12/2025</td><td>Prado</td><td><span class="badge" style="background: rgba(0,169,157,0.1); color: #00a99d;">Pendiente</span></td><td><button class="btn btn-info btn-sm" onclick="verDetalleMantenimiento(2)">Ver</button></td></tr>
+</tbody>
+</table>
+</div>
+</div>
+
+<!-- SEDES Y SERVICIOS -->
+<div id="sedes-page" style="display: none;">
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+<div><h2 class="page-title" style="margin: 0;">Sedes y Servicios</h2><div style="color: #616161; font-size: 14px; margin-top: 5px;">Inicio / Configuración / Sedes</div></div>
+<button class="btn btn-primary" onclick="openModal('modal-nueva-sede')">➕ Nueva Sede</button>
+</div>
+<div class="info-card"><div class="info-box-title">🏢 Gestión de Sedes</div><div style="font-size: 14px; color: #616161; margin-top: 8px;">LIME cuenta con 3 sedes principales. Cada sede tiene múltiples servicios donde se ubican los equipos médicos y tecnológicos. A continuación se muestra la información detallada de cada sede y sus servicios.</div></div>
+
+<!-- SEDE PRADO -->
+<div class="sede-card">
+<div class="sede-header">
+<div>
+<div class="sede-title">🏢 Sede Prado</div>
+<div style="font-size: 14px; color: #616161; margin-top: 5px;">Dirección Sede Prado, Medellín</div>
+</div>
+<div style="display: flex; gap: 10px;">
+<button class="btn btn-info btn-sm">✏️ Editar Sede</button>
+<button class="btn btn-success btn-sm" onclick="openModal('modal-nuevo-servicio')">➕ Nuevo Servicio</button>
+</div>
+</div>
+<div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 20px;">
+<div style="background: rgba(0,102,51,0.05); padding: 15px; border-radius: 8px;">
+<div style="font-size: 12px; color: #616161;">Total Servicios</div>
+<div style="font-size: 24px; font-weight: 600; color: #006633;">4</div>
+</div>
+<div style="background: rgba(0,169,157,0.05); padding: 15px; border-radius: 8px;">
+<div style="font-size: 12px; color: #616161;">Equipos Totales</div>
+<div style="font-size: 24px; font-weight: 600; color: #00a99d;">187</div>
+</div>
+</div>
+<h4 style="color: #006633; margin-bottom: 15px; font-size: 16px;">Servicios de la Sede</h4>
+<div class="servicio-item">
+<div>
+<div class="servicio-name">LIME Central</div>
+<div class="servicio-stats">🔧 142 equipos • 👤 Responsable: Gloria Zapata</div>
+</div>
+<button class="btn btn-secondary btn-sm">✏️ Editar</button>
+</div>
+<div class="servicio-item">
+<div>
+<div class="servicio-name">Fotodermatología</div>
+<div class="servicio-stats">🔧 23 equipos • 👤 Responsable: Carlos Ramírez</div>
+</div>
+<button class="btn btn-secondary btn-sm">✏️ Editar</button>
+</div>
+<div class="servicio-item">
+<div>
+<div class="servicio-name">Resonador</div>
+<div class="servicio-stats">🔧 12 equipos • 👤 Responsable: María González</div>
+</div>
+<button class="btn btn-secondary btn-sm">✏️ Editar</button>
+</div>
+<div class="servicio-item">
+<div>
+<div class="servicio-name">Oftalmología</div>
+<div class="servicio-stats">🔧 10 equipos • 👤 Responsable: Juan Pérez</div>
+</div>
+<button class="btn btn-secondary btn-sm">✏️ Editar</button>
+</div>
+</div>
+
+<!-- SEDE 2 -->
+<div class="sede-card">
+<div class="sede-header">
+<div>
+<div class="sede-title">🏢 Sede 2</div>
+<div style="font-size: 14px; color: #616161; margin-top: 5px;">Dirección Sede 2, Medellín</div>
+</div>
+<div style="display: flex; gap: 10px;">
+<button class="btn btn-info btn-sm">✏️ Editar Sede</button>
+<button class="btn btn-success btn-sm" onclick="openModal('modal-nuevo-servicio')">➕ Nuevo Servicio</button>
+</div>
+</div>
+<div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 20px;">
+<div style="background: rgba(0,102,51,0.05); padding: 15px; border-radius: 8px;">
+<div style="font-size: 12px; color: #616161;">Total Servicios</div>
+<div style="font-size: 24px; font-weight: 600; color: #006633;">3</div>
+</div>
+<div style="background: rgba(0,169,157,0.05); padding: 15px; border-radius: 8px;">
+<div style="font-size: 12px; color: #616161;">Equipos Totales</div>
+<div style="font-size: 24px; font-weight: 600; color: #00a99d;">58</div>
+</div>
+</div>
+<h4 style="color: #006633; margin-bottom: 15px; font-size: 16px;">Servicios de la Sede</h4>
+<div class="servicio-item">
+<div>
+<div class="servicio-name">Laboratorio Clínico</div>
+<div class="servicio-stats">🔧 32 equipos • 👤 Responsable: Ana Torres</div>
+</div>
+<button class="btn btn-secondary btn-sm">✏️ Editar</button>
+</div>
+<div class="servicio-item">
+<div>
+<div class="servicio-name">Biología Molecular</div>
+<div class="servicio-stats">🔧 18 equipos • 👤 Responsable: Pedro Martínez</div>
+</div>
+<button class="btn btn-secondary btn-sm">✏️ Editar</button>
+</div>
+<div class="servicio-item">
+<div>
+<div class="servicio-name">Microbiología</div>
+<div class="servicio-stats">🔧 8 equipos • 👤 Responsable: Laura Rodríguez</div>
+</div>
+<button class="btn btn-secondary btn-sm">✏️ Editar</button>
+</div>
+</div>
+
+<!-- SEDE 3 -->
+<div class="sede-card">
+<div class="sede-header">
+<div>
+<div class="sede-title">🏢 Sede 3</div>
+<div style="font-size: 14px; color: #616161; margin-top: 5px;">Dirección Sede 3, Medellín</div>
+</div>
+<div style="display: flex; gap: 10px;">
+<button class="btn btn-info btn-sm">✏️ Editar Sede</button>
+<button class="btn btn-success btn-sm" onclick="openModal('modal-nuevo-servicio')">➕ Nuevo Servicio</button>
+</div>
+</div>
+<div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 20px;">
+<div style="background: rgba(0,102,51,0.05); padding: 15px; border-radius: 8px;">
+<div style="font-size: 12px; color: #616161;">Total Servicios</div>
+<div style="font-size: 24px; font-weight: 600; color: #006633;">2</div>
+</div>
+<div style="background: rgba(0,169,157,0.05); padding: 15px; border-radius: 8px;">
+<div style="font-size: 12px; color: #616161;">Equipos Totales</div>
+<div style="font-size: 24px; font-weight: 600; color: #00a99d;">39</div>
+</div>
+</div>
+<h4 style="color: #006633; margin-bottom: 15px; font-size: 16px;">Servicios de la Sede</h4>
+<div class="servicio-item">
+<div>
+<div class="servicio-name">Patología Clínica</div>
+<div class="servicio-stats">🔧 25 equipos • 👤 Responsable: Roberto Sánchez</div>
+</div>
+<button class="btn btn-secondary btn-sm">✏️ Editar</button>
+</div>
+<div class="servicio-item">
+<div>
+<div class="servicio-name">Inmunología</div>
+<div class="servicio-stats">🔧 14 equipos • 👤 Responsable: Claudia López</div>
+</div>
+<button class="btn btn-secondary btn-sm">✏️ Editar</button>
+</div>
+</div>
+</div>
+
+<!-- USUARIOS -->
+<div id="usuarios-page" style="display: none;">
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+<div><h2 class="page-title" style="margin: 0;">Gestión de Usuarios</h2><div style="color: #616161; font-size: 14px; margin-top: 5px;">Inicio / Usuarios</div></div>
+<button class="btn btn-primary" onclick="openModal('modal-nuevo-usuario')">➕ Nuevo Usuario</button>
+</div>
+<div class="content-card">
+<table>
+<thead><tr><th>Nombre</th><th>Email</th><th>Rol</th><th>Sede Asignada</th><th>Estado</th><th>Último Acceso</th><th>Acciones</th></tr></thead>
+<tbody>
+<tr><td>Admin LIME</td><td><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="6b0a0f0602052b0702060e451e0f0e0a450e0f1e450804">[email&#160;protected]</a></td><td><span class="badge" style="background: rgba(244,67,54,0.1); color: #f44336;">Admin</span></td><td>Todas las sedes</td><td><span class="badge badge-success">Activo</span></td><td>17/11/2025 09:30</td><td><button class="btn btn-info btn-sm" onclick="verDetalleUsuario(1)">👁️</button> <button class="btn btn-secondary btn-sm" onclick="editarUsuario(1)">✏️</button></td></tr>
+<tr><td>Gloria Zapata</td><td><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="e88f84879a8189c6928998899c89a88481858dc69d8c8d89c68d8c9dc68b87">[email&#160;protected]</a></td><td><span class="badge" style="background: rgba(0,169,157,0.1); color: #00a99d;">Operador</span></td><td>Prado</td><td><span class="badge badge-success">Activo</span></td><td>16/11/2025 14:20</td><td><button class="btn btn-info btn-sm" onclick="verDetalleUsuario(2)">👁️</button> <button class="btn btn-secondary btn-sm" onclick="editarUsuario(2)">✏️</button></td></tr>
+<tr><td>Carlos Ramírez</td><td><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="05666477696a762b7764686c77607f45696c68602b706160642b6061702b666a">[email&#160;protected]</a></td><td><span class="badge" style="background: rgba(0,169,157,0.1); color: #00a99d;">Operador</span></td><td>Prado</td><td><span class="badge badge-success">Activo</span></td><td>15/11/2025 10:45</td><td><button class="btn btn-info btn-sm" onclick="verDetalleUsuario(3)">👁️</button> <button class="btn btn-secondary btn-sm" onclick="editarUsuario(3)">✏️</button></td></tr>
+<tr><td>Ana Torres</td><td><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="ee8f808fc09a819c9c8b9dae8287838bc09b8a8b8fc08b8a9bc08d81">[email&#160;protected]</a></td><td><span class="badge" style="background: rgba(158,158,158,0.1); color: #616161;">Consulta</span></td><td>Sede 2</td><td><span class="badge badge-success">Activo</span></td><td>14/11/2025 16:30</td><td><button class="btn btn-info btn-sm" onclick="verDetalleUsuario(4)">👁️</button> <button class="btn btn-secondary btn-sm" onclick="editarUsuario(4)">✏️</button></td></tr>
+</tbody>
+</table>
+</div>
+</div>
+
+<!-- REPORTES -->
+<div id="reportes-page" style="display: none;">
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+<div><h2 class="page-title" style="margin: 0;">Reportes y Estadísticas</h2><div style="color: #616161; font-size: 14px; margin-top: 5px;">Inicio / Reportes</div></div>
+<button class="btn btn-success" onclick="openModal('modal-generar-reporte')">📄 Generar Reporte</button>
+</div>
+<div class="info-card"><div class="info-box-title">📊 Tipos de Reportes Disponibles</div><div style="font-size: 14px; color: #616161; margin-top: 8px;">Genera reportes personalizados en PDF o Excel con la información del inventario, mantenimientos, traslados y más.</div></div>
+<div class="stats-grid" style="grid-template-columns: repeat(2, 1fr);">
+<div class="stat-card"><div style="font-weight: 600; color: #006633; margin-bottom: 15px;">📋 Inventario General</div><div style="font-size: 14px; color: #616161; margin-bottom: 15px;">Listado completo de equipos con toda su información técnica y administrativa</div><button class="btn btn-sm btn-primary" onclick="generarReporte('inventario')">Generar PDF</button></div>
+<div class="stat-card"><div style="font-weight: 600; color: #006633; margin-bottom: 15px;">🔧 Mantenimientos</div><div style="font-size: 14px; color: #616161; margin-bottom: 15px;">Historial de mantenimientos preventivos y correctivos realizados</div><button class="btn btn-sm btn-primary" onclick="generarReporte('mantenimientos')">Generar PDF</button></div>
+<div class="stat-card"><div style="font-weight: 600; color: #006633; margin-bottom: 15px;">🔄 Traslados</div><div style="font-size: 14px; color: #616161; margin-bottom: 15px;">Registro de movimientos de equipos entre sedes y servicios</div><button class="btn btn-sm btn-primary" onclick="generarReporte('traslados')">Generar PDF</button></div>
+<div class="stat-card"><div style="font-weight: 600; color: #006633; margin-bottom: 15px;">📊 Estadísticas por Sede</div><div style="font-size: 14px; color: #616161; margin-bottom: 15px;">Análisis de distribución y estado de equipos por ubicación</div><button class="btn btn-sm btn-primary" onclick="generarReporte('estadisticas')">Generar PDF</button></div>
+</div>
+</div>
+
+<!-- CONFIGURACIÓN -->
+<div id="configuracion-page" style="display: none;">
+<h2 class="page-title">Configuración del Sistema</h2>
+<div class="info-card"><div class="info-box-title">⚙️ Parámetros del Sistema</div><div style="font-size: 14px; color: #616161; margin-top: 8px;">Configura los parámetros generales del sistema de inventario LIME.</div></div>
+<div class="content-card">
+<h3 style="color: #006633; margin-bottom: 20px;">Configuración General</h3>
+<div class="form-grid">
+<div class="form-group"><label class="form-label">Nombre del Sistema</label><input type="text" class="form-input" value="LIME - Sistema de Inventario"></div>
+<div class="form-group"><label class="form-label">Email de Notificaciones</label><input type="email" class="form-input" value="notificaciones@lime.udea.edu.co"></div>
+<div class="form-group"><label class="form-label">Días de Alerta Mantenimiento</label><input type="number" class="form-input" value="30"></div>
+<div class="form-group"><label class="form-label">Días de Alerta Calibración</label><input type="number" class="form-input" value="30"></div>
+</div>
+<button class="btn btn-primary" style="margin-top: 20px;" onclick="guardarConfiguracion()">💾 Guardar Configuración</button>
+</div>
+</div>
+</main>
+</div>
+
+<!-- ============================================ -->
+<!-- MODAL: CREAR NUEVO EQUIPO -->
+<!-- ============================================ -->
+<div id="modal-crear-equipo" class="modal">
+<div class="modal-content">
+<div class="modal-header">
+<div class="modal-title">➕ Crear Nuevo Equipo</div>
+<button class="close-btn" onclick="closeModal('modal-crear-equipo')">&times;</button>
+</div>
+<div class="modal-body">
+<div class="tabs">
+<div class="tab active" onclick="mostrarTabEquipo(1)">1. Info General</div>
+<div class="tab" onclick="mostrarTabEquipo(2)">2. Datos del Equipo</div>
+<div class="tab" onclick="mostrarTabEquipo(3)">3. Registro Histórico</div>
+<div class="tab" onclick="mostrarTabEquipo(4)">4. Documentos</div>
+<div class="tab" onclick="mostrarTabEquipo(5)">5. Metrología</div>
+<div class="tab" onclick="mostrarTabEquipo(6)">6. Condiciones</div>
+</div>
+
+<!-- TAB 1: INFO GENERAL -->
+<div id="tab-equipo-1" class="tab-content active">
+<h4 class="section-title">📝 A. Información General</h4>
+<div class="form-grid">
+<div class="form-group">
+<label class="form-label required">Proceso</label>
+<input type="text" class="form-input" placeholder="Ej: LIME, LIME - Hematología">
+</div>
+<div class="form-group">
+<label class="form-label required">Nombre del Equipo</label>
+<input type="text" class="form-input" placeholder="Ej: Congelador, Agregómetro">
+</div>
+<div class="form-group">
+<label class="form-label required">Código de Inventario Interno</label>
+<input type="text" class="form-input" placeholder="Ej: 135306">
+</div>
+<div class="form-group">
+<label class="form-label">Código IPS</label>
+<input type="text" class="form-input" placeholder="Ej: BIO-12183">
+</div>
+<div class="form-group">
+<label class="form-label">Código ECRI</label>
+<input type="text" class="form-input" placeholder="Ej: 15 - 583">
+</div>
+<div class="form-group">
+<label class="form-label required">Responsable del Equipo</label>
+<input type="text" class="form-input" placeholder="Nombre completo">
+</div>
+<div class="form-group full-width">
+<label class="form-label required">Ubicación Física</label>
+<input type="text" class="form-input" placeholder="Ej: Procesamiento Sección C">
+</div>
+<div class="form-group">
+<label class="form-label required">Sede</label>
+<select class="form-select">
+<option value="">Seleccione una sede</option>
+<option value="1">Prado</option>
+<option value="2">Sede 2</option>
+<option value="3">Sede 3</option>
+</select>
+</div>
+<div class="form-group">
+<label class="form-label required">Servicio</label>
+<select class="form-select">
+<option value="">Seleccione un servicio</option>
+<option value="1">LIME Central</option>
+<option value="2">Fotodermatología</option>
+<option value="3">Resonador</option>
+<option value="4">Oftalmología</option>
+<option value="5">Hematología</option>
+</select>
+</div>
+</div>
+</div>
+
+<!-- TAB 2: DATOS DEL EQUIPO -->
+<div id="tab-equipo-2" class="tab-content">
+<h4 class="section-title">🔧 B. Información del Equipo</h4>
+<div class="form-grid">
+<div class="form-group">
+<label class="form-label required">Marca</label>
+<input type="text" class="form-input" placeholder="Ej: Challenger, Helena Laboratories">
+</div>
+<div class="form-group">
+<label class="form-label required">Modelo</label>
+<input type="text" class="form-input" placeholder="Ej: CV430, AGGRAM">
+</div>
+<div class="form-group">
+<label class="form-label required">Número de Serie</label>
+<input type="text" class="form-input" placeholder="Ej: 9053127">
+</div>
+<div class="form-group">
+<label class="form-label">Clasificación Eje Misional</label>
+<input type="text" class="form-input" placeholder="Docencia / Investigación / Extensión">
+</div>
+<div class="form-group">
+<label class="form-label">Clasificación IPS</label>
+<select class="form-select">
+<option value="">Seleccione</option>
+<option value="IND">IND - Industrial</option>
+<option value="BIO">BIO - Biomédico</option>
+<option value="Gases">Gases Medicinales</option>
+</select>
+</div>
+<div class="form-group">
+<label class="form-label">Clasificación por Riesgo</label>
+<select class="form-select">
+<option value="">Seleccione</option>
+<option value="I">Clase I</option>
+<option value="IIa">Clase IIa</option>
+<option value="IIb">Clase IIb</option>
+<option value="III">Clase III</option>
+<option value="N/A">N/A</option>
+</select>
+</div>
+<div class="form-group full-width">
+<label class="form-label">Registro INVIMA / Permiso Comercialización</label>
+<input type="text" class="form-input" placeholder="Ej: INVIMA 2019DM-0019614 o N/A">
+</div>
+</div>
+</div>
+
+<!-- TAB 3: REGISTRO HISTÓRICO -->
+<div id="tab-equipo-3" class="tab-content">
+<h4 class="section-title">📅 C. Registro Histórico</h4>
+<div class="form-grid">
+<div class="form-group">
+<label class="form-label">Tiempo de Vida Útil</label>
+<input type="text" class="form-input" placeholder="Ej: 10 años">
+</div>
+<div class="form-group">
+<label class="form-label required">Fecha de Adquisición</label>
+<input type="date" class="form-input">
+</div>
+<div class="form-group">
+<label class="form-label required">Propietario del Equipo</label>
+<input type="text" class="form-input" placeholder="Ej: UdeA, Hospital">
+</div>
+<div class="form-group">
+<label class="form-label">Fecha de Fabricación</label>
+<input type="text" class="form-input" placeholder="Año (Ej: 2008) o NI">
+</div>
+<div class="form-group">
+<label class="form-label required">NIT del Proveedor</label>
+<input type="text" class="form-input" placeholder="Ej: 890.934.939-8">
+</div>
+<div class="form-group full-width">
+<label class="form-label required">Proveedor del Equipo</label>
+<textarea class="form-textarea" placeholder="Nombre completo del proveedor"></textarea>
+</div>
+<div class="form-group">
+<div class="checkbox-group">
+<input type="checkbox" class="checkbox-input" id="enGarantia">
+<label for="enGarantia" class="form-label" style="margin: 0;">¿Está en Garantía?</label>
+</div>
+</div>
+<div class="form-group">
+<label class="form-label">Fecha Finalización Garantía</label>
+<input type="date" class="form-input">
+</div>
+<div class="form-group">
+<label class="form-label required">Forma de Adquisición</label>
+<select class="form-select">
+<option value="">Seleccione</option>
+<option value="Compra">Compra</option>
+<option value="Donación">Donación</option>
+<option value="Comodato">Comodato</option>
+<option value="Arrendamiento">Arrendamiento</option>
+</select>
+</div>
+<div class="form-group">
+<label class="form-label required">Tipo de Documento</label>
+<input type="text" class="form-input" placeholder="Ej: Factura, Acta">
+</div>
+<div class="form-group">
+<label class="form-label required">Número de Documento</label>
+<input type="text" class="form-input" placeholder="Ej: 47736">
+</div>
+</div>
+</div>
+
+<!-- TAB 4: DOCUMENTOS -->
+<div id="tab-equipo-4" class="tab-content">
+<h4 class="section-title">📄 D. Inventario de Documentos</h4>
+<p style="color: #616161; margin-bottom: 20px; font-size: 14px;">Marque los documentos que posee el equipo:</p>
+<div class="form-grid">
+<div class="form-group">
+<div class="checkbox-group">
+<input type="checkbox" class="checkbox-input" id="doc1">
+<label for="doc1" class="form-label" style="margin: 0;">Hoja de Vida</label>
+</div>
+</div>
+<div class="form-group">
+<div class="checkbox-group">
+<input type="checkbox" class="checkbox-input" id="doc2">
+<label for="doc2" class="form-label" style="margin: 0;">Registro de Importación</label>
+</div>
+</div>
+<div class="form-group">
+<div class="checkbox-group">
+<input type="checkbox" class="checkbox-input" id="doc3">
+<label for="doc3" class="form-label" style="margin: 0;">Manual de Operación</label>
+</div>
+</div>
+<div class="form-group">
+<label class="form-label">Idioma del Manual</label>
+<select class="form-select">
+<option value="">Seleccione</option>
+<option value="Español">Español</option>
+<option value="Inglés">Inglés</option>
+<option value="Otro">Otro</option>
+</select>
+</div>
+<div class="form-group">
+<div class="checkbox-group">
+<input type="checkbox" class="checkbox-input" id="doc4">
+<label for="doc4" class="form-label" style="margin: 0;">Manual Servicio/Mto</label>
+</div>
+</div>
+<div class="form-group">
+<div class="checkbox-group">
+<input type="checkbox" class="checkbox-input" id="doc5">
+<label for="doc5" class="form-label" style="margin: 0;">Guía Rápida</label>
+</div>
+</div>
+<div class="form-group">
+<div class="checkbox-group">
+<input type="checkbox" class="checkbox-input" id="doc6">
+<label for="doc6" class="form-label" style="margin: 0;">Instructivo Manejo</label>
+</div>
+</div>
+<div class="form-group">
+<div class="checkbox-group">
+<input type="checkbox" class="checkbox-input" id="doc7">
+<label for="doc7" class="form-label" style="margin: 0;">Protocolo Mto Preventivo</label>
+</div>
+</div>
+<div class="form-group">
+<div class="checkbox-group">
+<input type="checkbox" class="checkbox-input" id="doc8">
+<label for="doc8" class="form-label" style="margin: 0;">Frecuencia Metrológica</label>
+</div>
+</div>
+<div class="form-group full-width">
+<label class="form-label">Observaciones Documentos</label>
+<textarea class="form-textarea" placeholder="Ej: Carta de proveedor de no entrega de manual"></textarea>
+</div>
+</div>
+</div>
+
+<!-- TAB 5: METROLOGÍA -->
+<div id="tab-equipo-5" class="tab-content">
+<h4 class="section-title">🔬 E & F. Información Metrológica</h4>
+<div class="info-box">
+<div class="info-box-title">Información Metrológica Administrativa</div>
+<p style="font-size: 13px; color: #616161;">Configure los parámetros de mantenimiento y calibración del equipo.</p>
+</div>
+<div class="form-grid">
+<div class="form-group">
+<div class="checkbox-group">
+<input type="checkbox" class="checkbox-input" id="reqMto">
+<label for="reqMto" class="form-label" style="margin: 0;">Requiere Mantenimiento</label>
+</div>
+</div>
+<div class="form-group">
+<label class="form-label">Frecuencia Anual Mto</label>
+<input type="number" class="form-input" placeholder="Ej: 1, 2, 4">
+</div>
+<div class="form-group">
+<div class="checkbox-group">
+<input type="checkbox" class="checkbox-input" id="reqCal">
+<label for="reqCal" class="form-label" style="margin: 0;">Requiere Calibración</label>
+</div>
+</div>
+<div class="form-group">
+<label class="form-label">Frecuencia Anual Calibración</label>
+<input type="number" class="form-input" placeholder="Ej: 1, 2, 4">
+</div>
+<div class="form-group">
+<label class="form-label">Tipo de Calibración</label>
+<input type="text" class="form-input" placeholder="Ej: Calificación, Verificación">
+</div>
+</div>
+
+<div class="section-divider"></div>
+
+<div class="info-box">
+<div class="info-box-title">Información Metrológica Técnica</div>
+<p style="font-size: 13px; color: #616161;">Especificaciones técnicas del equipo para su operación.</p>
+</div>
+<div class="form-grid">
+<div class="form-group">
+<label class="form-label">Magnitud</label>
+<input type="text" class="form-input" placeholder="Ej: Temperatura, Absorbancia">
+</div>
+<div class="form-group">
+<label class="form-label">Rango del Equipo</label>
+<input type="text" class="form-input" placeholder="Ej: T -18, 0-100°C">
+</div>
+<div class="form-group">
+<label class="form-label">Resolución</label>
+<input type="text" class="form-input" placeholder="Ej: 0.1°C, NI">
+</div>
+<div class="form-group">
+<label class="form-label">Rango de Trabajo</label>
+<input type="text" class="form-input" placeholder="Ej: 0 a -33°C">
+</div>
+<div class="form-group">
+<label class="form-label">Error Máximo Permitido</label>
+<input type="text" class="form-input" placeholder="Ej: ±0.5°C, NI">
+</div>
+</div>
+</div>
+
+<!-- TAB 6: CONDICIONES -->
+<div id="tab-equipo-6" class="tab-content">
+<h4 class="section-title">⚙️ G. Condiciones de Funcionamiento</h4>
+<div class="form-grid">
+<div class="form-group">
+<label class="form-label">Voltaje</label>
+<input type="text" class="form-input" placeholder="Ej: 115 VAC, 200-240V">
+</div>
+<div class="form-group">
+<label class="form-label">Corriente</label>
+<input type="text" class="form-input" placeholder="Ej: 4A, NI">
+</div>
+<div class="form-group">
+<label class="form-label">Humedad Relativa</label>
+<input type="text" class="form-input" placeholder="Ej: 30-90%, NI">
+</div>
+<div class="form-group">
+<label class="form-label">Temperatura Funcionamiento</label>
+<input type="text" class="form-input" placeholder="Ej: Max 38°C">
+</div>
+<div class="form-group">
+<label class="form-label">Dimensiones</label>
+<input type="text" class="form-input" placeholder="Ej: 53.5 x 53 x 142 cm">
+</div>
+<div class="form-group">
+<label class="form-label">Peso</label>
+<input type="text" class="form-input" placeholder="Ej: 55.5 kg">
+</div>
+<div class="form-group full-width">
+<label class="form-label">Otras Condiciones</label>
+<textarea class="form-textarea" placeholder="Ej: Frecuencia eléctrica, presión, etc."></textarea>
+</div>
+</div>
+</div>
+
+</div>
+<div class="modal-footer">
+<button class="btn btn-secondary" onclick="closeModal('modal-crear-equipo')">Cancelar</button>
+<button class="btn btn-primary" onclick="guardarEquipo()">💾 Guardar Equipo</button>
+</div>
+</div>
+</div>
+
+<!-- ============================================ -->
+<!-- MODAL: EDITAR EQUIPO -->
+<!-- ============================================ -->
+<div id="modal-editar-equipo" class="modal">
+<div class="modal-content">
+<div class="modal-header">
+<div class="modal-title">✏️ Editar Equipo - <span id="edit-equipo-nombre"></span> (<span id="edit-equipo-codigo"></span>)</div>
+<button class="close-btn" onclick="closeModal('modal-editar-equipo')">&times;</button>
+</div>
+<div class="modal-body">
+<div class="edit-note">
+ℹ️ <strong>Campos protegidos:</strong> Los campos con fondo amarillo 🔒 son críticos y requieren contraseña de administrador para modificarse. Los demás campos pueden editarse libremente.
+</div>
+
+<div class="tabs">
+<div class="tab active" onclick="mostrarTabEditEquipo(1)">1. Info General</div>
+<div class="tab" onclick="mostrarTabEditEquipo(2)">2. Datos del Equipo</div>
+<div class="tab" onclick="mostrarTabEditEquipo(3)">3. Registro Histórico</div>
+<div class="tab" onclick="mostrarTabEditEquipo(4)">4. Documentos</div>
+<div class="tab" onclick="mostrarTabEditEquipo(5)">5. Metrología</div>
+<div class="tab" onclick="mostrarTabEditEquipo(6)">6. Condiciones</div>
+</div>
+
+<!-- TAB 1: INFO GENERAL -->
+<div id="tab-edit-equipo-1" class="tab-content active">
+<h4 class="section-title">📝 A. Información General</h4>
+<div class="form-grid">
+<div class="form-group">
+<label class="form-label required">Proceso</label>
+<input type="text" id="edit-proceso" class="form-input" value="LIME">
+</div>
+<div class="form-group">
+<label class="form-label required">Nombre del Equipo</label>
+<input type="text" id="edit-nombre" class="form-input" value="Congelador">
+</div>
+<div class="form-group">
+<label class="form-label required">Código de Inventario Interno <span class="lock-icon">🔒</span></label>
+<input type="text" id="edit-codigo" class="form-input locked" value="135306" onclick="solicitarPasswordParaCampo('codigo')">
+</div>
+<div class="form-group">
+<label class="form-label">Código IPS</label>
+<input type="text" id="edit-codigo-ips" class="form-input" value="IND-135306">
+</div>
+<div class="form-group">
+<label class="form-label">Código ECRI</label>
+<input type="text" id="edit-codigo-ecri" class="form-input" value="15 - 583">
+</div>
+<div class="form-group">
+<label class="form-label required">Responsable del Equipo</label>
+<input type="text" id="edit-responsable" class="form-input" value="Gloria Zapata">
+</div>
+<div class="form-group full-width">
+<label class="form-label required">Ubicación Física</label>
+<input type="text" id="edit-ubicacion" class="form-input" value="Procesamiento Sección C">
+</div>
+<div class="form-group">
+<label class="form-label required">Sede</label>
+<select id="edit-sede" class="form-select">
+<option value="1" selected>Prado</option>
+<option value="2">Sede 2</option>
+<option value="3">Sede 3</option>
+</select>
+</div>
+<div class="form-group">
+<label class="form-label required">Servicio</label>
+<select id="edit-servicio" class="form-select">
+<option value="1" selected>LIME Central</option>
+<option value="2">Fotodermatología</option>
+<option value="3">Resonador</option>
+<option value="4">Oftalmología</option>
+<option value="5">Hematología</option>
+</select>
+</div>
+</div>
+</div>
+
+<!-- TAB 2: DATOS DEL EQUIPO -->
+<div id="tab-edit-equipo-2" class="tab-content">
+<h4 class="section-title">🔧 B. Información del Equipo</h4>
+<div class="form-grid">
+<div class="form-group">
+<label class="form-label required">Marca</label>
+<input type="text" id="edit-marca" class="form-input" value="Challenger">
+</div>
+<div class="form-group">
+<label class="form-label required">Modelo</label>
+<input type="text" id="edit-modelo" class="form-input" value="CV430">
+</div>
+<div class="form-group">
+<label class="form-label required">Número de Serie 🔒<span class="lock-icon">🔒</span></label>
+<input type="text" id="edit-serie" class="form-input locked" value="9053127" onclick="solicitarPasswordParaCampo('serie')">
+</div>
+<div class="form-group">
+<label class="form-label">Clasificación Eje Misional</label>
+<input type="text" id="edit-eje-misional" class="form-input" value="">
+</div>
+<div class="form-group">
+<label class="form-label">Clasificación IPS</label>
+<select id="edit-clasif-ips" class="form-select">
+<option value="IND" selected>IND - Industrial</option>
+<option value="BIO">BIO - Biomédico</option>
+<option value="Gases">Gases Medicinales</option>
+</select>
+</div>
+<div class="form-group">
+<label class="form-label">Clasificación por Riesgo</label>
+<select id="edit-clasif-riesgo" class="form-select">
+<option value="I">Clase I</option>
+<option value="IIa">Clase IIa</option>
+<option value="IIb">Clase IIb</option>
+<option value="III">Clase III</option>
+<option value="N/A" selected>N/A</option>
+</select>
+</div>
+<div class="form-group full-width">
+<label class="form-label">Registro INVIMA / Permiso Comercialización</label>
+<input type="text" id="edit-invima" class="form-input" value="N/A">
+</div>
+</div>
+</div>
+
+<!-- TAB 3: REGISTRO HISTÓRICO -->
+<div id="tab-edit-equipo-3" class="tab-content">
+<h4 class="section-title">📅 C. Registro Histórico</h4>
+<div class="info-box" style="background: rgba(255, 152, 0, 0.05); border-left-color: #ff9800;">
+<div class="info-box-title" style="color: #ff9800;">⚠️ Sección Protegida</div>
+<p style="font-size: 13px; color: #616161;">Todos los campos en esta sección requieren autenticación de administrador para modificarse, ya que constituyen el registro histórico legal del equipo.</p>
+</div>
+<div class="form-grid">
+<div class="form-group">
+<label class="form-label">Tiempo de Vida Útil</label>
+<input type="text" id="edit-vida-util" class="form-input" value="">
+</div>
+<div class="form-group">
+<label class="form-label required">Fecha de Adquisición 🔒<span class="lock-icon">🔒</span></label>
+<input type="date" id="edit-fecha-adq" class="form-input locked" value="2009-12-10" onclick="solicitarPasswordParaCampo('fecha-adq')">
+</div>
+<div class="form-group">
+<label class="form-label required">Propietario del Equipo 🔒<span class="lock-icon">🔒</span></label>
+<input type="text" id="edit-propietario" class="form-input locked" value="UdeA" onclick="solicitarPasswordParaCampo('propietario')">
+</div>
+<div class="form-group">
+<label class="form-label">Fecha de Fabricación</label>
+<input type="text" id="edit-fecha-fab" class="form-input" value="NI">
+</div>
+<div class="form-group">
+<label class="form-label required">NIT del Proveedor 🔒<span class="lock-icon">🔒</span></label>
+<input type="text" id="edit-nit" class="form-input locked" value="890.934.939-8" onclick="solicitarPasswordParaCampo('nit')">
+</div>
+<div class="form-group full-width">
+<label class="form-label required">Proveedor del Equipo 🔒<span class="lock-icon">🔒</span></label>
+<textarea id="edit-proveedor" class="form-textarea locked" onclick="solicitarPasswordParaCampo('proveedor')">Almacén Navarro Ospina S.A.</textarea>
+</div>
+<div class="form-group">
+<div class="checkbox-group">
+<input type="checkbox" class="checkbox-input" id="edit-garantia">
+<label for="edit-garantia" class="form-label" style="margin: 0;">¿Está en Garantía?</label>
+</div>
+</div>
+<div class="form-group">
+<label class="form-label">Fecha Finalización Garantía</label>
+<input type="date" id="edit-fecha-garantia" class="form-input">
+</div>
+<div class="form-group">
+<label class="form-label required">Forma de Adquisición 🔒<span class="lock-icon">🔒</span></label>
+<select id="edit-forma-adq" class="form-select locked" onclick="solicitarPasswordParaCampo('forma-adq')">
+<option value="Compra" selected>Compra</option>
+<option value="Donación">Donación</option>
+<option value="Comodato">Comodato</option>
+<option value="Arrendamiento">Arrendamiento</option>
+</select>
+</div>
+<div class="form-group">
+<label class="form-label required">Tipo de Documento 🔒<span class="lock-icon">🔒</span></label>
+<input type="text" id="edit-tipo-doc" class="form-input locked" value="Factura" onclick="solicitarPasswordParaCampo('tipo-doc')">
+</div>
+<div class="form-group">
+<label class="form-label required">Número de Documento 🔒<span class="lock-icon">🔒</span></label>
+<input type="text" id="edit-num-doc" class="form-input locked" value="47736" onclick="solicitarPasswordParaCampo('num-doc')">
+</div>
+</div>
+</div>
+
+<!-- TAB 4: DOCUMENTOS -->
+<div id="tab-edit-equipo-4" class="tab-content">
+<h4 class="section-title">📄 D. Inventario de Documentos</h4>
+<p style="color: #616161; margin-bottom: 20px; font-size: 14px;">Marque los documentos que posee el equipo:</p>
+<div class="form-grid">
+<div class="form-group">
+<div class="checkbox-group">
+<input type="checkbox" class="checkbox-input" id="edit-doc1" checked>
+<label for="edit-doc1" class="form-label" style="margin: 0;">Hoja de Vida</label>
+</div>
+</div>
+<div class="form-group">
+<div class="checkbox-group">
+<input type="checkbox" class="checkbox-input" id="edit-doc2">
+<label for="edit-doc2" class="form-label" style="margin: 0;">Registro de Importación</label>
+</div>
+</div>
+<div class="form-group">
+<div class="checkbox-group">
+<input type="checkbox" class="checkbox-input" id="edit-doc3" checked>
+<label for="edit-doc3" class="form-label" style="margin: 0;">Manual de Operación</label>
+</div>
+</div>
+<div class="form-group">
+<label class="form-label">Idioma del Manual</label>
+<select id="edit-idioma-manual" class="form-select">
+<option value="">Seleccione</option>
+<option value="Español" selected>Español</option>
+<option value="Inglés">Inglés</option>
+<option value="Otro">Otro</option>
+</select>
+</div>
+<div class="form-group">
+<div class="checkbox-group">
+<input type="checkbox" class="checkbox-input" id="edit-doc4">
+<label for="edit-doc4" class="form-label" style="margin: 0;">Manual Servicio/Mto</label>
+</div>
+</div>
+<div class="form-group">
+<div class="checkbox-group">
+<input type="checkbox" class="checkbox-input" id="edit-doc5">
+<label for="edit-doc5" class="form-label" style="margin: 0;">Guía Rápida</label>
+</div>
+</div>
+<div class="form-group full-width">
+<label class="form-label">Observaciones Documentos</label>
+<textarea id="edit-obs-docs" class="form-textarea" placeholder="Ej: Carta de proveedor de no entrega de manual"></textarea>
+</div>
+</div>
+</div>
+
+<!-- TAB 5: METROLOGÍA -->
+<div id="tab-edit-equipo-5" class="tab-content">
+<h4 class="section-title">🔬 E & F. Información Metrológica</h4>
+<div class="info-box">
+<div class="info-box-title">Información Metrológica Administrativa</div>
+<p style="font-size: 13px; color: #616161;">Configure los parámetros de mantenimiento y calibración del equipo.</p>
+</div>
+<div class="form-grid">
+<div class="form-group">
+<div class="checkbox-group">
+<input type="checkbox" class="checkbox-input" id="edit-reqMto" checked>
+<label for="edit-reqMto" class="form-label" style="margin: 0;">Requiere Mantenimiento</label>
+</div>
+</div>
+<div class="form-group">
+<label class="form-label">Frecuencia Anual Mto</label>
+<input type="number" id="edit-frec-mto" class="form-input" value="1">
+</div>
+<div class="form-group">
+<div class="checkbox-group">
+<input type="checkbox" class="checkbox-input" id="edit-reqCal" checked>
+<label for="edit-reqCal" class="form-label" style="margin: 0;">Requiere Calibración</label>
+</div>
+</div>
+<div class="form-group">
+<label class="form-label">Frecuencia Anual Calibración</label>
+<input type="number" id="edit-frec-cal" class="form-input" value="1">
+</div>
+<div class="form-group">
+<label class="form-label">Tipo de Calibración</label>
+<input type="text" id="edit-tipo-cal" class="form-input" value="Calificación">
+</div>
+</div>
+
+<div class="section-divider"></div>
+
+<div class="info-box">
+<div class="info-box-title">Información Metrológica Técnica</div>
+<p style="font-size: 13px; color: #616161;">Especificaciones técnicas del equipo para su operación.</p>
+</div>
+<div class="form-grid">
+<div class="form-group">
+<label class="form-label">Magnitud</label>
+<input type="text" id="edit-magnitud" class="form-input" value="Temperatura">
+</div>
+<div class="form-group">
+<label class="form-label">Rango del Equipo</label>
+<input type="text" id="edit-rango" class="form-input" value="T -18">
+</div>
+<div class="form-group">
+<label class="form-label">Resolución</label>
+<input type="text" id="edit-resolucion" class="form-input" value="NI">
+</div>
+<div class="form-group">
+<label class="form-label">Rango de Trabajo</label>
+<input type="text" id="edit-rango-trabajo" class="form-input" value="0 a -33°C">
+</div>
+<div class="form-group">
+<label class="form-label">Error Máximo Permitido</label>
+<input type="text" id="edit-error-max" class="form-input" value="NI">
+</div>
+</div>
+</div>
+
+<!-- TAB 6: CONDICIONES -->
+<div id="tab-edit-equipo-6" class="tab-content">
+<h4 class="section-title">⚙️ G. Condiciones de Funcionamiento</h4>
+<div class="form-grid">
+<div class="form-group">
+<label class="form-label">Voltaje</label>
+<input type="text" id="edit-voltaje" class="form-input" value="115 VAC">
+</div>
+<div class="form-group">
+<label class="form-label">Corriente</label>
+<input type="text" id="edit-corriente" class="form-input" value="">
+</div>
+<div class="form-group">
+<label class="form-label">Humedad Relativa</label>
+<input type="text" id="edit-humedad" class="form-input" value="">
+</div>
+<div class="form-group">
+<label class="form-label">Temperatura Funcionamiento</label>
+<input type="text" id="edit-temp-func" class="form-input" value="Max 38°C">
+</div>
+<div class="form-group">
+<label class="form-label">Dimensiones</label>
+<input type="text" id="edit-dimensiones" class="form-input" value="53,5 x 53 x 142 cm">
+</div>
+<div class="form-group">
+<label class="form-label">Peso</label>
+<input type="text" id="edit-peso" class="form-input" value="55,5 kg">
+</div>
+<div class="form-group full-width">
+<label class="form-label">Otras Condiciones</label>
+<textarea id="edit-otras-cond" class="form-textarea"></textarea>
+</div>
+</div>
+</div>
+
+</div>
+<div class="modal-footer">
+<button class="btn btn-secondary" onclick="closeModal('modal-editar-equipo')">Cancelar</button>
+<button class="btn btn-primary" onclick="guardarEdicionEquipo()">💾 Guardar Cambios</button>
+</div>
+</div>
+</div>
+
+<!-- MODAL: VALIDACIÓN DE CONTRASEÑA -->
+<div id="modal-password" class="modal">
+<div class="modal-content" style="max-width: 500px;">
+<div class="modal-header">
+<div class="modal-title">🔐 Verificación de Seguridad</div>
+<button class="close-btn" onclick="closeModal('modal-password')">&times;</button>
+</div>
+<div class="modal-body">
+<div class="password-group">
+<p style="margin-bottom: 15px; color: #616161; font-size: 14px;">
+Este campo es <strong>crítico para la integridad del sistema</strong>. Para modificarlo, ingrese su contraseña de administrador:
+</p>
+<div class="form-group">
+<label class="form-label required">Campo a modificar:</label>
+<input type="text" id="campo-protegido-nombre" class="form-input" disabled>
+</div>
+<div class="form-group">
+<label class="form-label required">Contraseña de Administrador:</label>
+<input type="password" id="password-validacion" class="form-input" placeholder="Ingrese su contraseña">
+</div>
+</div>
+</div>
+<div class="modal-footer">
+<button class="btn btn-secondary" onclick="closeModal('modal-password')">Cancelar</button>
+<button class="btn btn-danger" onclick="validarPassword()">🔓 Desbloquear Campo</button>
+</div>
+</div>
+</div>
+
+<!-- MODAL: EDITAR USUARIO -->
+<div id="modal-editar-usuario" class="modal">
+<div class="modal-content" style="max-width: 700px;">
+<div class="modal-header">
+<div class="modal-title">✏️ Editar Usuario - <span id="edit-usuario-nombre"></span></div>
+<button class="close-btn" onclick="closeModal('modal-editar-usuario')">&times;</button>
+</div>
+<div class="modal-body">
+<div class="edit-note">
+ℹ️ <strong>Privilegios de administrador:</strong> Como administrador, tienes autoridad total para modificar cualquier campo de usuario.
+</div>
+<div class="form-grid">
+<div class="form-group full-width">
+<label class="form-label required">Nombre Completo</label>
+<input type="text" id="edit-user-nombre" class="form-input" value="Gloria Zapata">
+</div>
+<div class="form-group">
+<label class="form-label required">Email</label>
+<input type="email" id="edit-user-email" class="form-input" value="gloria.zapata@lime.udea.edu.co">
+</div>
+<div class="form-group">
+<label class="form-label required">Rol</label>
+<select id="edit-user-rol" class="form-select">
+<option value="admin">Administrador</option>
+<option value="operador" selected>Operador</option>
+<option value="consulta">Consulta</option>
+</select>
+</div>
+<div class="form-group">
+<label class="form-label">Sede Asignada</label>
+<select id="edit-user-sede" class="form-select">
+<option value="">Todas las sedes</option>
+<option value="1" selected>Prado</option>
+<option value="2">Sede 2</option>
+<option value="3">Sede 3</option>
+</select>
+</div>
+<div class="form-group">
+<label class="form-label">Estado</label>
+<select id="edit-user-estado" class="form-select">
+<option value="activo" selected>Activo</option>
+<option value="inactivo">Inactivo</option>
+</select>
+</div>
+<div class="form-group full-width">
+<div class="checkbox-group">
+<input type="checkbox" class="checkbox-input" id="edit-user-reset-pass">
+<label for="edit-user-reset-pass" class="form-label" style="margin: 0;">Restablecer contraseña (se enviará email)</label>
+</div>
+</div>
+</div>
+</div>
+<div class="modal-footer">
+<button class="btn btn-secondary" onclick="closeModal('modal-editar-usuario')">Cancelar</button>
+<button class="btn btn-primary" onclick="guardarEdicionUsuario()">💾 Guardar Cambios</button>
+</div>
+</div>
+</div>
+
+<!-- MODAL: CONFIRMACIÓN -->
+<div id="modal-confirmacion" class="modal">
+<div class="modal-content" style="max-width: 500px;">
+<div class="modal-header">
+<div class="modal-title" id="mensaje-confirmacion-titulo">✅ Operación Exitosa</div>
+<button class="close-btn" onclick="closeModal('modal-confirmacion')">&times;</button>
+</div>
+<div class="modal-body">
+<div class="alert alert-success" style="cursor: default;">
+<span style="font-size: 48px;">✅</span>
+<div id="mensaje-confirmacion-detalle" style="font-size: 16px;">La operación se completó correctamente.</div>
+</div>
+</div>
+<div class="modal-footer">
+<button class="btn btn-primary" onclick="closeModal('modal-confirmacion')">Aceptar</button>
+</div>
+</div>
+</div>
+
+<!-- MODAL: DAR DE BAJA EQUIPO -->
+<div id="modal-baja-equipo" class="modal">
+<div class="modal-content" style="max-width: 600px;">
+<div class="modal-header">
+<div class="modal-title">⚠️ Dar de Baja Equipo</div>
+<button class="close-btn" onclick="closeModal('modal-baja-equipo')">&times;</button>
+</div>
+<div class="modal-body">
+<div class="alert alert-warning">
+<span style="font-size: 20px;">⚠️</span>
+<div><strong>Advertencia:</strong> Esta acción desactivará el equipo del inventario activo. El equipo quedará registrado en el historial pero no aparecerá en los reportes de equipos activos.</div>
+</div>
+
+<div class="info-box">
+<div class="info-box-title">Equipo a dar de baja</div>
+<p style="margin-top: 10px;"><strong>Código:</strong> <span id="baja-codigo">135306</span></p>
+<p><strong>Nombre:</strong> <span id="baja-nombre">Congelador</span></p>
+<p><strong>Marca/Modelo:</strong> <span id="baja-marca">Challenger CV430</span></p>
+</div>
+
+<div class="form-group full-width">
+<label class="form-label required">Motivo de la Baja</label>
+<textarea class="form-textarea" id="motivo-baja" placeholder="Describa el motivo de la baja del equipo..." style="min-height: 120px;"></textarea>
+</div>
+
+<div class="password-group">
+<div style="font-weight: 600; color: #f44336; margin-bottom: 10px;">🔒 Autorización Requerida</div>
+<p style="font-size: 13px; color: #616161; margin-bottom: 15px;">Para confirmar esta acción, ingrese su contraseña:</p>
+<input type="password" class="form-input" id="password-baja" placeholder="Contraseña">
+</div>
+</div>
+<div class="modal-footer">
+<button class="btn btn-secondary" onclick="closeModal('modal-baja-equipo')">Cancelar</button>
+<button class="btn btn-danger" onclick="confirmarBaja()">🗑️ Confirmar Baja</button>
+</div>
+</div>
+</div>
+
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+let currentTab = 1;
+let currentEditTab = 1;
+let currentEquipoId = null;
+let campoProtegido = null;
+let equipoDetalleActivo = null;
+
+// Cambio de páginas
+function showPage(page) {
+  document.querySelectorAll('[id$="-page"]').forEach(p => p.style.display = 'none');
+  document.getElementById(page + '-page').style.display = 'block';
+  
+  document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('active'));
+  event.target.classList.add('active');
+}
+
+// Control de modales
+function openModal(id) {
+  document.getElementById(id).classList.add('active');
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('active');
+}
+
+// Ir a mantenimientos desde Información General
+function irAMantenimientos() {
+  showPage('mantenimientos');
+  document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('active'));
+  document.querySelectorAll('.menu-item')[3].classList.add('active'); // 4to item (índice 3)
+}
+
+// Filtrar tabla
+function filterTable() {
+  const input = document.getElementById('searchInput');
+  if(!input) return;
+  const filter = input.value.toLowerCase();
+  const tbody = document.querySelector('#equiposTable tbody');
+  if(!tbody) return;
+  const rows = tbody.getElementsByTagName('tr');
+  
+  // Cerrar cualquier detalle abierto al buscar
+  if (equipoDetalleActivo) {
+    const detalleRow = document.getElementById('detalle-' + equipoDetalleActivo);
+    const btnVer = document.getElementById('btn-ver-' + equipoDetalleActivo);
+    const equipoRow = document.querySelector(`tr[data-equipo="${equipoDetalleActivo}"]`);
+    if (detalleRow) detalleRow.classList.remove('active');
+    if (btnVer) btnVer.classList.remove('active');
+    if (equipoRow) equipoRow.classList.remove('row-active');
+    equipoDetalleActivo = null;
+  }
+  
+  for(let i=0; i<rows.length; i++) {
+    // Solo filtrar filas de equipos, no las de detalle
+    if (rows[i].classList.contains('detalle-row')) {
+      continue;
+    }
+    
+    const text = rows[i].textContent.toLowerCase();
+    rows[i].style.display = text.includes(filter) ? '' : 'none';
+  }
+}
+
+// Crear equipo
+function abrirCrearEquipo() {
+  openModal('modal-crear-equipo');
+  mostrarTabEquipo(1);
+}
+
+function mostrarTabEquipo(tabNum) {
+  currentTab = tabNum;
+  for(let i = 1; i <= 6; i++) {
+    const tab = document.getElementById('tab-equipo-' + i);
+    if(tab) tab.classList.remove('active');
+  }
+  const selectedTab = document.getElementById('tab-equipo-' + tabNum);
+  if(selectedTab) selectedTab.classList.add('active');
+  
+  const modalTabs = document.querySelector('#modal-crear-equipo .tabs');
+  if(modalTabs) {
+    modalTabs.querySelectorAll('.tab').forEach((tab, index) => {
+      tab.classList.remove('active');
+      if(index === tabNum - 1) tab.classList.add('active');
+    });
+  }
+}
+
+// Editar equipo
+function editarEquipo(codigo) {
+  currentEquipoId = codigo;
+  document.getElementById('edit-equipo-codigo').textContent = codigo;
+  document.getElementById('edit-equipo-nombre').textContent = 'Congelador';
+  openModal('modal-editar-equipo');
+  mostrarTabEditEquipo(1);
+}
+
+function mostrarTabEditEquipo(tabNum) {
+  currentEditTab = tabNum;
+  for(let i = 1; i <= 6; i++) {
+    const tab = document.getElementById('tab-edit-equipo-' + i);
+    if(tab) tab.classList.remove('active');
+  }
+  const selectedTab = document.getElementById('tab-edit-equipo-' + tabNum);
+  if(selectedTab) selectedTab.classList.add('active');
+  
+  const modalTabs = document.querySelector('#modal-editar-equipo .tabs');
+  if(modalTabs) {
+    modalTabs.querySelectorAll('.tab').forEach((tab, index) => {
+      tab.classList.remove('active');
+      if(index === tabNum - 1) tab.classList.add('active');
+    });
+  }
+}
+
+// Solicitar contraseña para campo protegido
+function solicitarPasswordParaCampo(campo) {
+  campoProtegido = campo;
+  const nombresCampos = {
+    'codigo': 'Código de Inventario Interno',
+    'serie': 'Número de Serie',
+    'fecha-adq': 'Fecha de Adquisición',
+    'propietario': 'Propietario del Equipo',
+    'nit': 'NIT del Proveedor',
+    'proveedor': 'Proveedor del Equipo',
+    'forma-adq': 'Forma de Adquisición',
+    'tipo-doc': 'Tipo de Documento',
+    'num-doc': 'Número de Documento'
+  };
+  document.getElementById('campo-protegido-nombre').value = nombresCampos[campo] || campo;
+  openModal('modal-password');
+}
+
+// Validar contraseña
+function validarPassword() {
+  const password = document.getElementById('password-validacion').value;
+  
+  // Simulación de validación (en producción, esto debe hacerse en el backend)
+  if(password === 'admin123' || password === 'admin') {
+    // Desbloquear campo
+    const campoInput = document.getElementById('edit-' + campoProtegido);
+    if(campoInput) {
+      campoInput.classList.remove('locked');
+      campoInput.removeAttribute('onclick');
+      campoInput.focus();
+    }
+    closeModal('modal-password');
+    document.getElementById('password-validacion').value = '';
+    
+    // Mostrar notificación
+    document.getElementById('mensaje-confirmacion-titulo').textContent = '🔓 Campo Desbloqueado';
+    document.getElementById('mensaje-confirmacion-detalle').textContent = 'El campo ha sido desbloqueado y ahora puede modificarse.';
+    openModal('modal-confirmacion');
+  } else {
+    alert('❌ Contraseña incorrecta. Acceso denegado.');
+    document.getElementById('password-validacion').value = '';
+  }
+}
+
+// Guardar equipo
+function guardarEquipo() {
+  closeModal('modal-crear-equipo');
+  document.getElementById('mensaje-confirmacion-titulo').textContent = '✅ Equipo guardado exitosamente';
+  document.getElementById('mensaje-confirmacion-detalle').textContent = 'Toda la información del equipo ha sido registrada correctamente en el sistema.';
+  openModal('modal-confirmacion');
+}
+
+// Guardar edición de equipo
+function guardarEdicionEquipo() {
+  closeModal('modal-editar-equipo');
+  document.getElementById('mensaje-confirmacion-titulo').textContent = '✅ Cambios guardados';
+  document.getElementById('mensaje-confirmacion-detalle').textContent = 'Las modificaciones del equipo se guardaron correctamente.';
+  openModal('modal-confirmacion');
+}
+
+// Usuarios
+function verDetalleUsuario(id) {
+  alert('Ver detalle del usuario ' + id);
+}
+
+function editarUsuario(id) {
+  document.getElementById('edit-usuario-nombre').textContent = id === 1 ? 'Admin LIME' : 'Gloria Zapata';
+  openModal('modal-editar-usuario');
+}
+
+function guardarEdicionUsuario() {
+  closeModal('modal-editar-usuario');
+  document.getElementById('mensaje-confirmacion-titulo').textContent = '✅ Usuario actualizado';
+  document.getElementById('mensaje-confirmacion-detalle').textContent = 'Los cambios del usuario se guardaron exitosamente.';
+  openModal('modal-confirmacion');
+}
+
+// Ver detalle equipo (acordeón en tabla)
+function toggleDetalleEquipo(codigo) {
+  const detalleRow = document.getElementById('detalle-' + codigo);
+  const btnVer = document.getElementById('btn-ver-' + codigo);
+  const equipoRow = document.querySelector(`tr[data-equipo="${codigo}"]`);
+  
+  // Si hay otro equipo abierto, cerrarlo
+  if (equipoDetalleActivo && equipoDetalleActivo !== codigo) {
+    const detalleAnterior = document.getElementById('detalle-' + equipoDetalleActivo);
+    const btnAnterior = document.getElementById('btn-ver-' + equipoDetalleActivo);
+    const rowAnterior = document.querySelector(`tr[data-equipo="${equipoDetalleActivo}"]`);
+    if (detalleAnterior) {
+      detalleAnterior.classList.remove('active');
+    }
+    if (btnAnterior) {
+      btnAnterior.classList.remove('active');
+    }
+    if (rowAnterior) {
+      rowAnterior.classList.remove('row-active');
+    }
+  }
+  
+  // Toggle el equipo actual
+  if (detalleRow.classList.contains('active')) {
+    detalleRow.classList.remove('active');
+    btnVer.classList.remove('active');
+    if (equipoRow) equipoRow.classList.remove('row-active');
+    equipoDetalleActivo = null;
+  } else {
+    detalleRow.classList.add('active');
+    btnVer.classList.add('active');
+    if (equipoRow) equipoRow.classList.add('row-active');
+    equipoDetalleActivo = codigo;
+    
+    // Scroll suave al detalle
+    setTimeout(() => {
+      detalleRow.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 100);
+  }
+}
+
+function mostrarTabDetalleEquipo(codigo, tabNum) {
+  // Desactivar todas las tabs de este equipo
+  const tabs = document.querySelectorAll(`#detalle-${codigo} .detalle-tab`);
+  tabs.forEach(tab => tab.classList.remove('active'));
+  
+  // Activar la tab seleccionada
+  tabs[tabNum - 1].classList.add('active');
+  
+  // Desactivar todos los contenidos de este equipo
+  for (let i = 1; i <= 4; i++) {
+    const content = document.getElementById(`detalle-tab-${codigo}-${i}`);
+    if (content) content.classList.remove('active');
+  }
+  
+  // Activar el contenido seleccionado
+  const selectedContent = document.getElementById(`detalle-tab-${codigo}-${tabNum}`);
+  if (selectedContent) selectedContent.classList.add('active');
+}
+
+// Dar de baja
+function abrirModalBaja(codigo) {
+  // Obtener la fila del equipo
+  const row = document.querySelector(`tr[data-equipo="${codigo}"]`);
+  if (!row) return;
+  
+  // Extraer los datos de la fila
+  const cells = row.querySelectorAll('td');
+  const codigoEquipo = cells[0].textContent.trim();
+  const nombreEquipo = cells[1].textContent.trim();
+  const marca = cells[2].textContent.trim();
+  const modelo = cells[3].textContent.trim();
+  
+  // Llenar los datos en el modal
+  document.getElementById('baja-codigo').textContent = codigoEquipo;
+  document.getElementById('baja-nombre').textContent = nombreEquipo;
+  document.getElementById('baja-marca').textContent = marca + ' ' + modelo;
+  
+  // Limpiar campos
+  document.getElementById('motivo-baja').value = '';
+  document.getElementById('password-baja').value = '';
+  
+  // Abrir el modal
+  openModal('modal-baja-equipo');
+}
+
+// Confirmar baja del equipo
+function confirmarBaja() {
+  const motivo = document.getElementById('motivo-baja').value.trim();
+  const password = document.getElementById('password-baja').value;
+  const codigo = document.getElementById('baja-codigo').textContent;
+  
+  // Validar campos
+  if (!motivo) {
+    alert('⚠️ Por favor ingrese el motivo de la baja.');
+    document.getElementById('motivo-baja').focus();
+    return;
+  }
+  
+  if (!password) {
+    alert('⚠️ Por favor ingrese su contraseña para autorizar esta acción.');
+    document.getElementById('password-baja').focus();
+    return;
+  }
+  
+  // Aquí iría la lógica de validación de contraseña y registro de baja
+  // Por ahora simulamos que es exitoso
+  
+  // Cerrar modal de baja
+  closeModal('modal-baja-equipo');
+  
+  // Mostrar confirmación
+  document.getElementById('mensaje-confirmacion-titulo').textContent = '✅ Equipo dado de baja';
+  document.getElementById('mensaje-confirmacion-detalle').textContent = `El equipo ${codigo} ha sido dado de baja exitosamente. Ya no aparecerá en el inventario activo.`;
+  openModal('modal-confirmacion');
+  
+  // Aquí podrías actualizar la tabla o remover la fila del equipo
+  // Por ejemplo: actualizarEstadoEquipo(codigo, 'Inactivo');
+}
+
+// Configuración
+function guardarConfiguracion() {
+  document.getElementById('mensaje-confirmacion-titulo').textContent = '✅ Configuración guardada';
+  document.getElementById('mensaje-confirmacion-detalle').textContent = 'Los parámetros del sistema han sido actualizados correctamente.';
+  openModal('modal-confirmacion');
+}
+
+// Reportes
+function generarReporte(tipo) {
+  document.getElementById('mensaje-confirmacion-titulo').textContent = '📊 Generando reporte...';
+  document.getElementById('mensaje-confirmacion-detalle').textContent = 'El reporte de ' + tipo + ' se está generando. Será descargado en unos momentos.';
+  openModal('modal-confirmacion');
+}
+
+// Mantenimientos
+function verDetalleMantenimiento(id) {
+  alert('Ver detalle del mantenimiento ' + id);
+}
+
+// Cerrar modal con ESC
+document.addEventListener('keydown', function(event) {
+  if(event.key === 'Escape') {
+    document.querySelectorAll('.modal.active').forEach(modal => {
+      modal.classList.remove('active');
+    });
+  }
+});
+
+// Cerrar modal al hacer clic fuera
+document.querySelectorAll('.modal').forEach(modal => {
+  modal.addEventListener('click', function(event) {
+    if(event.target === modal) {
+      modal.classList.remove('active');
+    }
+  });
+});
+
+// Hacer clickeable toda la fila del equipo (excepto columna de acciones)
+document.addEventListener('DOMContentLoaded', function() {
+  // Agregar event listeners a todas las filas de equipos
+  document.querySelectorAll('tr[data-equipo]').forEach(row => {
+    row.addEventListener('click', function(event) {
+      // Verificar si el click NO fue en la columna de acciones
+      // La columna de acciones es la última (td:last-child) y contiene los botones
+      const clickedElement = event.target;
+      
+      // Si se hizo click en un botón o en la celda de acciones, no hacer nada
+      if (clickedElement.tagName === 'BUTTON' || 
+          clickedElement.closest('button') ||
+          clickedElement.closest('td:last-child')) {
+        return; // Salir sin hacer nada
+      }
+      
+      // Si no, toggle el detalle del equipo
+      const codigo = this.getAttribute('data-equipo');
+      toggleDetalleEquipo(codigo);
+    });
+  });
+});
+
+// Funciones para el panel de filtros
+function toggleFiltroPanel() {
+  const panel = document.getElementById('filtroPanel');
+  const overlay = document.getElementById('filtroOverlay');
+  
+  panel.classList.toggle('active');
+  overlay.classList.toggle('active');
+}
+
+function borrarTodosFiltros() {
+  // Limpiar todos los checkboxes de sede
+  document.querySelectorAll('input[name="sede"]').forEach(checkbox => {
+    checkbox.checked = false;
+  });
+  
+  // Limpiar todos los checkboxes de estado
+  document.querySelectorAll('input[name="estado"]').forEach(checkbox => {
+    checkbox.checked = false;
+  });
+  
+  // Limpiar todos los checkboxes de servicio
+  document.querySelectorAll('input[name="servicio"]').forEach(checkbox => {
+    checkbox.checked = false;
+  });
+  
+  // Resetear ordenamiento al valor por defecto (más recientes)
+  document.getElementById('orden-recientes').checked = true;
+  
+  // Aquí podrías agregar lógica para aplicar los filtros a la tabla
+  // Por ahora solo limpia los filtros visualmente
+}
+
+// Función opcional para aplicar filtros a la tabla (puede expandirse después)
+function aplicarFiltros() {
+  // Obtener valores seleccionados
+  const sedesSeleccionadas = Array.from(document.querySelectorAll('input[name="sede"]:checked')).map(cb => cb.value);
+  const estadosSeleccionados = Array.from(document.querySelectorAll('input[name="estado"]:checked')).map(cb => cb.value);
+  const serviciosSeleccionados = Array.from(document.querySelectorAll('input[name="servicio"]:checked')).map(cb => cb.value);
+  const ordenSeleccionado = document.querySelector('input[name="orden"]:checked').value;
+  
+  // Aquí iría la lógica de filtrado de la tabla
+  // Esta función puede expandirse para filtrar dinámicamente las filas de la tabla
+  console.log('Filtros aplicados:', {
+    sedes: sedesSeleccionadas,
+    estados: estadosSeleccionados,
+    servicios: serviciosSeleccionados,
+    orden: ordenSeleccionado
+  });
+}
+
+// Funciones para el panel de filtros de traslados
+function toggleFiltroTrasladosPanel() {
+  const panel = document.getElementById('filtroTrasladosPanel');
+  const overlay = document.getElementById('filtroTrasladosOverlay');
+  
+  panel.classList.toggle('active');
+  overlay.classList.toggle('active');
+}
+
+function borrarTodosFiltrosTraslados() {
+  // Limpiar todos los checkboxes de sede origen
+  document.querySelectorAll('input[name="traslado-origen"]').forEach(checkbox => {
+    checkbox.checked = false;
+  });
+  
+  // Limpiar todos los checkboxes de sede destino
+  document.querySelectorAll('input[name="traslado-destino"]').forEach(checkbox => {
+    checkbox.checked = false;
+  });
+  
+  // Limpiar todos los checkboxes de responsable
+  document.querySelectorAll('input[name="traslado-responsable"]').forEach(checkbox => {
+    checkbox.checked = false;
+  });
+  
+  // Resetear ordenamiento al valor por defecto (más recientes)
+  document.getElementById('traslado-orden-recientes').checked = true;
+}
+
+// Función para filtrar tabla de traslados por búsqueda
+function filterTrasladosTable() {
+  const input = document.getElementById('searchTrasladosInput');
+  const filter = input.value.toUpperCase();
+  const table = document.getElementById('trasladosTable');
+  const tr = table.getElementsByTagName('tr');
+
+  for (let i = 1; i < tr.length; i++) {
+    const td = tr[i].getElementsByTagName('td');
+    let txtValue = '';
+    
+    // Concatenar el texto de todas las columnas
+    for (let j = 0; j < td.length; j++) {
+      if (td[j]) {
+        txtValue += td[j].textContent || td[j].innerText;
+      }
+    }
+    
+    if (txtValue.toUpperCase().indexOf(filter) > -1) {
+      tr[i].style.display = '';
+    } else {
+      tr[i].style.display = 'none';
+    }
+  }
+}
+
+// Función para filtrar traslados por mes y año
+function filtrarTrasladosPorFecha() {
+  const mesSeleccionado = document.getElementById('traslado-mes').value;
+  const añoSeleccionado = document.getElementById('traslado-año').value;
+  const table = document.getElementById('trasladosTable');
+  const tr = table.getElementsByTagName('tr');
+
+  for (let i = 1; i < tr.length; i++) {
+    const td = tr[i].getElementsByTagName('td')[0]; // Primera columna (fecha)
+    if (td) {
+      const fechaTexto = td.textContent || td.innerText;
+      // Extraer fecha del formato "DD/MM/YYYY HH:MM"
+      const fechaParts = fechaTexto.split(' ')[0].split('/');
+      const mes = fechaParts[1];
+      const año = fechaParts[2];
+      
+      let mostrar = true;
+      
+      // Si se seleccionó un mes específico (no "todos")
+      if (mesSeleccionado !== 'todos') {
+        mostrar = (mes === mesSeleccionado.padStart(2, '0')) && (año === añoSeleccionado);
+      } else {
+        // Si es "todos los meses", solo filtrar por año
+        mostrar = (año === añoSeleccionado);
+      }
+      
+      if (mostrar) {
+        tr[i].style.display = '';
+      } else {
+        tr[i].style.display = 'none';
+      }
+    }
+  }
+}
+</script>
+
+</body>
+</html>
