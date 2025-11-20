@@ -9,7 +9,7 @@ class HistorialMantenimiento(models.Model):
         ('calificacion', 'Calificación'),
         ('verificacion', 'Verificación'),
     ]
-    
+
     equipo = models.ForeignKey(Equipo, on_delete=models.CASCADE, related_name='mantenimientos')
     tipo_mantenimiento = models.CharField(max_length=50, choices=TIPO_MANTENIMIENTO)
     fecha_mantenimiento = models.DateField()
