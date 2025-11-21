@@ -10,13 +10,13 @@ class EquipoAdmin(admin.ModelAdmin):
         'marca',
         'modelo',
         'sede',
-        'proceso',
+        'servicio',
         'responsable'
     ]
 
     list_filter = [
         'sede',
-        'proceso',
+        'servicio',
         'clasificacion_misional',
         'clasificacion_ips',
         'clasificacion_riesgo',
@@ -36,7 +36,7 @@ class EquipoAdmin(admin.ModelAdmin):
     fieldsets = (
         ('Información General', {
             'fields': (
-                'sede', 'proceso', 'nombre_equipo',
+                'sede', 'servicio', 'nombre_equipo',
                 'codigo_interno', 'codigo_ips', 'codigo_ecri',
                 'responsable', 'ubicacion_fisica',
                 'marca', 'modelo', 'serie',
@@ -77,7 +77,7 @@ class EquipoAdmin(admin.ModelAdmin):
                 'frecuencia_metrologica',
                 'requiere_mantenimiento', 'frecuencia_mantenimiento',
                 'requiere_calibracion', 'frecuencia_calibracion',
-                'magnitud', 'rango_equipo', 'resolucion',
+                'magnitud', 'rango_equipo', 'resolucion', 'rango_trabajo',
                 'error_maximo'
             ),
             'classes': ('collapse',)

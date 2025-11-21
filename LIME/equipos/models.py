@@ -1,12 +1,14 @@
 from django.db import models
+from sedes.models import Sede
+from servicios.models import Servicio
 
 class Equipo(models.Model):
 
     # ---------------------------
     # INFORMACIÓN GENERAL
     # ---------------------------
-    sede = models.CharField(max_length=100, null=True, blank=True)
-    proceso = models.CharField(max_length=150, null=True, blank=True)
+    sede = models.ForeignKey(Sede, on_delete=models.SET_NULL, null=True, blank=True, related_name='equipos')
+    servicio = models.ForeignKey(Servicio, on_delete=models.SET_NULL, null=True, blank=True, related_name='equipos')
     nombre_equipo = models.CharField(max_length=200, null=True, blank=True)
 
     codigo_interno = models.CharField(max_length=100, null=True, blank=True)
@@ -32,9 +34,9 @@ class Equipo(models.Model):
     )
 
     CLASIF_IPS_CHOICES = [
-        ("IND", "Industrial"),
-        ("BIO", "Biomédico"),
-        ("GASES", "Gases medicinales"),
+        ("IND", "IND"),
+        ("BIO", "BIO"),
+        ("GASES", "GASES"),
     ]
     clasificacion_ips = models.CharField(
         max_length=10, choices=CLASIF_IPS_CHOICES,
@@ -111,6 +113,7 @@ class Equipo(models.Model):
     magnitud = models.CharField(max_length=100, null=True, blank=True)
     rango_equipo = models.CharField(max_length=100, null=True, blank=True)
     resolucion = models.CharField(max_length=100, null=True, blank=True)
+    rango_trabajo = models.CharField(max_length=100, null=True, blank=True)
     error_maximo = models.CharField(max_length=100, null=True, blank=True)
 
     # ---------------------------
