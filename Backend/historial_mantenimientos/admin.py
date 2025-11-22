@@ -3,7 +3,7 @@ from .models import HistorialMantenimiento
 
 @admin.register(HistorialMantenimiento)
 class HistorialMantenimientoAdmin(admin.ModelAdmin):
-    list_display = ['id', 'equipo', 'tipo_mantenimiento', 'fecha_mantenimiento', 'realizado_por', 'costo']
-    list_filter = ['tipo_mantenimiento', 'fecha_mantenimiento']
-    search_fields = ['equipo__codigo_inventario', 'descripcion', 'realizado_por']
-    date_hierarchy = 'fecha_mantenimiento'
+    list_display = ['id', 'equipo', 'tipo_mantenimiento', 'mes_mantenimiento', 'anio_mantenimiento', 'realizado_por', 'costo']
+    list_filter = ['tipo_mantenimiento', 'anio_mantenimiento', 'mes_mantenimiento']
+    search_fields = ['equipo__codigo_interno', 'descripcion', 'realizado_por']
+    ordering = ['-anio_mantenimiento', '-mes_mantenimiento']

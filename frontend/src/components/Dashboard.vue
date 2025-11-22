@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="dashboard-container">
     <h2 class="page-title">Información General</h2>
 
     <!-- Stats Grid -->
@@ -93,11 +93,19 @@
 </template>
 
 <style scoped>
+.dashboard-container {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 20px;
   margin-bottom: 30px;
+  width: 100%;
+  max-width: 100%;
 }
 
 .stat-card {
@@ -107,6 +115,8 @@
   border-left: 4px solid #006633;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   transition: transform 0.3s;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .stat-card:hover {
@@ -171,11 +181,14 @@
   padding: 25px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   margin-bottom: 25px;
+  overflow-x: auto;
+  max-width: 100%;
 }
 
 table {
   width: 100%;
   border-collapse: collapse;
+  table-layout: auto;
 }
 
 thead {
@@ -188,6 +201,7 @@ th {
   text-align: left;
   font-size: 13px;
   text-transform: uppercase;
+  white-space: nowrap;
 }
 
 td {

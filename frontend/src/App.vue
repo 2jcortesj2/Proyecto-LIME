@@ -34,30 +34,51 @@ function showPage(page) {
   box-sizing: border-box;
 }
 
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
+}
+
 body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   background: #f5f5f5;
-  overflow: hidden;
+}
+
+#app {
+  width: 100%;
   height: 100vh;
+  margin: 0;
+  padding: 0;
 }
 
 .app {
+  width: 100%;
   height: 100vh;
   display: flex;
   flex-direction: column;
+  margin: 0;
+  padding: 0;
 }
 
 .container {
   display: flex;
+  width: 100%;
   height: calc(100vh - 90px);
+  margin: 0;
+  padding: 0;
 }
 
 .main-content {
   flex: 1;
-  padding: 30px;
+  padding: 20px;
   overflow-y: auto;
+  overflow-x: hidden;
   max-height: calc(100vh - 90px);
   min-height: calc(100vh - 90px);
+  width: 100%;
 }
 
 .page-title {

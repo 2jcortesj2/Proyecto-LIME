@@ -48,6 +48,7 @@ const menuItems = [
   cursor: pointer;
   border-left: 4px solid transparent;
   transition: all 0.3s;
+  text-align: left;
 }
 
 .menu-item:hover {

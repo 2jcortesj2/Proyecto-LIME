@@ -4,7 +4,9 @@ from rest_framework import status
 from .models import HistorialMantenimiento
 from .serializers import HistorialMantenimientoSerializer
 from equipos.models import Equipo
-from datetime import datetime
+from datetime import datetime, date
+from dateutil.relativedelta import relativedelta
+from django.db.models import Q
 
 @api_view(['GET', 'POST'])
 def mantenimiento_list(request):
@@ -38,22 +40,28 @@ def mantenimiento_list(request):
             # Asegurar que existe la relación
             if hasattr(equipo, 'informacion_metrologica'):
                 metrologia = equipo.informacion_metrologica
-                metrologia.ultimo_mantenimiento = mantenimiento.fecha_mantenimiento
+                
+                # Crear fecha temporal para cálculos (día 1 del mes)
+                fecha_temp = date(
+                    mantenimiento.anio_mantenimiento,
+                    mantenimiento.mes_mantenimiento,
+                    1
+                )
+                
+                metrologia.ultimo_mantenimiento = fecha_temp
                 
                 # Calcular próximo mantenimiento según frecuencia
                 if metrologia.frecuencia_mantenimiento:
-                    from dateutil.relativedelta import relativedelta
-                    
                     frecuencia = metrologia.frecuencia_mantenimiento.lower()
                     
                     if 'anual' in frecuencia or '1 vez por año' in frecuencia:
-                        metrologia.proximo_mantenimiento = mantenimiento.fecha_mantenimiento + relativedelta(years=1)
+                        metrologia.proximo_mantenimiento = fecha_temp + relativedelta(years=1)
                     elif 'semestral' in frecuencia or '2 veces por año' in frecuencia:
-                        metrologia.proximo_mantenimiento = mantenimiento.fecha_mantenimiento + relativedelta(months=6)
+                        metrologia.proximo_mantenimiento = fecha_temp + relativedelta(months=6)
                     elif 'trimestral' in frecuencia or '4 veces por año' in frecuencia:
-                        metrologia.proximo_mantenimiento = mantenimiento.fecha_mantenimiento + relativedelta(months=3)
+                        metrologia.proximo_mantenimiento = fecha_temp + relativedelta(months=3)
                     elif 'mensual' in frecuencia:
-                        metrologia.proximo_mantenimiento = mantenimiento.fecha_mantenimiento + relativedelta(months=1)
+                        metrologia.proximo_mantenimiento = fecha_temp + relativedelta(months=1)
                 
                 metrologia.save()
                 # También guardamos equipo por si acaso se tocó algo allí
@@ -81,13 +89,15 @@ def mantenimiento_por_equipo(request, equipo_id):
 
 @api_view(['GET'])
 def mantenimientos_recientes(request):
-    """Obtiene los mantenimientos de los últimos 30 días"""
-    from datetime import timedelta
-    fecha_inicio = datetime.now().date() - timedelta(days=30)
+    """Obtiene los mantenimientos de los últimos 3 meses"""
+    hoy = date.today()
+    hace_3_meses = hoy - relativedelta(months=3)
     
+    # Filtrar por año y mes
     mantenimientos = HistorialMantenimiento.objects.filter(
-        fecha_mantenimiento__gte=fecha_inicio
-    ).order_by('-fecha_mantenimiento')
+        Q(anio_mantenimiento__gt=hace_3_meses.year) |
+        Q(anio_mantenimiento=hace_3_meses.year, mes_mantenimiento__gte=hace_3_meses.month)
+    ).order_by('-anio_mantenimiento', '-mes_mantenimiento')
     
     serializer = HistorialMantenimientoSerializer(mantenimientos, many=True)
     return Response(serializer.data)
