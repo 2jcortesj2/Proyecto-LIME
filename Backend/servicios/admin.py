@@ -1,0 +1,8 @@
+from django.contrib import admin
+from .models import Servicio
+
+@admin.register(Servicio)
+class ServicioAdmin(admin.ModelAdmin):
+    list_display = ['id', 'nombre', 'sede', 'responsable', 'estado']
+    list_filter = ['estado', 'sede']
+    search_fields = ['nombre', 'responsable']
