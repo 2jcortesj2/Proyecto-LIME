@@ -1,8 +1,37 @@
 from django.contrib import admin
-from .models import Equipo
+from .models import (
+    Equipo, RegistroAdquisicion, DocumentacionEquipo,
+    InformacionMetrologica, CondicionesFuncionamiento
+)
+
+class RegistroAdquisicionInline(admin.StackedInline):
+    model = RegistroAdquisicion
+    can_delete = False
+    verbose_name_plural = 'Registro de Adquisición'
+
+class DocumentacionEquipoInline(admin.StackedInline):
+    model = DocumentacionEquipo
+    can_delete = False
+    verbose_name_plural = 'Documentación del Equipo'
+
+class InformacionMetrologicaInline(admin.StackedInline):
+    model = InformacionMetrologica
+    can_delete = False
+    verbose_name_plural = 'Información Metrológica'
+
+class CondicionesFuncionamientoInline(admin.StackedInline):
+    model = CondicionesFuncionamiento
+    can_delete = False
+    verbose_name_plural = 'Condiciones de Funcionamiento'
 
 @admin.register(Equipo)
 class EquipoAdmin(admin.ModelAdmin):
+    inlines = [
+        RegistroAdquisicionInline,
+        DocumentacionEquipoInline,
+        InformacionMetrologicaInline,
+        CondicionesFuncionamientoInline,
+    ]
 
     list_display = [
         'codigo_interno',
@@ -20,8 +49,6 @@ class EquipoAdmin(admin.ModelAdmin):
         'clasificacion_misional',
         'clasificacion_ips',
         'clasificacion_riesgo',
-        'requiere_mantenimiento',
-        'requiere_calibracion',
     ]
 
     search_fields = [
@@ -44,50 +71,4 @@ class EquipoAdmin(admin.ModelAdmin):
                 'clasificacion_riesgo', 'registro_invima'
             )
         }),
-
-        ('Fechas y Vida Útil', {
-            'fields': (
-                'fecha_adquisicion', 'fecha_fabricacion',
-                'tiempo_vida_util', 'propietario'
-            )
-        }),
-
-        ('Proveedor y Garantía', {
-            'fields': (
-                'nit_proveedor', 'nombre_proveedor',
-                'en_garantia', 'fecha_fin_garantia',
-                'forma_adquisicion', 'tipo_documento',
-                'numero_documento', 'valor_compra'
-            ),
-            'classes': ('collapse',)
-        }),
-
-        ('Documentos Existentes', {
-            'fields': (
-                'hoja_vida', 'registro_importacion',
-                'manual_operacion', 'manual_servicio',
-                'guia_rapida', 'instructivo_manejo',
-                'protocolo_mto_preventivo'
-            ),
-            'classes': ('collapse',)
-        }),
-
-        ('Información Metrológica', {
-            'fields': (
-                'frecuencia_metrologica',
-                'requiere_mantenimiento', 'frecuencia_mantenimiento',
-                'requiere_calibracion', 'frecuencia_calibracion',
-                'magnitud', 'rango_equipo', 'resolucion', 'rango_trabajo',
-                'error_maximo'
-            ),
-            'classes': ('collapse',)
-        }),
-
-        ('Condiciones de funcionamiento', {
-            'fields': (
-                'voltaje', 'corriente', 'humedad_relativa',
-                'temperatura', 'dimensiones', 'peso', 'otros'
-            ),
-            'classes': ('collapse',)
-        })
     )

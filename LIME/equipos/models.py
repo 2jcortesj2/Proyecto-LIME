@@ -55,24 +55,25 @@ class Equipo(models.Model):
     )
 
     registro_invima = models.CharField(max_length=100, null=True, blank=True)
-
-    # ---------------------------
-    # VIDA ÚTIL Y FECHAS
-    # ---------------------------
+    
     tiempo_vida_util = models.IntegerField(null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.nombre_equipo} ({self.codigo_interno})"
+
+
+class RegistroAdquisicion(models.Model):
+    equipo = models.OneToOneField(Equipo, on_delete=models.CASCADE, related_name='registro_adquisicion')
     fecha_adquisicion = models.DateField(null=True, blank=True)
     fecha_fabricacion = models.DateField(null=True, blank=True)
     propietario = models.CharField(max_length=100, null=True, blank=True)
-
-    # ---------------------------
-    # PROVEEDOR Y GARANTÍA
-    # ---------------------------
+    
     nit_proveedor = models.CharField(max_length=20, null=True, blank=True)
     nombre_proveedor = models.CharField(max_length=150, null=True, blank=True)
-
+    
     en_garantia = models.BooleanField(default=False)
     fecha_fin_garantia = models.DateField(null=True, blank=True)
-
+    
     FORMA_ADQUISICION_CHOICES = [
         ("Compra", "Compra"),
         ("Apoyo Tecnológico", "Apoyo Tecnológico"),
@@ -83,42 +84,48 @@ class Equipo(models.Model):
         max_length=50, choices=FORMA_ADQUISICION_CHOICES,
         null=True, blank=True
     )
-
+    
     tipo_documento = models.CharField(max_length=50, null=True, blank=True)
     numero_documento = models.CharField(max_length=50, null=True, blank=True)
     valor_compra = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
 
-    # ---------------------------
-    # DOCUMENTOS
-    # ---------------------------
+    def __str__(self):
+        return f"Registro Adquisición - {self.equipo}"
+
+
+class DocumentacionEquipo(models.Model):
+    equipo = models.OneToOneField(Equipo, on_delete=models.CASCADE, related_name='documentacion')
     hoja_vida = models.BooleanField(default=False)
     registro_importacion = models.BooleanField(default=False)
     manual_operacion = models.BooleanField(default=False)
     manual_servicio = models.BooleanField(default=False)
     guia_rapida = models.BooleanField(default=False)
-    instructivo_manejo = models.BooleanField(default=False)
     protocolo_mto_preventivo = models.BooleanField(default=False)
-
-    # ---------------------------
-    # INFORMACIÓN METROLÓGICA
-    # ---------------------------
     frecuencia_metrologica = models.CharField(max_length=50, null=True, blank=True)
 
+    def __str__(self):
+        return f"Documentación - {self.equipo}"
+
+
+class InformacionMetrologica(models.Model):
+    equipo = models.OneToOneField(Equipo, on_delete=models.CASCADE, related_name='informacion_metrologica')
+    magnitud = models.CharField(max_length=100, null=True, blank=True)
+    rango_equipo = models.CharField(max_length=100, null=True, blank=True)
+    rango_trabajo = models.CharField(max_length=100, null=True, blank=True)
+    error_maximo = models.CharField(max_length=100, null=True, blank=True)
+    resolucion = models.CharField(max_length=100, null=True, blank=True)
+    
     requiere_mantenimiento = models.BooleanField(default=False)
     frecuencia_mantenimiento = models.CharField(max_length=50, null=True, blank=True)
-
     requiere_calibracion = models.BooleanField(default=False)
     frecuencia_calibracion = models.CharField(max_length=50, null=True, blank=True)
 
-    magnitud = models.CharField(max_length=100, null=True, blank=True)
-    rango_equipo = models.CharField(max_length=100, null=True, blank=True)
-    resolucion = models.CharField(max_length=100, null=True, blank=True)
-    rango_trabajo = models.CharField(max_length=100, null=True, blank=True)
-    error_maximo = models.CharField(max_length=100, null=True, blank=True)
+    def __str__(self):
+        return f"Info Metrológica - {self.equipo}"
 
-    # ---------------------------
-    # CONDICIONES DE FUNCIONAMIENTO
-    # ---------------------------
+
+class CondicionesFuncionamiento(models.Model):
+    equipo = models.OneToOneField(Equipo, on_delete=models.CASCADE, related_name='condiciones_funcionamiento')
     voltaje = models.CharField(max_length=50, null=True, blank=True)
     corriente = models.CharField(max_length=50, null=True, blank=True)
     humedad_relativa = models.CharField(max_length=50, null=True, blank=True)
@@ -128,4 +135,4 @@ class Equipo(models.Model):
     otros = models.TextField(null=True, blank=True)
 
     def __str__(self):
-        return f"{self.nombre_equipo} ({self.codigo_interno})"
+        return f"Condiciones - {self.equipo}"

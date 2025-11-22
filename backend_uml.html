@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Backend UML Diagram</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <script>
+        mermaid.initialize({ startOnLoad: true });
+    </script>
+    <style>
+        body {
+            font-family: sans-serif;
+            margin: 20px;
+            background-color: #f4f4f4;
+        }
+
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            overflow-x: auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Backend Class Diagram</h1>
+    <div class="container">
+        <div class="mermaid">
+            classDiagram
+            class Sede {
+            +String nombre
+            +String direccion
+            +String ciudad
+            +String telefono
+            +Boolean estado
+            }
+
+            class Servicio {
+            +String nombre
+            +String descripcion
+            +String responsable
+            +Boolean estado
+            }
+            Servicio --> Sede : sede
+
+            class Equipo {
+            +String nombre_equipo
+            +String codigo_interno
+            +String codigo_ips
+            +String codigo_ecri
+            +String responsable
+            +String ubicacion_fisica
+            +String marca
+            +String modelo
+            +String serie
+            +String clasificacion_misional
+            +String clasificacion_ips
+            +String clasificacion_riesgo
+            +String registro_invima
+            +Integer tiempo_vida_util
+            }
+            Equipo --> Sede : sede
+            Equipo --> Servicio : servicio
+
+            class RegistroAdquisicion {
+            +Date fecha_adquisicion
+            +Date fecha_fabricacion
+            +String propietario
+            +String nit_proveedor
+            +String nombre_proveedor
+            +Boolean en_garantia
+            +Date fecha_fin_garantia
+            +String forma_adquisicion
+            +String tipo_documento
+            +String numero_documento
+            +Decimal valor_compra
+            }
+            RegistroAdquisicion --> Equipo : equipo
+
+            class DocumentacionEquipo {
+            +Boolean hoja_vida
+            +Boolean registro_importacion
+            +Boolean manual_operacion
+            +Boolean manual_servicio
+            +Boolean guia_rapida
+            +Boolean protocolo_mto_preventivo
+            +String frecuencia_metrologica
+            }
+            DocumentacionEquipo --> Equipo : equipo
+
+            class InformacionMetrologica {
+            +String magnitud
+            +String rango_equipo
+            +String rango_trabajo
+            +String error_maximo
+            +String resolucion
+            +Boolean requiere_mantenimiento
+            +String frecuencia_mantenimiento
+            +Boolean requiere_calibracion
+            +String frecuencia_calibracion
+            }
+            InformacionMetrologica --> Equipo : equipo
+
+            class CondicionesFuncionamiento {
+            +String voltaje
+            +String corriente
+            +String humedad_relativa
+            +String temperatura
+            +String dimensiones
+            +String peso
+            +String otros
+            }
+            CondicionesFuncionamiento --> Equipo : equipo
+
+            class HistorialMantenimiento {
+            +String tipo_mantenimiento
+            +Date fecha_mantenimiento
+            +String descripcion
+            +String realizado_por
+            +Decimal costo
+            +String usuario_registro
+            +String observaciones
+            +DateTime created_at
+            }
+            HistorialMantenimiento --> Equipo : equipo
+
+            class HistorialTraslado {
+            +DateTime fecha_traslado
+            +String justificacion
+            +String usuario_registro
+            +DateTime created_at
+            }
+            HistorialTraslado --> Equipo : equipo
+            HistorialTraslado --> Sede : sede_origen
+            HistorialTraslado --> Sede : sede_destino
+            HistorialTraslado --> Servicio : servicio_origen
+            HistorialTraslado --> Servicio : servicio_destino
+
+            class Usuario {
+            +String nombre_completo
+            +String email
+            +String password_hash
+            +String rol
+            +Boolean estado
+            }
+            Usuario --> Sede : sede
+        </div>
+    </div>
+</body>
+
+</html>
