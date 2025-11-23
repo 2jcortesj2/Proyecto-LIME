@@ -41,11 +41,11 @@ INSTALLED_APPS = [
     'corsheaders',
     'sedes',
     'servicios',
+    'responsables',
     'equipos',
     'historial_traslados',
     'historial_mantenimientos',
     'reportes',
-    'encargados',
     'configuracion',
 ]
 

@@ -11,7 +11,7 @@ class Migration(migrations.Migration):
     dependencies = [
         ('sedes', '0001_initial'),
         ('servicios', '0001_initial'),
-        ('encargados', '0001_initial'),
+        ('responsables', '0001_initial'),
     ]
 
     operations = [
@@ -33,7 +33,7 @@ class Migration(migrations.Migration):
                 ('registro_invima', models.CharField(blank=True, max_length=100, null=True)),
                 ('tiempo_vida_util', models.IntegerField(blank=True, null=True)),
                 ('estado', models.CharField(choices=[('Activo', 'Activo'), ('Inactivo', 'Inactivo'), ('Baja', 'Baja'), ('En Mantenimiento', 'En Mantenimiento')], default='Activo', max_length=20)),
-                ('responsable', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='equipos_asignados', to='encargados.encargado')),
+                ('responsable', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='equipos_asignados', to='responsables.responsable')),
                 ('sede', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='equipos', to='sedes.sede')),
                 ('servicio', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='equipos', to='servicios.servicio')),
             ],
