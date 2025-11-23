@@ -7,7 +7,8 @@ const emit = defineEmits(['changePage'])
 // Reactive data
 const stats = ref({
   total_equipos: 0,
-  mantenimientos_pendientes: 0,
+  vencidos: 0,
+  proximos: 0,
   calibraciones_proximas: 0
 })
 
@@ -15,44 +16,22 @@ const equiposRecientes = ref([])
 const loading = ref(true)
 const error = ref(null)
 
-// Helper function to calculate next maintenance date (same as EquiposPendientes)
-function calcularProximoMantenimiento(equipo) {
-  if (!equipo.registro_adquisicion?.fecha_adquisicion) return null
-  if (!equipo.informacion_metrologica?.frecuencia_mantenimiento) return null
-  
-  const fechaIngreso = new Date(equipo.registro_adquisicion.fecha_adquisicion)
-  const frecuencia = equipo.informacion_metrologica.frecuencia_mantenimiento.toLowerCase()
-  
-  if (equipo.informacion_metrologica.proximo_mantenimiento) {
-    return new Date(equipo.informacion_metrologica.proximo_mantenimiento)
-  }
-  
-  const fechaProxima = new Date(fechaIngreso)
-  
-  if (frecuencia.includes('anual') || frecuencia.includes('1')) {
-    fechaProxima.setFullYear(fechaProxima.getFullYear() + 1)
-  } else if (frecuencia.includes('semestral') || frecuencia.includes('6')) {
-    fechaProxima.setMonth(fechaProxima.getMonth() + 6)
-  } else if (frecuencia.includes('trimestral') || frecuencia.includes('3')) {
-    fechaProxima.setMonth(fechaProxima.getMonth() + 3)
-  } else if (frecuencia.includes('mensual')) {
-    fechaProxima.setMonth(fechaProxima.getMonth() + 1)
-  } else {
-    fechaProxima.setFullYear(fechaProxima.getFullYear() + 1)
-  }
-  
-  return fechaProxima
-}
-
-// Calculate dashboard stats from equipment data
+// Calculate dashboard stats using backend endpoint
 async function fetchDashboardStats() {
   try {
-    const response = await equiposAPI.getAll()
-    const todosEquipos = response.data
+    // Get maintenance stats from centralized backend endpoint
+    const maintenanceResponse = await fetch('http://localhost:8000/api/equipos/maintenance-stats/')
+    const maintenanceData = await maintenanceResponse.json()
+    
+    // Get total equipos
+    const equiposResponse = await equiposAPI.getAll()
+    const todosEquipos = equiposResponse.data
     
     stats.value.total_equipos = todosEquipos.length
+    stats.value.vencidos = maintenanceData.vencidos
+    stats.value.proximos = maintenanceData.proximos
     
-    // Calculate maintenance counts using same logic as EquiposPendientes
+    // Calculate calibration stats (still using legacy frontend logic)
     const hoy = new Date()
     const mesActual = hoy.getMonth() + 1
     const anioActual = hoy.getFullYear()
@@ -64,29 +43,8 @@ async function fetchDashboardStats() {
       anioLimite += 1
     }
     
-    let vencidos = 0
-    let proximos = 0
     let calibraciones = 0
-    
     todosEquipos.forEach(eq => {
-      if (!eq.informacion_metrologica?.requiere_mantenimiento) return
-      
-      const fechaProxima = calcularProximoMantenimiento(eq)
-      if (!fechaProxima) return
-      
-      const mesProximo = fechaProxima.getMonth() + 1
-      const anioProximo = fechaProxima.getFullYear()
-      
-      // Vencidos
-      if ((anioProximo < anioActual) || (anioProximo === anioActual && mesProximo < mesActual)) {
-        vencidos++
-      }
-      // Próximos (dentro de 3 meses pero no vencidos)
-      else if ((anioProximo < anioLimite) || (anioProximo === anioLimite && mesProximo <= mesLimite)) {
-        proximos++
-      }
-      
-      // Calibraciones próximas
       if (eq.informacion_metrologica?.requiere_calibracion && eq.informacion_metrologica?.proxima_calibracion) {
         const fechaCal = new Date(eq.informacion_metrologica.proxima_calibracion)
         const mesCal = fechaCal.getMonth() + 1
@@ -98,7 +56,6 @@ async function fetchDashboardStats() {
       }
     })
     
-    stats.value.mantenimientos_pendientes = vencidos + proximos
     stats.value.calibraciones_proximas = calibraciones
     
   } catch (err) {
@@ -185,31 +142,31 @@ function formatDate(dateString) {
           <div class="stat-value">{{ stats.total_equipos }}</div>
           <div class="stat-trend success">Registrados en el sistema</div>
         </div>
-        <div class="stat-card" style="border-left-color: #003d6b;">
-          <div class="stat-label">Mantenimientos Pendientes</div>
-          <div class="stat-value">{{ stats.mantenimientos_pendientes }}</div>
-          <div class="stat-trend warning">Próximos 30 días</div>
+        <div class="stat-card" style="border-left-color: #f44336;">
+          <div class="stat-label">Revisiones Pendientes</div>
+          <div class="stat-value">{{ stats.vencidos }}</div>
+          <div class="stat-trend warning">Vencidos</div>
         </div>
-        <div class="stat-card" style="border-left-color: #4CAF50;">
-          <div class="stat-label">Calibraciones Próximas</div>
-          <div class="stat-value">{{ stats.calibraciones_proximas }}</div>
-          <div class="stat-trend warning">Este mes</div>
+        <div class="stat-card" style="border-left-color: #ff9800;">
+          <div class="stat-label">Próximas Revisiones</div>
+          <div class="stat-value">{{ stats.proximos }}</div>
+          <div class="stat-trend warning">Próximos 3 meses</div>
         </div>
       </div>
 
       <!-- Alerts -->
-      <div class="alert alert-danger" @click="navigateToPage('Equipos Pendientes')" v-if="stats.mantenimientos_pendientes > 0">
+      <div class="alert alert-danger" @click="navigateToPage('Equipos Pendientes')" v-if="stats.vencidos > 0">
         <span style="font-size: 20px;">⚠️</span>
         <div>
-          <strong>Atención:</strong> Hay {{ stats.mantenimientos_pendientes }} equipos con mantenimiento pendiente.
+          <strong>Atención:</strong> Hay {{ stats.vencidos }} {{ stats.vencidos === 1 ? 'equipo' : 'equipos' }} con revisión pendiente.
           <strong>Clic aquí para ver detalles</strong>
         </div>
       </div>
 
-      <div class="alert alert-warning" @click="navigateToPage('Equipos Pendientes')" v-if="stats.calibraciones_proximas > 0">
+      <div class="alert alert-warning" @click="navigateToPage('Equipos Pendientes')" v-if="stats.proximos > 0">
         <span style="font-size: 20px;">⚠️</span>
         <div>
-          <strong>Próximas calibraciones:</strong> {{ stats.calibraciones_proximas }} equipos requieren calibración pronto.
+          <strong>Próximas revisiones:</strong> {{ stats.proximos }} {{ stats.proximos === 1 ? 'equipo requiere' : 'equipos requieren' }} revisión pronto.
           <strong>Clic aquí para ver detalles</strong>
         </div>
       </div>

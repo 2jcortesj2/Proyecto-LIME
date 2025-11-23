@@ -1,11 +1,33 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { equiposAPI } from '../services/api'
+import { filterEquiposBySearch } from '../utils/searchUtils'
 
 // Reactive data
 const equipos = ref([])
 const loading = ref(true)
 const error = ref(null)
+
+// Pagination state
+const itemsPerPage = ref(5)
+const itemsPerPageOptions = [5, 10, 20, 50]
+
+const pageVencidos = ref(1)
+const pageProximos = ref(1)
+const pageNormales = ref(1)
+
+// Search state
+const searchVencidos = ref('')
+const searchProximos = ref('')
+const searchNormales = ref('')
+
+// Month filter for Próximos
+const monthsFilter = ref(3)
+const monthsOptions = [
+  { value: 3, label: 'Próximos 3 meses' },
+  { value: 6, label: 'Próximos 6 meses' },
+  { value: 12, label: 'Próximos 12 meses' }
+]
 
 // Fetch equipment with maintenance info
 async function fetchEquipos() {
@@ -15,8 +37,7 @@ async function fetchEquipos() {
     
     // Filter only equipment that requires maintenance
     equipos.value = response.data.filter(eq => 
-      eq.informacion_metrologica?.requiere_mantenimiento && 
-      eq.informacion_metrologica?.proximo_mantenimiento
+      eq.informacion_metrologica?.requiere_mantenimiento
     )
   } catch (err) {
     console.error('Error fetching equipment:', err)
@@ -30,121 +51,123 @@ onMounted(() => {
   fetchEquipos()
 })
 
-// Helper function to calculate next maintenance date
-function calcularProximoMantenimiento(equipo) {
-  if (!equipo.registro_adquisicion?.fecha_adquisicion) return null
-  if (!equipo.informacion_metrologica?.frecuencia_mantenimiento) return null
-  
-  const fechaIngreso = new Date(equipo.registro_adquisicion.fecha_adquisicion)
-  const frecuencia = equipo.informacion_metrologica.frecuencia_mantenimiento.toLowerCase()
-  
-  // Si tiene proximo_mantenimiento definido, usarlo
-  if (equipo.informacion_metrologica.proximo_mantenimiento) {
-    return new Date(equipo.informacion_metrologica.proximo_mantenimiento)
-  }
-  
-  // Calcular basado en frecuencia
-  const fechaProxima = new Date(fechaIngreso)
-  
-  if (frecuencia.includes('anual') || frecuencia.includes('1')) {
-    fechaProxima.setFullYear(fechaProxima.getFullYear() + 1)
-  } else if (frecuencia.includes('semestral') || frecuencia.includes('6')) {
-    fechaProxima.setMonth(fechaProxima.getMonth() + 6)
-  } else if (frecuencia.includes('trimestral') || frecuencia.includes('3')) {
-    fechaProxima.setMonth(fechaProxima.getMonth() + 3)
-  } else if (frecuencia.includes('mensual')) {
-    fechaProxima.setMonth(fechaProxima.getMonth() + 1)
-  } else {
-    // Por defecto, anual
-    fechaProxima.setFullYear(fechaProxima.getFullYear() + 1)
-  }
-  
-  return fechaProxima
-}
-
-// Computed properties para clasificar equipos
+// Computed properties para clasificar equipos usando la lógica del backend
 const equiposVencidos = computed(() => {
-  const hoy = new Date()
-  const mesActual = hoy.getMonth() + 1
-  const anioActual = hoy.getFullYear()
+  let filtered = equipos.value.filter(eq => 
+    eq.informacion_metrologica?.estado_mantenimiento === 'Vencido'
+  )
   
-  return equipos.value.filter(eq => {
-    if (!eq.informacion_metrologica?.requiere_mantenimiento) return false
-    
-    const fechaProxima = calcularProximoMantenimiento(eq)
-    if (!fechaProxima) return false
-    
-    const mesProximo = fechaProxima.getMonth() + 1
-    const anioProximo = fechaProxima.getFullYear()
-    
-    return (anioProximo < anioActual) || (anioProximo === anioActual && mesProximo < mesActual)
-  }).sort((a, b) => {
-    const fechaA = calcularProximoMantenimiento(a)
-    const fechaB = calcularProximoMantenimiento(b)
+  // Apply search filter using centralized function
+  filtered = filterEquiposBySearch(filtered, searchVencidos.value)
+  
+  return filtered.sort((a, b) => {
+    const fechaA = new Date(a.informacion_metrologica?.fecha_proximo_mantenimiento_calculada || 0)
+    const fechaB = new Date(b.informacion_metrologica?.fecha_proximo_mantenimiento_calculada || 0)
     return fechaA - fechaB
   })
 })
 
 const equiposProximosVencer = computed(() => {
   const hoy = new Date()
-  const mesActual = hoy.getMonth() + 1
-  const anioActual = hoy.getFullYear()
+  const limite = new Date()
+  limite.setMonth(hoy.getMonth() + monthsFilter.value)
   
-  let mesLimite = mesActual + 3
-  let anioLimite = anioActual
-  if (mesLimite > 12) {
-    mesLimite -= 12
-    anioLimite += 1
-  }
-  
-  return equipos.value.filter(eq => {
+  // Filter equipment that:
+  // 1. Requires maintenance
+  // 2. Next maintenance date is in the future (not overdue)
+  // 3. Next maintenance date is within selected months range
+  let filtered = equipos.value.filter(eq => {
     if (!eq.informacion_metrologica?.requiere_mantenimiento) return false
     
-    const fechaProxima = calcularProximoMantenimiento(eq)
-    if (!fechaProxima) return false
+    const fechaProxima = new Date(eq.informacion_metrologica?.fecha_proximo_mantenimiento_calculada)
+    if (!fechaProxima || isNaN(fechaProxima.getTime())) return false
     
-    const mesProximo = fechaProxima.getMonth() + 1
-    const anioProximo = fechaProxima.getFullYear()
+    // Must be in the future (not overdue)
+    if (fechaProxima < hoy) return false
     
-    const noVencido = (anioProximo > anioActual) || (anioProximo === anioActual && mesProximo >= mesActual)
-    const dentroLimite = (anioProximo < anioLimite) || (anioProximo === anioLimite && mesProximo <= mesLimite)
-    
-    return noVencido && dentroLimite
-  }).sort((a, b) => {
-    const fechaA = calcularProximoMantenimiento(a)
-    const fechaB = calcularProximoMantenimiento(b)
+    // Must be within selected months range
+    return fechaProxima <= limite
+  })
+  
+  // Apply search filter using centralized function
+  filtered = filterEquiposBySearch(filtered, searchProximos.value)
+  
+  return filtered.sort((a, b) => {
+    const fechaA = new Date(a.informacion_metrologica?.fecha_proximo_mantenimiento_calculada || 0)
+    const fechaB = new Date(b.informacion_metrologica?.fecha_proximo_mantenimiento_calculada || 0)
     return fechaA - fechaB
   })
 })
 
 const equiposNormales = computed(() => {
-  const hoy = new Date()
-  const mesActual = hoy.getMonth() + 1
-  const anioActual = hoy.getFullYear()
+  let filtered = equipos.value.filter(eq => 
+    eq.informacion_metrologica?.estado_mantenimiento === 'Normal'
+  )
   
-  let mesLimite = mesActual + 3
-  let anioLimite = anioActual
-  if (mesLimite > 12) {
-    mesLimite -= 12
-    anioLimite += 1
-  }
+  // Apply search filter using centralized function
+  filtered = filterEquiposBySearch(filtered, searchNormales.value)
   
-  return equipos.value.filter(eq => {
-    if (!eq.informacion_metrologica?.requiere_mantenimiento) return false
-    
-    const fechaProxima = calcularProximoMantenimiento(eq)
-    if (!fechaProxima) return false
-    
-    const mesProximo = fechaProxima.getMonth() + 1
-    const anioProximo = fechaProxima.getFullYear()
-    
-    return (anioProximo > anioLimite) || (anioProximo === anioLimite && mesProximo > mesLimite)
-  }).sort((a, b) => {
-    const fechaA = calcularProximoMantenimiento(a)
-    const fechaB = calcularProximoMantenimiento(b)
+  return filtered.sort((a, b) => {
+    const fechaA = new Date(a.informacion_metrologica?.fecha_proximo_mantenimiento_calculada || 0)
+    const fechaB = new Date(b.informacion_metrologica?.fecha_proximo_mantenimiento_calculada || 0)
     return fechaA - fechaB
   })
 })
+
+// Total counts before filtering (for v-if display logic)
+const totalVencidosBeforeFilter = computed(() => 
+  equipos.value.filter(eq => eq.informacion_metrologica?.estado_mantenimiento === 'Vencido').length
+)
+
+const totalProximosBeforeFilter = computed(() => {
+  // Count all equipment with upcoming maintenance within any reasonable timeframe
+  const hoy = new Date()
+  return equipos.value.filter(eq => {
+    if (!eq.informacion_metrologica?.requiere_mantenimiento) return false
+    const fechaProxima = new Date(eq.informacion_metrologica?.fecha_proximo_mantenimiento_calculada)
+    if (!fechaProxima || isNaN(fechaProxima.getTime())) return false
+    return fechaProxima >= hoy // Any future maintenance
+  }).length  
+})
+
+const totalNormalesBeforeFilter = computed(() => 
+  equipos.value.filter(eq => eq.informacion_metrologica?.estado_mantenimiento === 'Normal').length
+)
+
+// Pagination Computed Properties
+const totalPagesVencidos = computed(() => Math.ceil(equiposVencidos.value.length / itemsPerPage.value))
+const paginatedVencidos = computed(() => {
+  const start = (pageVencidos.value - 1) * itemsPerPage.value
+  const end = start + itemsPerPage.value
+  return equiposVencidos.value.slice(start, end)
+})
+
+const totalPagesProximos = computed(() => Math.ceil(equiposProximosVencer.value.length / itemsPerPage.value))
+const paginatedProximos = computed(() => {
+  const start = (pageProximos.value - 1) * itemsPerPage.value
+  const end = start + itemsPerPage.value
+  return equiposProximosVencer.value.slice(start, end)
+})
+
+const totalPagesNormales = computed(() => Math.ceil(equiposNormales.value.length / itemsPerPage.value))
+const paginatedNormales = computed(() => {
+  const start = (pageNormales.value - 1) * itemsPerPage.value
+  const end = start + itemsPerPage.value
+  return equiposNormales.value.slice(start, end)
+})
+
+// Pagination Methods
+function changePageVencidos(page) {
+  if (page >= 1 && page <= totalPagesVencidos.value) pageVencidos.value = page
+}
+
+function changePageProximos(page) {
+  if (page >= 1 && page <= totalPagesProximos.value) pageProximos.value = page
+}
+
+function changePageNormales(page) {
+  if (page >= 1 && page <= totalPagesNormales.value) pageNormales.value = page
+}
 
 function formatFecha(fecha) {
   if (!fecha) return 'N/A'
@@ -157,7 +180,7 @@ function formatFecha(fecha) {
 }
 
 function getProximoMantenimientoDisplay(equipo) {
-  const fecha = calcularProximoMantenimiento(equipo)
+  const fecha = equipo.informacion_metrologica?.fecha_proximo_mantenimiento_calculada
   return formatFecha(fecha)
 }
 
@@ -170,7 +193,6 @@ function completarMantenimiento(equipo) {
   // TODO: Implementar modal de completar mantenimiento
   alert(`Completar mantenimiento para: ${equipo.nombre_equipo}`)
 }
-
 </script>
 
 <template>
@@ -227,7 +249,7 @@ function completarMantenimiento(equipo) {
             </tr>
           </thead>
           <tbody>
-            <tr v-for="eq in equiposVencidos" :key="eq.id" class="row-vencido">
+            <tr v-for="eq in paginatedVencidos" :key="eq.id" class="row-vencido">
               <td><strong>{{ eq.codigo_interno }}</strong></td>
               <td>
                 <div style="font-weight: 600;">{{ eq.nombre_equipo }}</div>
@@ -242,7 +264,7 @@ function completarMantenimiento(equipo) {
               <td>{{ formatFecha(eq.informacion_metrologica?.ultimo_mantenimiento) }}</td>
               <td><strong style="color: #f44336;">{{ getProximoMantenimientoDisplay(eq) }}</strong></td>
               <td>
-                <div style="display: flex; gap: 8px;">
+                <div style="display: flex; gap: 10px;">
                   <button class="btn-action btn-completar" @click="completarMantenimiento(eq)" title="Marcar como completado">
                     Completar
                   </button>
@@ -254,14 +276,55 @@ function completarMantenimiento(equipo) {
             </tr>
           </tbody>
         </table>
+        
+        <!-- Pagination Footer Vencidos -->
+        <div class="pagination-footer">
+          <div class="items-per-page">
+            <span>Mostrar</span>
+            <select v-model="itemsPerPage" class="page-select">
+              <option v-for="opt in itemsPerPageOptions" :key="opt" :value="opt">{{ opt }}</option>
+            </select>
+            <span>registros</span>
+          </div>
+          <div class="page-navigation">
+            <button class="page-btn" :disabled="pageVencidos === 1" @click="changePageVencidos(pageVencidos - 1)">Anterior</button>
+            <span class="page-info">
+              Página 
+              <input type="number" v-model="pageVencidos" min="1" :max="totalPagesVencidos" class="page-input" @change="changePageVencidos(pageVencidos)">
+              de {{ totalPagesVencidos }}
+            </span>
+            <button class="page-btn" :disabled="pageVencidos === totalPagesVencidos" @click="changePageVencidos(pageVencidos + 1)">Siguiente</button>
+          </div>
+        </div>
       </div>
 
       <!-- Equipos Próximos a Vencer -->
-      <div class="content-card" v-if="equiposProximosVencer.length > 0">
+      <div class="content-card" v-if="totalProximosBeforeFilter > 0">
         <div class="section-header proximo">
-          <h3>⏰ Próximos a Vencer ({{ equiposProximosVencer.length }})</h3>
-          <p>Equipos que requieren mantenimiento en los próximos 3 meses</p>
+          <h3>⏰ Próximos a Revisión ({{ equiposProximosVencer.length }})</h3>
+          <p>Equipos que requieren mantenimiento en los próximos {{ monthsFilter }} meses</p>
         </div>
+        
+        <!-- Filter Controls -->
+        <div class="filter-controls">
+          <div class="month-filter">
+            <label for="months-filter">Mostrar equipos:</label>
+            <select id="months-filter" v-model="monthsFilter" class="filter-select">
+              <option v-for="opt in monthsOptions" :key="opt.value" :value="opt.value">
+                {{ opt.label }}
+              </option>
+            </select>
+          </div>
+          <div class="search-container-inline">
+            <input 
+              v-model="searchProximos" 
+              type="text" 
+              class="search-input" 
+              placeholder="🔍 Buscar por código, nombre, marca, modelo, sede o servicio..."
+            >
+          </div>
+        </div>
+        
         <table>
           <thead>
             <tr>
@@ -276,7 +339,7 @@ function completarMantenimiento(equipo) {
             </tr>
           </thead>
           <tbody>
-            <tr v-for="eq in equiposProximosVencer" :key="eq.id" class="row-proximo">
+            <tr v-for="eq in paginatedProximos" :key="eq.id" class="row-proximo">
               <td><strong>{{ eq.codigo_interno }}</strong></td>
               <td>
                 <div style="font-weight: 600;">{{ eq.nombre_equipo }}</div>
@@ -291,10 +354,7 @@ function completarMantenimiento(equipo) {
               <td>{{ formatFecha(eq.informacion_metrologica?.ultimo_mantenimiento) }}</td>
               <td><strong style="color: #ff9800;">{{ getProximoMantenimientoDisplay(eq) }}</strong></td>
               <td>
-                <div style="display: flex; gap: 8px;">
-                  <button class="btn-action btn-completar" @click="completarMantenimiento(eq)" title="Marcar como completado">
-                    Completar
-                  </button>
+                <div style="display: flex; gap: 10px;">
                   <button class="btn-action btn-reprogramar" @click="reprogramarMantenimiento(eq)" title="Reprogramar mantenimiento">
                     Reprogramar
                   </button>
@@ -303,6 +363,31 @@ function completarMantenimiento(equipo) {
             </tr>
           </tbody>
         </table>
+        
+        <!-- No Results Message -->
+        <div v-if="equiposProximosVencer.length === 0" class="no-results">
+          🔍 No se encontraron equipos que coincidan con tu búsqueda
+        </div>
+
+        <!-- Pagination Footer Proximos -->
+        <div class="pagination-footer">
+          <div class="items-per-page">
+            <span>Mostrar</span>
+            <select v-model="itemsPerPage" class="page-select">
+              <option v-for="opt in itemsPerPageOptions" :key="opt" :value="opt">{{ opt }}</option>
+            </select>
+            <span>registros</span>
+          </div>
+          <div class="page-navigation">
+            <button class="page-btn" :disabled="pageProximos === 1" @click="changePageProximos(pageProximos - 1)">Anterior</button>
+            <span class="page-info">
+              Página 
+              <input type="number" v-model="pageProximos" min="1" :max="totalPagesProximos" class="page-input" @change="changePageProximos(pageProximos)">
+              de {{ totalPagesProximos }}
+            </span>
+            <button class="page-btn" :disabled="pageProximos === totalPagesProximos" @click="changePageProximos(pageProximos + 1)">Siguiente</button>
+          </div>
+        </div>
       </div>
 
       <!-- Equipos Normales -->
@@ -325,7 +410,7 @@ function completarMantenimiento(equipo) {
             </tr>
           </thead>
           <tbody>
-            <tr v-for="eq in equiposNormales" :key="eq.id">
+            <tr v-for="eq in paginatedNormales" :key="eq.id">
               <td><strong>{{ eq.codigo_interno }}</strong></td>
               <td>
                 <div style="font-weight: 600;">{{ eq.nombre_equipo }}</div>
@@ -343,6 +428,26 @@ function completarMantenimiento(equipo) {
             </tr>
           </tbody>
         </table>
+
+        <!-- Pagination Footer Normales -->
+        <div class="pagination-footer">
+          <div class="items-per-page">
+            <span>Mostrar</span>
+            <select v-model="itemsPerPage" class="page-select">
+              <option v-for="opt in itemsPerPageOptions" :key="opt" :value="opt">{{ opt }}</option>
+            </select>
+            <span>registros</span>
+          </div>
+          <div class="page-navigation">
+            <button class="page-btn" :disabled="pageNormales === 1" @click="changePageNormales(pageNormales - 1)">Anterior</button>
+            <span class="page-info">
+              Página 
+              <input type="number" v-model="pageNormales" min="1" :max="totalPagesNormales" class="page-input" @change="changePageNormales(pageNormales)">
+              de {{ totalPagesNormales }}
+            </span>
+            <button class="page-btn" :disabled="pageNormales === totalPagesNormales" @click="changePageNormales(pageNormales + 1)">Siguiente</button>
+          </div>
+        </div>
       </div>
 
       <!-- No data message -->
@@ -412,6 +517,82 @@ function completarMantenimiento(equipo) {
   color: #4CAF50;
 }
 
+.search-container {
+  margin-bottom: 20px;
+}
+
+.filter-controls {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 20px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.month-filter {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.month-filter label {
+  font-weight: 600;
+  font-size: 14px;
+  color: #212121;
+  white-space: nowrap;
+}
+
+.filter-select {
+  padding: 10px 14px;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 14px;
+  background: white;
+  cursor: pointer;
+  transition: all 0.3s;
+  font-weight: 500;
+}
+
+.filter-select:hover {
+  border-color: #006633;
+}
+
+.filter-select:focus {
+  outline: none;
+  border-color: #006633;
+  box-shadow: 0 0 0 3px rgba(0, 102, 51, 0.1);
+}
+
+.search-container-inline {
+  flex: 1;
+  min-width: 300px;
+}
+
+.search-input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: all 0.3s;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #006633;
+  box-shadow: 0 0 0 3px rgba(0, 102, 51, 0.1);
+}
+
+.no-results {
+  text-align: center;
+  padding: 40px 20px;
+  color: #616161;
+  font-size: 14px;
+  background: rgba(0, 102, 51, 0.02);
+  border-radius: 8px;
+  margin-top: 20px;
+}
+
 table {
   width: 100%;
   border-collapse: collapse;
@@ -437,20 +618,25 @@ td {
   font-size: 14px;
 }
 
+tbody tr {
+  background: white;
+  transition: all 0.2s;
+}
+
 tbody tr:hover {
-  background: rgba(0, 102, 51, 0.04);
+  background: rgba(0, 102, 51, 0.08);
 }
 
 .row-vencido {
-  background: rgba(244, 67, 54, 0.05);
+  background: white;
 }
 
 .row-vencido:hover {
-  background: rgba(244, 67, 54, 0.1) !important;
+  background: rgba(0, 102, 51, 0.08) !important;
 }
 
 .row-proximo {
-  background: rgba(255, 152, 0, 0.05);
+  background: white;
 }
 
 .row-proximo:hover {
@@ -566,6 +752,93 @@ tbody tr:hover {
   background: rgba(244, 67, 54, 0.1);
   color: #f44336;
   border-left: 4px solid #f44336;
+}
+
+/* Pagination Styles */
+.pagination-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #e0e0e0;
+}
+
+.items-per-page {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  color: #616161;
+}
+
+.page-select {
+  padding: 5px;
+  border: 1px solid #c0c0c0;
+  border-radius: 4px;
+  background: #f5f5f5;
+  color: #212121;
+  font-weight: 500;
+}
+
+.page-select:hover {
+  background: #e8e8e8;
+  border-color: #a0a0a0;
+}
+
+.page-navigation {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.page-btn {
+  padding: 6px 12px;
+  border: 1px solid #c0c0c0;
+  background: #e8e8e8;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+  color: #212121;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.page-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: #f0f0f0;
+}
+
+.page-btn:not(:disabled):hover {
+  background: #d0d0d0;
+  border-color: #006633;
+  color: #006633;
+}
+
+.page-info {
+  font-size: 14px;
+  color: #616161;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.page-input {
+  width: 50px;
+  padding: 4px;
+  text-align: center;
+  border: 1px solid #c0c0c0;
+  border-radius: 4px;
+  background: #f5f5f5;
+  color: #212121;
+  font-weight: 600;
+}
+
+.page-input:focus {
+  outline: none;
+  border-color: #006633;
+  background: white;
 }
 
 /* Skeleton Loading Styles */

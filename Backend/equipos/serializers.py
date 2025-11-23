@@ -17,6 +17,9 @@ class DocumentacionEquipoSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class InformacionMetrologicaSerializer(serializers.ModelSerializer):
+    estado_mantenimiento = serializers.ReadOnlyField()
+    fecha_proximo_mantenimiento_calculada = serializers.ReadOnlyField()
+
     class Meta:
         model = InformacionMetrologica
         fields = '__all__'

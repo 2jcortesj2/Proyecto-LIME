@@ -1,11 +1,19 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { mantenimientosAPI } from '../services/api'
 
 // Data de mantenimientos
 const mantenimientos = ref([])
 const loading = ref(true)
 const error = ref(null)
+
+// Pagination state
+const currentPage = ref(1)
+const itemsPerPage = ref(10)
+const itemsPerPageOptions = [5, 10, 20, 50]
+
+// Accordion state
+const expandedRows = ref(new Set())
 
 const mesesNombres = [
   'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
@@ -29,6 +37,30 @@ async function fetchMantenimientos() {
 onMounted(() => {
   fetchMantenimientos()
 })
+
+// Pagination Logic
+const totalPages = computed(() => Math.ceil(mantenimientos.value.length / itemsPerPage.value))
+
+const paginatedMantenimientos = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage.value
+  const end = start + itemsPerPage.value
+  return mantenimientos.value.slice(start, end)
+})
+
+function changePage(page) {
+  if (page >= 1 && page <= totalPages.value) {
+    currentPage.value = page
+  }
+}
+
+// Accordion Logic
+function toggleRow(id) {
+  if (expandedRows.value.has(id)) {
+    expandedRows.value.delete(id)
+  } else {
+    expandedRows.value.add(id)
+  }
+}
 
 function formatMes(mes, anio) {
   return `${mesesNombres[mes - 1]} ${anio}`
@@ -59,19 +91,6 @@ function getTipoBadgeClass(tipo) {
     'verificacion': 'badge-secondary'
   }
   return classes[tipo] || 'badge-secondary'
-}
-
-const showModal = ref(false)
-const modalData = ref(null)
-
-function abrirModal(mantenimiento) {
-  modalData.value = mantenimiento
-  showModal.value = true
-}
-
-function cerrarModal() {
-  showModal.value = false
-  modalData.value = null
 }
 
 function abrirNuevoMantenimiento() {
@@ -131,103 +150,94 @@ function abrirNuevoMantenimiento() {
           </tr>
         </thead>
         <tbody>
-          <tr v-for="mant in mantenimientos" :key="mant.id" @click="abrirModal(mant)" style="cursor: pointer;">
-            <td><strong>{{ mant.equipo?.codigo_interno || 'N/A' }}</strong></td>
-            <td>
-              <div style="font-weight: 600;">{{ mant.equipo?.nombre_equipo || 'N/A' }}</div>
-              <div style="font-size: 12px; color: #616161;">{{ mant.equipo?.marca }} - {{ mant.equipo?.modelo }}</div>
-            </td>
-            <td>
-              <span class="badge" :class="getTipoBadgeClass(mant.tipo_mantenimiento)">
-                {{ getTipoLabel(mant.tipo_mantenimiento) }}
-              </span>
-            </td>
-            <td><strong>{{ formatMes(mant.mes_mantenimiento, mant.anio_mantenimiento) }}</strong></td>
-            <td>{{ mant.realizado_por }}</td>
-            <td>{{ formatCosto(mant.costo) }}</td>
-            <td @click.stop>
-              <button class="btn btn-info btn-sm" @click="abrirModal(mant)">👁️</button>
-              <button class="btn btn-secondary btn-sm">✏️</button>
-              <button class="btn btn-danger btn-sm">🗑️</button>
-            </td>
-          </tr>
+          <template v-for="mant in paginatedMantenimientos" :key="mant.id">
+            <tr 
+              :class="{ 'row-active': expandedRows.has(mant.id) }" 
+              @click="toggleRow(mant.id)"
+              style="cursor: pointer;"
+            >
+              <td class="col-codigo"><strong>{{ mant.equipo?.codigo_interno || 'N/A' }}</strong></td>
+              <td>
+                <div style="font-weight: 600;">{{ mant.equipo?.nombre_equipo || 'N/A' }}</div>
+                <div style="font-size: 12px; color: #616161;">{{ mant.equipo?.marca }} - {{ mant.equipo?.modelo }}</div>
+              </td>
+              <td>
+                <span class="badge" :class="getTipoBadgeClass(mant.tipo_mantenimiento)">
+                  {{ getTipoLabel(mant.tipo_mantenimiento) }}
+                </span>
+              </td>
+              <td>
+                <span :style="{ fontWeight: expandedRows.has(mant.id) ? 'bold' : 'normal' }">
+                  {{ formatMes(mant.mes_mantenimiento, mant.anio_mantenimiento) }}
+                </span>
+              </td>
+              <td>{{ mant.realizado_por }}</td>
+              <td>{{ formatCosto(mant.costo) }}</td>
+              <td @click.stop>
+                <div style="display: flex; gap: 10px;">
+                  <button class="btn btn-info btn-sm" @click="toggleRow(mant.id)">👁️</button>
+                  <button class="btn btn-secondary btn-sm">✏️</button>
+                  <button class="btn btn-danger btn-sm">🗑️</button>
+                </div>
+              </td>
+            </tr>
+            <!-- Accordion Content -->
+            <tr v-if="expandedRows.has(mant.id)" class="accordion-details-row">
+              <td colspan="7" class="detalle-cell">
+                <div class="accordion-details">
+                  <div class="detalle-header">
+                    <div class="detalle-title">📋 Detalle del Mantenimiento</div>
+                    <button class="btn btn-secondary btn-sm btn-close" @click="toggleRow(mant.id)">✕ Cerrar</button>
+                  </div>
+                  
+                  <div class="detail-grid-horizontal">
+                    <div class="detail-item-horizontal">
+                      <span class="detail-label">Registrado Por:</span>
+                      <span class="detail-value">{{ mant.usuario_registro }}</span>
+                    </div>
+                    <div class="detail-item-horizontal">
+                      <span class="detail-label">Descripción:</span>
+                      <span class="detail-value">{{ mant.descripcion }}</span>
+                    </div>
+                  </div>
+
+                  <!-- Observaciones Section - Will include edit history in the future -->
+                  <div class="observaciones-section" v-if="mant.observaciones">
+                    <h4 class="observaciones-title">💬 Observaciones</h4>
+                    <div class="observaciones-content">
+                      {{ mant.observaciones }}
+                    </div>
+                    <!-- Future: Automatic edit history will be appended here -->
+                    <!-- Example: "Editado el 23/11/2024 10:30 por Admin LIME - Motivo: Corrección de costo" -->
+                  </div>
+                </div>
+              </td>
+            </tr>
+          </template>
         </tbody>
       </table>
       <p v-else style="text-align: center; color: #616161; padding: 40px;">
         No hay mantenimientos registrados
       </p>
-    </div>
 
-    <!-- Modal de Detalle -->
-    <div class="modal" :class="{ active: showModal }" @click="cerrarModal">
-      <div class="modal-content" @click.stop>
-        <div class="modal-header">
-          <div class="modal-title">📋 Detalle del Mantenimiento</div>
-          <button class="close-btn" @click="cerrarModal">✕</button>
+      <!-- Pagination Footer -->
+      <div class="pagination-footer" v-if="mantenimientos.length > 0">
+        <div class="items-per-page">
+          <span>Mostrar</span>
+          <select v-model="itemsPerPage" class="page-select">
+            <option v-for="opt in itemsPerPageOptions" :key="opt" :value="opt">{{ opt }}</option>
+          </select>
+          <span>registros</span>
         </div>
-        <div class="modal-body" v-if="modalData">
-          <div class="detail-grid">
-            <div class="detail-section">
-              <h4 class="detail-section-title">Información del Equipo</h4>
-              <div class="detail-item">
-                <span class="detail-label">Código Interno:</span>
-                <span class="detail-value"><strong>{{ modalData.equipo?.codigo_interno || 'N/A' }}</strong></span>
-              </div>
-              <div class="detail-item">
-                <span class="detail-label">Nombre:</span>
-                <span class="detail-value">{{ modalData.equipo?.nombre_equipo || 'N/A' }}</span>
-              </div>
-              <div class="detail-item">
-                <span class="detail-label">Marca:</span>
-                <span class="detail-value">{{ modalData.equipo?.marca || 'N/A' }}</span>
-              </div>
-              <div class="detail-item">
-                <span class="detail-label">Modelo:</span>
-                <span class="detail-value">{{ modalData.equipo?.modelo || 'N/A' }}</span>
-              </div>
-            </div>
-
-            <div class="detail-section">
-              <h4 class="detail-section-title">Información del Mantenimiento</h4>
-              <div class="detail-item">
-                <span class="detail-label">Tipo:</span>
-                <span class="detail-value">
-                  <span class="badge" :class="getTipoBadgeClass(modalData.tipo_mantenimiento)">
-                    {{ getTipoLabel(modalData.tipo_mantenimiento) }}
-                  </span>
-                </span>
-              </div>
-              <div class="detail-item">
-                <span class="detail-label">Fecha:</span>
-                <span class="detail-value"><strong>{{ formatMes(modalData.mes_mantenimiento, modalData.anio_mantenimiento) }}</strong></span>
-              </div>
-              <div class="detail-item">
-                <span class="detail-label">Realizado Por:</span>
-                <span class="detail-value">{{ modalData.realizado_por }}</span>
-              </div>
-              <div class="detail-item">
-                <span class="detail-label">Costo:</span>
-                <span class="detail-value">{{ formatCosto(modalData.costo) }}</span>
-              </div>
-              <div class="detail-item">
-                <span class="detail-label">Registrado Por:</span>
-                <span class="detail-value">{{ modalData.usuario_registro }}</span>
-              </div>
-            </div>
-
-            <div class="detail-section" style="grid-column: 1 / -1;">
-              <h4 class="detail-section-title">Descripción</h4>
-              <p style="margin: 0; line-height: 1.6;">{{ modalData.descripcion }}</p>
-            </div>
-
-            <div class="detail-section" style="grid-column: 1 / -1;" v-if="modalData.observaciones">
-              <h4 class="detail-section-title">Observaciones</h4>
-              <p style="margin: 0; line-height: 1.6;">{{ modalData.observaciones }}</p>
-            </div>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button class="btn btn-secondary" @click="cerrarModal">Cerrar</button>
+        
+        <div class="page-navigation">
+          <button class="page-btn" :disabled="currentPage === 1" @click="changePage(currentPage - 1)">Anterior</button>
+          <span class="page-info">
+            Página 
+            <input type="number" v-model="currentPage" min="1" :max="totalPages" class="page-input" @change="changePage(currentPage)">
+            de {{ totalPages }}
+          </span>
+          <button class="page-btn" :disabled="currentPage === totalPages" @click="changePage(currentPage + 1)">Siguiente</button>
         </div>
       </div>
     </div>
@@ -254,49 +264,57 @@ function abrirNuevoMantenimiento() {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   margin-bottom: 25px;
   overflow-x: auto;
-  max-width: 100%;
 }
 
 .search-filter-container {
   display: flex;
-  gap: 20px;
-  margin-bottom: 25px;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  gap: 15px;
+  flex-wrap: wrap;
 }
 
 .search-section {
   flex: 1;
+  min-width: 300px;
 }
 
 .search-input {
   width: 100%;
-  padding: 12px;
-  border: 2px solid #e0e0e0;
+  padding: 10px 15px;
+  border: 1px solid #e0e0e0;
   border-radius: 8px;
   font-size: 14px;
+  transition: all 0.3s;
+  background: #f9f9f9;
 }
 
 .search-input:focus {
   outline: none;
   border-color: #006633;
+  background: white;
+  box-shadow: 0 0 0 3px rgba(0, 102, 51, 0.1);
 }
 
 .filter-button {
-  padding: 12px 24px;
+  padding: 10px 20px;
   background: white;
-  border: 2px solid #006633;
-  color: #006633;
+  border: 1px solid #e0e0e0;
   border-radius: 8px;
-  cursor: pointer;
+  color: #616161;
   font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
   display: flex;
   align-items: center;
   gap: 8px;
-  transition: all 0.3s;
 }
 
 .filter-button:hover {
-  background: #006633;
-  color: white;
+  background: #f5f5f5;
+  color: #006633;
+  border-color: #006633;
 }
 
 table {
@@ -316,42 +334,60 @@ th {
   font-size: 13px;
   text-transform: uppercase;
   white-space: nowrap;
+  font-weight: 600;
 }
 
 td {
   padding: 15px;
   border-bottom: 1px solid #e0e0e0;
   font-size: 14px;
+  vertical-align: middle;
+}
+
+tbody tr {
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
 }
 
 tbody tr:hover {
-  background: rgba(0, 102, 51, 0.04);
+  background: rgba(0, 102, 51, 0.08);
+}
+
+tbody tr:hover td:first-child {
+  font-weight: 600;
+}
+
+tbody tr td:last-child {
+  cursor: default;
 }
 
 .btn {
-  padding: 12px 24px;
   border: none;
   border-radius: 6px;
   cursor: pointer;
-  font-weight: 600;
-  transition: all 0.3s;
-  font-size: 14px;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 500;
 }
 
 .btn-primary {
   background: #006633;
   color: white;
+  padding: 10px 20px;
 }
 
 .btn-primary:hover {
   background: #2d5016;
   transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 102, 51, 0.2);
 }
 
 .btn-sm {
   padding: 8px 16px;
   font-size: 13px;
-  margin-right: 5px;
 }
 
 .btn-info {
@@ -359,13 +395,36 @@ tbody tr:hover {
   color: white;
 }
 
+.btn-info:hover {
+  opacity: 0.9;
+}
+
 .btn-secondary {
-  background: #e0e0e0;
+  background: #d0d0d0;
+  color: #212121;
+}
+
+.btn-secondary:hover {
+  background: #c0c0c0;
+}
+
+.btn-close {
+  background: #b0b0b0;
+  color: #212121;
+  font-weight: 600;
+}
+
+.btn-close:hover {
+  background: #a0a0a0;
 }
 
 .btn-danger {
   background: #f44336;
   color: white;
+}
+
+.btn-danger:hover {
+  opacity: 0.9;
 }
 
 .badge {
@@ -416,122 +475,239 @@ tbody tr:hover {
   border-left: 4px solid #f44336;
 }
 
-/* Modal Styles */
-.modal {
+/* Accordion Styles */
+tbody tr.row-active {
+  background: rgba(0, 102, 51, 0.12) !important;
+  border-left: 4px solid #006633;
+}
+
+.accordion-details-row {
   display: none;
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.6);
-  z-index: 1000;
-  backdrop-filter: blur(4px);
 }
 
-.modal.active {
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.accordion-details-row {
+  display: table-row;
 }
 
-.modal-content {
-  background: white;
-  border-radius: 12px;
-  width: 95%;
-  max-width: 900px;
-  max-height: 90vh;
-  display: flex;
-  flex-direction: column;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+.detalle-cell {
+  padding: 0 !important;
+  background: #f9f9f9;
+  border-bottom: 3px solid #006633 !important;
 }
 
-.modal-header {
-  padding: 25px;
-  border-bottom: 2px solid #e0e0e0;
+.accordion-details {
+  padding: 30px;
+  position: relative;
+  animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.detalle-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: linear-gradient(90deg, rgba(0, 102, 51, 0.05) 0%, transparent 100%);
-  flex-shrink: 0;
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 2px solid #e0e0e0;
 }
 
-.modal-title {
-  font-size: 22px;
+.detalle-title {
+  font-size: 18px;
   color: #006633;
   font-weight: 600;
-}
-
-.close-btn {
-  background: none;
-  border: none;
-  font-size: 28px;
-  cursor: pointer;
-  color: #616161;
-  padding: 0;
-  width: 40px;
-  height: 40px;
   display: flex;
   align-items: center;
-  justify-content: center;
-}
-
-.close-btn:hover {
-  color: #f44336;
-}
-
-.modal-body {
-  padding: 25px;
-  overflow-y: auto;
-  flex: 1;
-}
-
-.modal-footer {
-  padding: 20px 25px;
-  border-top: 1px solid #e0e0e0;
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  background: #f5f5f5;
-  flex-shrink: 0;
+  gap: 10px;
 }
 
 .detail-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
+  gap: 25px;
+}
+
+.detail-grid-horizontal {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
   gap: 20px;
+  margin-bottom: 20px;
+}
+
+.detail-item-horizontal {
+  background: white;
+  padding: 15px;
+  border-radius: 8px;
+  border-left: 4px solid #006633;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.detail-item-horizontal .detail-label {
+  display: block;
+  font-weight: 700;
+  color: #006633;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+
+.detail-item-horizontal .detail-value {
+  display: block;
+  color: #212121;
+  font-size: 14px;
+  font-weight: 500;
 }
 
 .detail-section {
-  background: #f5f5f5;
+  background: white;
   padding: 20px;
   border-radius: 8px;
   border-left: 4px solid #006633;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 
 .detail-section-title {
-  font-size: 16px;
+  font-size: 14px;
   color: #006633;
-  font-weight: 600;
+  font-weight: 700;
   margin-bottom: 15px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  border-bottom: 2px solid #f0f0f0;
+  padding-bottom: 8px;
 }
 
 .detail-item {
   display: flex;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
   font-size: 14px;
+  line-height: 1.5;
 }
 
 .detail-label {
   font-weight: 600;
   color: #616161;
-  min-width: 150px;
+  min-width: 140px;
 }
 
 .detail-value {
   color: #212121;
+}
+
+.observaciones-section {
+  background: rgba(0, 169, 157, 0.05);
+  border-left: 4px solid #00a99d;
+  padding: 20px;
+  border-radius: 8px;
+  margin-top: 20px;
+}
+
+.observaciones-title {
+  font-size: 14px;
+  color: #00a99d;
+  font-weight: 700;
+  margin-bottom: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.observaciones-content {
+  color: #212121;
+  font-size: 14px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+/* Pagination Styles */
+.pagination-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #e0e0e0;
+}
+
+.items-per-page {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  color: #616161;
+}
+
+.page-select {
+  padding: 6px;
+  border: 1px solid #c0c0c0;
+  border-radius: 4px;
+  background: #f5f5f5;
+  cursor: pointer;
+  color: #212121;
+  font-weight: 500;
+}
+
+.page-select:hover {
+  background: #e8e8e8;
+  border-color: #a0a0a0;
+}
+
+.page-navigation {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.page-btn {
+  padding: 6px 12px;
+  border: 1px solid #c0c0c0;
+  background: #e8e8e8;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.2s;
+  color: #212121;
+  font-weight: 500;
+}
+
+.page-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: #f0f0f0;
+}
+
+.page-btn:not(:disabled):hover {
+  background: #d0d0d0;
+  border-color: #006633;
+  color: #006633;
+}
+
+.page-info {
+  font-size: 14px;
+  color: #616161;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.page-input {
+  width: 40px;
+  padding: 4px;
+  text-align: center;
+  border: 1px solid #c0c0c0;
+  border-radius: 4px;
+  background: #f5f5f5;
+  color: #212121;
+  font-weight: 600;
+}
+
+.page-input:focus {
+  outline: none;
+  border-color: #006633;
+  background: white;
 }
 
 /* Skeleton Loading Styles */

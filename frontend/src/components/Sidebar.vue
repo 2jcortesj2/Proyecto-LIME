@@ -133,6 +133,7 @@ function toggleMantenimientos() {
 .menu-item:hover {
   background: #f5f5f5;
   border-left-color: #006633;
+  font-weight: bold;
 }
 
 .menu-item.active {

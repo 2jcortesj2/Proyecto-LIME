@@ -136,6 +136,72 @@ class InformacionMetrologica(models.Model):
     def __str__(self):
         return f"Info Metrológica - {self.equipo}"
 
+    @property
+    def fecha_proximo_mantenimiento_calculada(self):
+        """
+        Calcula la fecha del próximo mantenimiento.
+        Si 'proximo_mantenimiento' está definido, lo usa.
+        Si no, lo calcula basado en la fecha de adquisición y la frecuencia.
+        """
+        if self.proximo_mantenimiento:
+            return self.proximo_mantenimiento
+            
+        if not self.frecuencia_mantenimiento:
+            return None
+            
+        # Acceder a fecha de adquisición a través del equipo
+        try:
+            fecha_adquisicion = self.equipo.registro_adquisicion.fecha_adquisicion
+            if not fecha_adquisicion:
+                return None
+        except:
+            return None
+            
+        frecuencia = self.frecuencia_mantenimiento.lower()
+        from dateutil.relativedelta import relativedelta
+        
+        fecha_base = fecha_adquisicion
+        
+        # Lógica de cálculo (simplificada para coincidir con el frontend anterior)
+        # En un escenario real, esto debería calcularse desde el último mantenimiento si existe
+        if self.ultimo_mantenimiento:
+            fecha_base = self.ultimo_mantenimiento
+            
+        if 'semestral' in frecuencia or '6' in frecuencia:
+            return fecha_base + relativedelta(months=6)
+        elif 'trimestral' in frecuencia or '3' in frecuencia:
+            return fecha_base + relativedelta(months=3)
+        elif 'mensual' in frecuencia:
+            return fecha_base + relativedelta(months=1)
+        else:
+            # Por defecto anual
+            return fecha_base + relativedelta(years=1)
+
+    @property
+    def estado_mantenimiento(self):
+        """
+        Determina el estado del mantenimiento: 'Vencido', 'Próximo', 'Normal', 'No Requiere'
+        """
+        if not self.requiere_mantenimiento:
+            return "No Requiere"
+            
+        fecha_proxima = self.fecha_proximo_mantenimiento_calculada
+        if not fecha_proxima:
+            return "No Programado"
+            
+        from datetime import date
+        from dateutil.relativedelta import relativedelta
+        
+        hoy = date.today()
+        limite_proximo = hoy + relativedelta(months=3)
+        
+        if fecha_proxima < hoy:
+            return "Vencido"
+        elif fecha_proxima <= limite_proximo:
+            return "Próximo"
+        else:
+            return "Normal"
+
 
 class CondicionesFuncionamiento(models.Model):
     equipo = models.OneToOneField(Equipo, on_delete=models.CASCADE, related_name='condiciones_funcionamiento')

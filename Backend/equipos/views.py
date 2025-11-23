@@ -99,6 +99,43 @@ def equipos_proximos_mantenimiento(request):
     serializer = EquipoListSerializer(equipos, many=True)
     return Response(serializer.data)
 
+@api_view(['GET'])
+def maintenance_stats(request):
+    """
+    Retorna estadísticas de mantenimiento usando la misma lógica del modelo.
+    Esto garantiza consistencia entre el dashboard y las tablas de equipos.
+    """
+    equipos = Equipo.objects.filter(estado='Activo')
+    
+    vencidos = 0
+    proximos = 0
+    normales = 0
+    
+    print(f"\n=== MAINTENANCE STATS DEBUG ===")
+    print(f"Total equipos activos: {equipos.count()}")
+    
+    for equipo in equipos:
+        if hasattr(equipo, 'informacion_metrologica') and equipo.informacion_metrologica:
+            if equipo.informacion_metrologica.requiere_mantenimiento:
+                estado = equipo.informacion_metrologica.estado_mantenimiento
+                print(f"Equipo {equipo.codigo_interno}: estado={estado}, fecha_proxima={equipo.informacion_metrologica.fecha_proximo_mantenimiento_calculada}")
+                if estado == 'Vencido':
+                    vencidos += 1
+                elif estado == 'Próximo':
+                    proximos += 1
+                elif estado == 'Normal':
+                    normales += 1
+    
+    print(f"Vencidos: {vencidos}, Próximos: {proximos}, Normales: {normales}")
+    print(f"=== END DEBUG ===\n")
+    
+    return Response({
+        'vencidos': vencidos,
+        'proximos': proximos,
+        'normales': normales,
+        'total_requieren_mantenimiento': vencidos + proximos + normales
+    })
+
 @api_view(['POST'])
 def equipo_upload_documento(request, pk):
     """Actualiza el estado de documentos del equipo"""
@@ -116,15 +153,9 @@ def equipo_upload_documento(request, pk):
     ]
     
     if documento_tipo in documentos_validos:
-        # Nota: Esto asume que el campo existe en el modelo Equipo o en DocumentacionEquipo
-        # Dado el refactor, debería ser en DocumentacionEquipo.
-        # Ajustemos esto para ser robustos:
         if hasattr(equipo, 'documentacion'):
             setattr(equipo.documentacion, documento_tipo, True)
             equipo.documentacion.save()
-        else:
-            # Fallback si no existe la relación (no debería pasar si se crea correctamente)
-            pass
             
         return Response({'message': f'{documento_tipo} actualizado correctamente'})
     
