@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     'historial_traslados',
     'historial_mantenimientos',
     'reportes',
+    'encargados',
     'configuracion',
 ]
 

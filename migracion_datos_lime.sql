@@ -62,7 +62,7 @@ INSERT INTO `servicios` (`nombre`, `descripcion`, `responsable`, `estado`, `sede
 ('LIME - Microbiología', 'Sección de Microbiología', 'Enith Knuth', 1, 1),
 ('LIME - Química e inmunología', 'Sección de Química e Inmunología', 'Juan Carlos Herrera', 1, 1),
 ('LIME - Farmacología y Toxicología', 'Sección de Farmacología y Toxicología', 'Andrés Hincapie', 1, 1),
-('Centro de resonancia', Centro de Resonancia Magnética', 'Pablo Patiño Grajales', 1, 1),
+('Centro de resonancia', 'Centro de Resonancia Magnética', 'Pablo Patiño Grajales', 1, 1),
 ('Fotodermatología', 'Servicio de Fotodermatología', 'Jhon Frank Villa', 1, 1),
 
 -- Servicios SIU (sede_id = 2)

@@ -15,7 +15,7 @@ class Equipo(models.Model):
     codigo_ips = models.CharField(max_length=20, null=True, blank=True)
     codigo_ecri = models.CharField(max_length=50, null=True, blank=True)
 
-    responsable = models.ForeignKey('usuarios.Usuario', on_delete=models.SET_NULL, null=True, blank=True, related_name='equipos_asignados')
+    responsable = models.ForeignKey('encargados.Encargado', on_delete=models.SET_NULL, null=True, blank=True, related_name='equipos_asignados')
     ubicacion_fisica = models.CharField(max_length=200, null=True, blank=True)
 
     marca = models.CharField(max_length=100, null=True, blank=True)
