@@ -1,99 +1,34 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
+import { mantenimientosAPI } from '../services/api'
 
-// Data de muestra para mantenimientos
-const mantenimientos = ref([
-  {
-    id: 1,
-    equipo: {
-      codigo_interno: '135306',
-      nombre: 'Congelador',
-      marca: 'Challenger',
-      modelo: 'CV430'
-    },
-    tipo_mantenimiento: 'preventivo',
-    mes_mantenimiento: 11,
-    anio_mantenimiento: 2024,
-    descripcion: 'Limpieza general y verificación de temperatura',
-    realizado_por: 'TecnoFrío SAS',
-    costo: 250000,
-    usuario_registro: 'Admin LIME',
-    created_at: '2024-11-15 10:30:00'
-  },
-  {
-    id: 2,
-    equipo: {
-      codigo_interno: '119325',
-      nombre: 'Agregómetro',
-      marca: 'Helena Labs',
-      modelo: 'AGGRAM'
-    },
-    tipo_mantenimiento: 'calibracion',
-    mes_mantenimiento: 7,
-    anio_mantenimiento: 2025,
-    descripcion: 'Limpieza, calibración y verificación de canales',
-    realizado_por: 'Biocare Médica Ltda.',
-    costo: 420000,
-    usuario_registro: 'Admin LIME',
-    created_at: '2025-07-10 14:15:00'
-  },
-  {
-    id: 3,
-    equipo: {
-      codigo_interno: '120458',
-      nombre: 'Centrífuga',
-      marca: 'Eppendorf',
-      modelo: '5810R'
-    },
-    tipo_mantenimiento: 'preventivo',
-    mes_mantenimiento: 5,
-    anio_mantenimiento: 2025,
-    descripcion: 'Limpieza general, lubricación y verificación de velocidades',
-    realizado_por: 'Tecno Lab SAS',
-    costo: 550000,
-    usuario_registro: 'Admin LIME',
-    created_at: '2025-05-08 09:00:00'
-  },
-  {
-    id: 4,
-    equipo: {
-      codigo_interno: '142789',
-      nombre: 'Espectrofotómetro',
-      marca: 'Thermo Scientific',
-      modelo: 'Evolution 201'
-    },
-    tipo_mantenimiento: 'preventivo',
-    mes_mantenimiento: 8,
-    anio_mantenimiento: 2024,
-    descripcion: 'Limpieza óptica, verificación de lámpara y calibración',
-    realizado_por: 'Científica Sena S.A.',
-    costo: 680000,
-    usuario_registro: 'Admin LIME',
-    created_at: '2024-08-02 11:30:00'
-  },
-  {
-    id: 5,
-    equipo: {
-      codigo_interno: '135306',
-      nombre: 'Congelador',
-      marca: 'Challenger',
-      modelo: 'CV430'
-    },
-    tipo_mantenimiento: 'calibracion',
-    mes_mantenimiento: 5,
-    anio_mantenimiento: 2024,
-    descripcion: 'Calibración de sensor de temperatura',
-    realizado_por: 'Metrología UdeA',
-    costo: 180000,
-    usuario_registro: 'Admin LIME',
-    created_at: '2024-05-20 16:00:00'
-  }
-])
+// Data de mantenimientos
+const mantenimientos = ref([])
+const loading = ref(true)
+const error = ref(null)
 
 const mesesNombres = [
   'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
   'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
 ]
+
+// Fetch mantenimientos from backend
+async function fetchMantenimientos() {
+  try {
+    loading.value = true
+    const response = await mantenimientosAPI.getAll()
+    mantenimientos.value = response.data
+  } catch (err) {
+    console.error('Error fetching mantenimientos:', err)
+    error.value = 'Error al cargar mantenimientos'
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(() => {
+  fetchMantenimientos()
+})
 
 function formatMes(mes, anio) {
   return `${mesesNombres[mes - 1]} ${anio}`
@@ -149,13 +84,33 @@ function abrirNuevoMantenimiento() {
   <div class="mantenimientos-container">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
       <div>
-        <h2 class="page-title" style="margin: 0;">Mantenimientos</h2>
-        <div style="color: #616161; font-size: 14px; margin-top: 5px;">Inicio / Mantenimientos / Lista</div>
+        <h2 class="page-title" style="margin: 0;">Historial de Mantenimientos</h2>
+        <div style="color: #616161; font-size: 14px; margin-top: 5px;">Inicio / Mantenimientos / Historial Completo</div>
       </div>
       <button class="btn btn-primary" @click="abrirNuevoMantenimiento">➕ Nuevo Mantenimiento</button>
     </div>
 
-    <div class="content-card">
+    <!-- Loading Skeleton -->
+    <div v-if="loading" class="content-card skeleton">
+      <div class="search-filter-container">
+        <div class="skeleton-line" style="width: 70%; height: 45px; border-radius: 8px;"></div>
+        <div class="skeleton-line" style="width: 25%; height: 45px; border-radius: 8px;"></div>
+      </div>
+      <div class="skeleton-line" style="width: 100%; height: 60px; margin-bottom: 10px;"></div>
+      <div class="skeleton-line" style="width: 100%; height: 50px; margin-bottom: 10px;"></div>
+      <div class="skeleton-line" style="width: 100%; height: 50px; margin-bottom: 10px;"></div>
+      <div class="skeleton-line" style="width: 100%; height: 50px; margin-bottom: 10px;"></div>
+      <div class="skeleton-line" style="width: 100%; height: 50px; margin-bottom: 10px;"></div>
+      <div class="skeleton-line" style="width: 100%; height: 50px;"></div>
+    </div>
+
+    <!-- Error State -->
+    <div v-else-if="error" class="alert alert-danger">
+      {{ error }}
+    </div>
+
+    <!-- Content -->
+    <div v-else class="content-card">
       <div class="search-filter-container">
         <div class="search-section">
           <input type="text" class="search-input" placeholder="🔍 Buscar por código, equipo, tipo o proveedor...">
@@ -163,7 +118,7 @@ function abrirNuevoMantenimiento() {
         <button class="filter-button">☰ Filtrar y Ordenar</button>
       </div>
 
-      <table>
+      <table v-if="mantenimientos.length > 0">
         <thead>
           <tr>
             <th>Código Equipo</th>
@@ -177,10 +132,10 @@ function abrirNuevoMantenimiento() {
         </thead>
         <tbody>
           <tr v-for="mant in mantenimientos" :key="mant.id" @click="abrirModal(mant)" style="cursor: pointer;">
-            <td><strong>{{ mant.equipo.codigo_interno }}</strong></td>
+            <td><strong>{{ mant.equipo?.codigo_interno || 'N/A' }}</strong></td>
             <td>
-              <div style="font-weight: 600;">{{ mant.equipo.nombre }}</div>
-              <div style="font-size: 12px; color: #616161;">{{ mant.equipo.marca }} - {{ mant.equipo.modelo }}</div>
+              <div style="font-weight: 600;">{{ mant.equipo?.nombre_equipo || 'N/A' }}</div>
+              <div style="font-size: 12px; color: #616161;">{{ mant.equipo?.marca }} - {{ mant.equipo?.modelo }}</div>
             </td>
             <td>
               <span class="badge" :class="getTipoBadgeClass(mant.tipo_mantenimiento)">
@@ -198,6 +153,9 @@ function abrirNuevoMantenimiento() {
           </tr>
         </tbody>
       </table>
+      <p v-else style="text-align: center; color: #616161; padding: 40px;">
+        No hay mantenimientos registrados
+      </p>
     </div>
 
     <!-- Modal de Detalle -->
@@ -213,19 +171,19 @@ function abrirNuevoMantenimiento() {
               <h4 class="detail-section-title">Información del Equipo</h4>
               <div class="detail-item">
                 <span class="detail-label">Código Interno:</span>
-                <span class="detail-value"><strong>{{ modalData.equipo.codigo_interno }}</strong></span>
+                <span class="detail-value"><strong>{{ modalData.equipo?.codigo_interno || 'N/A' }}</strong></span>
               </div>
               <div class="detail-item">
                 <span class="detail-label">Nombre:</span>
-                <span class="detail-value">{{ modalData.equipo.nombre }}</span>
+                <span class="detail-value">{{ modalData.equipo?.nombre_equipo || 'N/A' }}</span>
               </div>
               <div class="detail-item">
                 <span class="detail-label">Marca:</span>
-                <span class="detail-value">{{ modalData.equipo.marca }}</span>
+                <span class="detail-value">{{ modalData.equipo?.marca || 'N/A' }}</span>
               </div>
               <div class="detail-item">
                 <span class="detail-label">Modelo:</span>
-                <span class="detail-value">{{ modalData.equipo.modelo }}</span>
+                <span class="detail-value">{{ modalData.equipo?.modelo || 'N/A' }}</span>
               </div>
             </div>
 
@@ -443,6 +401,21 @@ tbody tr:hover {
   color: #616161;
 }
 
+.alert {
+  padding: 15px 20px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.alert-danger {
+  background: rgba(244, 67, 54, 0.1);
+  color: #f44336;
+  border-left: 4px solid #f44336;
+}
+
 /* Modal Styles */
 .modal {
   display: none;
@@ -560,4 +533,26 @@ tbody tr:hover {
 .detail-value {
   color: #212121;
 }
+
+/* Skeleton Loading Styles */
+.skeleton {
+  animation: skeleton-loading 1s linear infinite alternate;
+}
+
+.skeleton-line {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s ease-in-out infinite;
+  border-radius: 4px;
+}
+
+@keyframes skeleton-loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
 </style>
+

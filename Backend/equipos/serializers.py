@@ -42,15 +42,18 @@ class EquipoSerializer(serializers.ModelSerializer):
 
 class EquipoListSerializer(serializers.ModelSerializer):
     """Serializer simplificado para listados"""
-    sede_nombre = serializers.CharField(source='sede.nombre', read_only=True)
-    servicio_nombre = serializers.CharField(source='servicio.nombre', read_only=True)
+    sede = SedeSerializer(read_only=True)
+    servicio = ServicioSerializer(read_only=True)
     responsable_nombre = serializers.CharField(source='responsable.nombre_completo', read_only=True)
+    registro_adquisicion = RegistroAdquisicionSerializer(read_only=True)
+    informacion_metrologica = InformacionMetrologicaSerializer(read_only=True)
     
     class Meta:
         model = Equipo
         fields = [
             'id', 'codigo_interno', 'nombre_equipo', 
             'marca', 'modelo', 'serie', 
-            'sede_nombre', 'servicio_nombre', 'responsable', 'responsable_nombre',
-            'estado', 'clasificacion_riesgo'
+            'registro_invima', 'clasificacion_riesgo',
+            'sede', 'servicio', 'responsable', 'responsable_nombre',
+            'estado', 'registro_adquisicion', 'informacion_metrologica'
         ]

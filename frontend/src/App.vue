@@ -4,6 +4,7 @@ import Header from './components/Header.vue'
 import Sidebar from './components/Sidebar.vue'
 import Dashboard from './components/Dashboard.vue'
 import Mantenimientos from './components/Mantenimientos.vue'
+import EquiposPendientes from './components/EquiposPendientes.vue'
 
 const currentPage = ref('Información General')
 
@@ -18,8 +19,9 @@ function showPage(page) {
     <div class="container">
       <Sidebar :currentPage="currentPage" @changePage="showPage" />
       <main class="main-content">
-        <Dashboard v-if="currentPage === 'Información General'" />
-        <Mantenimientos v-else-if="currentPage === 'Mantenimientos'" />
+        <Dashboard v-if="currentPage === 'Información General'" @changePage="showPage" />
+        <Mantenimientos v-else-if="currentPage === 'Historial de Mantenimientos'" />
+        <EquiposPendientes v-else-if="currentPage === 'Equipos Pendientes'" />
         <div v-else class="page-placeholder">
           <h2 class="page-title">{{ currentPage }}</h2>
           <p style="color: #616161;">Esta página está en desarrollo.</p>

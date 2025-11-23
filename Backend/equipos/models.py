@@ -1,4 +1,5 @@
 from django.db import models
+from multiselectfield import MultiSelectField
 from sedes.models import Sede
 from servicios.models import Servicio
 
@@ -26,10 +27,9 @@ class Equipo(models.Model):
         ("Docencia", "Docencia"),
         ("Investigación", "Investigación"),
         ("Extensión", "Extensión"),
-        ("Mixto", "Mixto"),
     ]
-    clasificacion_misional = models.CharField(
-        max_length=20, choices=CLASIF_MISIONAL_CHOICES,
+    clasificacion_misional = MultiSelectField(
+        max_length=50, choices=CLASIF_MISIONAL_CHOICES,
         null=True, blank=True
     )
 

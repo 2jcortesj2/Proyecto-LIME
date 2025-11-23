@@ -1,37 +1,113 @@
 <script setup>
+import { ref, defineProps, defineEmits } from 'vue'
+
 defineProps({
   currentPage: String
 })
 
 const emit = defineEmits(['changePage'])
 
-const menuItems = [
-  { icon: '📊', label: 'Información General' },
-  { icon: '🔧', label: 'Inventario de Equipos' },
-  { icon: '🔄', label: 'Traslados' },
-  { icon: '🛠️', label: 'Mantenimientos' },
-  { divider: true },
-  { icon: '🏢', label: 'Sedes y Servicios' },
-  { icon: '👥', label: 'Usuarios' },
-  { divider: true },
-  { icon: '📈', label: 'Reportes' },
-  { icon: '⚙️', label: 'Configuración' }
-]
+const mantenimientosExpanded = ref(false)
+
+function changePage(page) {
+  emit('changePage', page)
+}
+
+function toggleMantenimientos() {
+  mantenimientosExpanded.value = !mantenimientosExpanded.value
+}
 </script>
 
 <template>
   <aside class="sidebar">
-    <template v-for="(item, index) in menuItems" :key="index">
-      <div v-if="item.divider" class="divider"></div>
-      <div
-        v-else
-        class="menu-item"
-        :class="{ active: currentPage === item.label }"
-        @click="emit('changePage', item.label)"
+    <nav>
+      <div 
+        class="menu-item" 
+        :class="{ active: currentPage === 'Información General' }"
+        @click="changePage('Información General')"
       >
-        {{ item.icon }} {{ item.label }}
+        📊 Información General
       </div>
-    </template>
+      <div 
+        class="menu-item" 
+        :class="{ active: currentPage === 'Inventario de Equipos' }"
+        @click="changePage('Inventario de Equipos')"
+      >
+        🔬 Inventario de Equipos
+      </div>
+      
+      <!-- Accordion for Mantenimientos -->
+      <div class="menu-accordion">
+        <div 
+          class="menu-item accordion-header" 
+          :class="{ 
+            active: currentPage === 'Historial de Mantenimientos' || currentPage === 'Equipos Pendientes',
+            expanded: mantenimientosExpanded 
+          }"
+          @click="toggleMantenimientos"
+        >
+          🛠️ Mantenimientos
+        </div>
+        <div class="accordion-content" v-show="mantenimientosExpanded">
+          <div 
+            class="menu-item sub-item" 
+            :class="{ active: currentPage === 'Historial de Mantenimientos' }"
+            @click="changePage('Historial de Mantenimientos')"
+          >
+            📋 Historial Completo
+          </div>
+          <div 
+            class="menu-item sub-item" 
+            :class="{ active: currentPage === 'Equipos Pendientes' }"
+            @click="changePage('Equipos Pendientes')"
+          >
+            ⚠️ Equipos Pendientes
+          </div>
+        </div>
+      </div>
+      
+      <div 
+        class="menu-item" 
+        :class="{ active: currentPage === 'Traslados' }"
+        @click="changePage('Traslados')"
+      >
+        🔄 Traslados
+      </div>
+      
+      <div class="divider"></div>
+      
+      <div 
+        class="menu-item" 
+        :class="{ active: currentPage === 'Sedes y Servicios' }"
+        @click="changePage('Sedes y Servicios')"
+      >
+        🏢 Sedes y Servicios
+      </div>
+      <div 
+        class="menu-item" 
+        :class="{ active: currentPage === 'Usuarios' }"
+        @click="changePage('Usuarios')"
+      >
+        👥 Usuarios
+      </div>
+      
+      <div class="divider"></div>
+      
+      <div 
+        class="menu-item" 
+        :class="{ active: currentPage === 'Reportes' }"
+        @click="changePage('Reportes')"
+      >
+        📈 Reportes
+      </div>
+      <div 
+        class="menu-item" 
+        :class="{ active: currentPage === 'Configuración' }"
+        @click="changePage('Configuración')"
+      >
+        ⚙️ Configuración
+      </div>
+    </nav>
   </aside>
 </template>
 
@@ -49,6 +125,9 @@ const menuItems = [
   border-left: 4px solid transparent;
   transition: all 0.3s;
   text-align: left;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .menu-item:hover {
@@ -61,6 +140,37 @@ const menuItems = [
   border-left-color: #006633;
   font-weight: 600;
   color: #006633;
+}
+
+.menu-accordion {
+  position: relative;
+}
+
+.accordion-header {
+  font-weight: 600;
+  transition: background 0.3s;
+}
+
+.accordion-header.expanded {
+  background: rgba(0, 102, 51, 0.08);
+  border-left-color: #006633;
+}
+
+.accordion-content {
+  background: #f9f9f9;
+}
+
+.sub-item {
+  padding-left: 45px;
+  font-size: 14px;
+}
+
+.sub-item:hover {
+  background: #eeeeee;
+}
+
+.sub-item.active {
+  background: rgba(0, 102, 51, 0.15);
 }
 
 .divider {

@@ -1,14 +1,25 @@
 from rest_framework import serializers
 from .models import HistorialMantenimiento
+from equipos.serializers import EquipoListSerializer
 
 class HistorialMantenimientoSerializer(serializers.ModelSerializer):
-    equipo_codigo = serializers.CharField(source='equipo.codigo_interno', read_only=True)
-    equipo_nombre = serializers.CharField(source='equipo.nombre_equipo', read_only=True)
+    equipo = EquipoListSerializer(read_only=True)
+    equipo_id = serializers.PrimaryKeyRelatedField(
+        queryset=HistorialMantenimiento.objects.all(),
+        source='equipo',
+        write_only=True
+    )
     fecha_display = serializers.CharField(read_only=True)
     
     class Meta:
         model = HistorialMantenimiento
-        fields = '__all__'
+        fields = [
+            'id', 'equipo', 'equipo_id', 'tipo_mantenimiento',
+            'mes_mantenimiento', 'anio_mantenimiento', 'descripcion',
+            'realizado_por', 'costo', 'usuario_registro', 'observaciones',
+            'created_at', 'fecha_display'
+        ]
+        read_only_fields = ['created_at']
     
     def validate(self, data):
         """Validación adicional para mes y año"""

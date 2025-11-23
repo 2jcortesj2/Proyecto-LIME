@@ -170,7 +170,7 @@ tbody tr[data-equipo] td:last-child { cursor: default; }
 <div><span style="font-size: 24px; font-weight: 800; color: #003d6b;">Alma</span><span style="font-size: 24px; font-weight: 800; color: #00a99d;">Máter</span></div>
 </div>
 <div class="logo-divider"></div>
-<div style="font-size: 14px; font-weight: 700; color: #006633; line-height: 1.3;">UNIVERSIDAD<br>DE ANTIOQUIA</div>
+<img src="C:\Users\jjcor\Downloads\logosimbolo-horizontal-png.png" alt="UdeA" style="height: 45px;">
 </div>
 
 <!-- Centro: Título del sistema -->
@@ -389,7 +389,7 @@ tbody tr[data-equipo] td:last-child { cursor: default; }
 <div class="menu-item" onclick="showPage('sedes')">🏢 Sedes y Servicios</div>
 <div class="menu-item" onclick="showPage('usuarios')">👥 Usuarios</div>
 <div style="height: 1px; background: #e0e0e0; margin: 15px 25px;"></div>
-<div class="menu-item" onclick="showPage('reportes')">📈 Reportes</div>
+<!--div class="menu-item" onclick="showPage('reportes')">📈 Reportes</div-->
 <div class="menu-item" onclick="showPage('configuracion')">⚙️ Configuración</div>
 </aside>
 
@@ -2092,7 +2092,7 @@ tbody tr[data-equipo] td:last-child { cursor: default; }
 <input type="text" id="edit-modelo" class="form-input" value="CV430">
 </div>
 <div class="form-group">
-<label class="form-label required">Número de Serie 🔒<span class="lock-icon">🔒</span></label>
+<label class="form-label required">Número de Serie<span class="lock-icon">🔒</span></label>
 <input type="text" id="edit-serie" class="form-input locked" value="9053127" onclick="solicitarPasswordParaCampo('serie')">
 </div>
 <div class="form-group">
@@ -2127,21 +2127,17 @@ tbody tr[data-equipo] td:last-child { cursor: default; }
 <!-- TAB 3: REGISTRO HISTÓRICO -->
 <div id="tab-edit-equipo-3" class="tab-content">
 <h4 class="section-title">📅 C. Registro Histórico</h4>
-<div class="info-box" style="background: rgba(255, 152, 0, 0.05); border-left-color: #ff9800;">
-<div class="info-box-title" style="color: #ff9800;">⚠️ Sección Protegida</div>
-<p style="font-size: 13px; color: #616161;">Todos los campos en esta sección requieren autenticación de administrador para modificarse, ya que constituyen el registro histórico legal del equipo.</p>
-</div>
 <div class="form-grid">
 <div class="form-group">
 <label class="form-label">Tiempo de Vida Útil</label>
 <input type="text" id="edit-vida-util" class="form-input" value="">
 </div>
 <div class="form-group">
-<label class="form-label required">Fecha de Adquisición 🔒<span class="lock-icon">🔒</span></label>
+<label class="form-label required">Fecha de Adquisición<span class="lock-icon">🔒</span></label>
 <input type="date" id="edit-fecha-adq" class="form-input locked" value="2009-12-10" onclick="solicitarPasswordParaCampo('fecha-adq')">
 </div>
 <div class="form-group">
-<label class="form-label required">Propietario del Equipo 🔒<span class="lock-icon">🔒</span></label>
+<label class="form-label required">Propietario del Equipo<span class="lock-icon">🔒</span></label>
 <input type="text" id="edit-propietario" class="form-input locked" value="UdeA" onclick="solicitarPasswordParaCampo('propietario')">
 </div>
 <div class="form-group">
@@ -2149,11 +2145,11 @@ tbody tr[data-equipo] td:last-child { cursor: default; }
 <input type="text" id="edit-fecha-fab" class="form-input" value="NI">
 </div>
 <div class="form-group">
-<label class="form-label required">NIT del Proveedor 🔒<span class="lock-icon">🔒</span></label>
+<label class="form-label required">NIT del Proveedor<span class="lock-icon">🔒</span></label>
 <input type="text" id="edit-nit" class="form-input locked" value="890.934.939-8" onclick="solicitarPasswordParaCampo('nit')">
 </div>
 <div class="form-group full-width">
-<label class="form-label required">Proveedor del Equipo 🔒<span class="lock-icon">🔒</span></label>
+<label class="form-label required">Proveedor del Equipo<span class="lock-icon">🔒</span></label>
 <textarea id="edit-proveedor" class="form-textarea locked" onclick="solicitarPasswordParaCampo('proveedor')">Almacén Navarro Ospina S.A.</textarea>
 </div>
 <div class="form-group">
@@ -2167,7 +2163,7 @@ tbody tr[data-equipo] td:last-child { cursor: default; }
 <input type="date" id="edit-fecha-garantia" class="form-input">
 </div>
 <div class="form-group">
-<label class="form-label required">Forma de Adquisición 🔒<span class="lock-icon">🔒</span></label>
+<label class="form-label required">Forma de Adquisición<span class="lock-icon">🔒</span></label>
 <select id="edit-forma-adq" class="form-select locked" onclick="solicitarPasswordParaCampo('forma-adq')">
 <option value="Compra" selected>Compra</option>
 <option value="Donación">Donación</option>
@@ -2176,11 +2172,11 @@ tbody tr[data-equipo] td:last-child { cursor: default; }
 </select>
 </div>
 <div class="form-group">
-<label class="form-label required">Tipo de Documento 🔒<span class="lock-icon">🔒</span></label>
+<label class="form-label required">Tipo de Documento<span class="lock-icon">🔒</span></label>
 <input type="text" id="edit-tipo-doc" class="form-input locked" value="Factura" onclick="solicitarPasswordParaCampo('tipo-doc')">
 </div>
 <div class="form-group">
-<label class="form-label required">Número de Documento 🔒<span class="lock-icon">🔒</span></label>
+<label class="form-label required">Número de Documento<span class="lock-icon">🔒</span></label>
 <input type="text" id="edit-num-doc" class="form-input locked" value="47736" onclick="solicitarPasswordParaCampo('num-doc')">
 </div>
 </div>
@@ -2715,9 +2711,9 @@ function toggleDetalleEquipo(codigo) {
     equipoDetalleActivo = codigo;
     
     // Scroll suave al detalle
-    setTimeout(() => {
-      detalleRow.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }, 100);
+    //setTimeout(() => {
+    //  detalleRow.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    //}, 100);
   }
 }
 

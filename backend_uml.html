@@ -29,6 +29,37 @@
             color: #333;
         }
     </style>
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Backend UML Diagram</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <script>
+        mermaid.initialize({ startOnLoad: true });
+    </script>
+    <style>
+        body {
+            font-family: sans-serif;
+            margin: 20px;
+            background-color: #f4f4f4;
+        }
+
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            overflow-x: auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+    </style>
 </head>
 
 <body>
@@ -52,12 +83,18 @@
             }
             Servicio --> Sede : sede
 
+            class Responsable {
+            +String nombre_completo
+            +String email
+            +String telefono
+            +String rol
+            }
+
             class Equipo {
             +String nombre_equipo
             +String codigo_interno
             +String codigo_ips
             +String codigo_ecri
-            +String responsable
             +String ubicacion_fisica
             +String marca
             +String modelo
@@ -67,9 +104,11 @@
             +String clasificacion_riesgo
             +String registro_invima
             +Integer tiempo_vida_util
+            +String estado
             }
             Equipo --> Sede : sede
             Equipo --> Servicio : servicio
+            Equipo --> Responsable : responsable
 
             class RegistroAdquisicion {
             +Date fecha_adquisicion
@@ -105,8 +144,12 @@
             +String resolucion
             +Boolean requiere_mantenimiento
             +String frecuencia_mantenimiento
+            +Date ultimo_mantenimiento
+            +Date proximo_mantenimiento
             +Boolean requiere_calibracion
             +String frecuencia_calibracion
+            +Date ultima_calibracion
+            +Date proxima_calibracion
             }
             InformacionMetrologica --> Equipo : equipo
 
@@ -118,16 +161,17 @@
             +String dimensiones
             +String peso
             +String otros
-            }lado
+            }
             CondicionesFuncionamiento --> Equipo : equipo
 
             class HistorialMantenimiento {
             +String tipo_mantenimiento
-            +Date fecha_mantenimiento
+            +Integer mes_mantenimiento
+            +Integer anio_mantenimiento
             +String descripcion
             +String realizado_por
             +Decimal costo
-            +String responsable_registro
+            +String usuario_registro
             +String observaciones
             +DateTime created_at
             }
@@ -136,7 +180,7 @@
             class HistorialTraslado {
             +DateTime fecha_traslado
             +String justificacion
-            +String responsable_registro
+            +String usuario_registro
             +DateTime created_at
             }
             HistorialTraslado --> Equipo : equipo
@@ -144,15 +188,6 @@
             HistorialTraslado --> Sede : sede_destino
             HistorialTraslado --> Servicio : servicio_origen
             HistorialTraslado --> Servicio : servicio_destino
-
-            class Responsable {
-            +String nombre_completo
-            +String email
-            +String password_hash
-            +String rol
-            +Boolean estado
-            }
-            Responsable --> Equipo : equipo
         </div>
     </div>
 </body>

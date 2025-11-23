@@ -2,23 +2,16 @@
   <header class="header">
     <!-- Logo Container -->
     <div class="logo-container">
-      <div style="text-align: center;">
-        <div style="font-size: 32px; font-weight: 800; color: #006633; line-height: 1;">LIME</div>
-        <div style="font-size: 7px; color: #006633; text-transform: uppercase;">
-          Laboratorio Integrado de Medicina Especializada
-        </div>
+      <div class="logo-wrapper">
+        <img src="/logo_lime.png" alt="LIME Logo" class="logo-img lime-logo" />
       </div>
       <div class="logo-divider"></div>
-      <div style="text-align: center;">
-        <div style="font-size: 20px; font-weight: 700; color: #003d6b;">Hospital</div>
-        <div>
-          <span style="font-size: 24px; font-weight: 800; color: #003d6b;">Alma</span>
-          <span style="font-size: 24px; font-weight: 800; color: #00a99d;">Máter</span>
-        </div>
+      <div class="logo-wrapper">
+        <img src="/logo_hospital.png" alt="Hospital Alma Máter Logo" class="logo-img hospital-logo" />
       </div>
       <div class="logo-divider"></div>
-      <div style="font-size: 14px; font-weight: 700; color: #006633; line-height: 1.3;">
-        UNIVERSIDAD<br>DE ANTIOQUIA
+      <div class="logo-wrapper">
+        <img src="/logo_uda.png" alt="Universidad de Antioquia Logo" class="logo-img uda-logo" />
       </div>
     </div>
 
@@ -43,7 +36,7 @@
 .header {
   background: linear-gradient(135deg, #006633 0%, #2d5016 100%);
   color: white;
-  padding: 20px 40px;
+  padding: 10px 40px;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -51,19 +44,48 @@
   position: sticky;
   top: 0;
   z-index: 100;
+  height: 90px;
 }
 
 .logo-container {
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 15px;
   background: white;
-  padding: 10px 20px;
+  padding: 5px 20px;
   border-radius: 8px;
+  height: 70px;
+}
+
+.logo-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+
+.logo-img {
+  height: auto;
+  object-fit: contain;
+}
+
+.lime-logo {
+  max-height: 50px;
+  max-width: 120px;
+}
+
+.hospital-logo {
+  max-height: 45px;
+  max-width: 140px;
+}
+
+.uda-logo {
+  max-height: 55px;
+  max-width: 140px;
 }
 
 .logo-divider {
-  width: 2px;
+  width: 1px;
   height: 40px;
   background: #ddd;
 }
