@@ -1,8 +1,8 @@
 from django.contrib import admin
-from .models import Encargado
+from .models import Responsable
 
-@admin.register(Encargado)
-class EncargadoAdmin(admin.ModelAdmin):
+@admin.register(Responsable)
+class ResponsableAdmin(admin.ModelAdmin):
     list_display = ('id', 'nombre_completo', 'email', 'rol')
     search_fields = ('nombre_completo', 'email')
     list_filter = ('rol',)

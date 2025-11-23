@@ -1,6 +1,6 @@
 from django.db import models
 
-class Encargado(models.Model):
+class Responsable(models.Model):
     nombre_completo = models.CharField(max_length=200)
     email = models.EmailField(unique=True)
     telefono = models.CharField(max_length=20, blank=True, null=True)

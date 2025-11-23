@@ -118,7 +118,7 @@
             +String dimensiones
             +String peso
             +String otros
-            }
+            }lado
             CondicionesFuncionamiento --> Equipo : equipo
 
             class HistorialMantenimiento {
@@ -127,7 +127,7 @@
             +String descripcion
             +String realizado_por
             +Decimal costo
-            +String usuario_registro
+            +String responsable_registro
             +String observaciones
             +DateTime created_at
             }
@@ -136,7 +136,7 @@
             class HistorialTraslado {
             +DateTime fecha_traslado
             +String justificacion
-            +String usuario_registro
+            +String responsable_registro
             +DateTime created_at
             }
             HistorialTraslado --> Equipo : equipo
@@ -145,14 +145,14 @@
             HistorialTraslado --> Servicio : servicio_origen
             HistorialTraslado --> Servicio : servicio_destino
 
-            class Usuario {
+            class Responsable {
             +String nombre_completo
             +String email
             +String password_hash
             +String rol
             +Boolean estado
             }
-            Usuario --> Sede : sede
+            Responsable --> Equipo : equipo
         </div>
     </div>
 </body>
