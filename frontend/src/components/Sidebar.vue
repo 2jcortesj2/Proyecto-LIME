@@ -1,5 +1,6 @@
 <script setup>
-import { ref, defineProps, defineEmits } from 'vue'
+import { ref, defineProps, defineEmits, onMounted } from 'vue'
+import { equiposAPI } from '../services/api'
 
 defineProps({
   currentPage: String
@@ -16,6 +17,26 @@ function changePage(page) {
 function toggleMantenimientos() {
   mantenimientosExpanded.value = !mantenimientosExpanded.value
 }
+
+const stats = ref({
+  vencidos: 0,
+  proximos: 0
+})
+
+async function fetchStats() {
+  try {
+    const response = await equiposAPI.getMaintenanceStats()
+    stats.value = response.data
+  } catch (error) {
+    console.error('Error fetching stats:', error)
+  }
+}
+
+onMounted(() => {
+  fetchStats()
+  // Poll for updates every minute
+  setInterval(fetchStats, 60000)
+})
 </script>
 
 <template>
@@ -51,17 +72,26 @@ function toggleMantenimientos() {
         <div class="accordion-content" v-show="mantenimientosExpanded">
           <div 
             class="menu-item sub-item" 
+            :class="{ active: currentPage === 'Realizar Mantenimiento' }"
+            @click="changePage('Realizar Mantenimiento')"
+          >
+            ⚠️ Realizar Mantenimiento
+            <span v-if="stats.vencidos > 0" class="count-badge danger">{{ stats.vencidos }}</span>
+          </div>
+          <div 
+            class="menu-item sub-item" 
+            :class="{ active: currentPage === 'Proximos de Revision' }"
+            @click="changePage('Proximos de Revision')"
+          >
+            ⏰ Próximos de revisión
+            <span v-if="stats.proximos > 0" class="count-badge warning">{{ stats.proximos }}</span>
+          </div>
+          <div 
+            class="menu-item sub-item" 
             :class="{ active: currentPage === 'Historial de Mantenimientos' }"
             @click="changePage('Historial de Mantenimientos')"
           >
             📋 Historial Completo
-          </div>
-          <div 
-            class="menu-item sub-item" 
-            :class="{ active: currentPage === 'Equipos Pendientes' }"
-            @click="changePage('Equipos Pendientes')"
-          >
-            ⚠️ Equipos Pendientes
           </div>
         </div>
       </div>
@@ -178,5 +208,23 @@ function toggleMantenimientos() {
   height: 1px;
   background: #e0e0e0;
   margin: 15px 25px;
+}
+
+.count-badge {
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: bold;
+  margin-left: auto;
+}
+
+.count-badge.danger {
+  background: #ffebee;
+  color: #c62828;
+}
+
+.count-badge.warning {
+  background: #fff3e0;
+  color: #ef6c00;
 }
 </style>

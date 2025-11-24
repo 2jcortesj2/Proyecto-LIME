@@ -158,48 +158,150 @@ def clean_bool(value):
     val = str(value).upper()
     return '1' if val in ['SI', 'SÍ', 'YES', '1', 'TRUE', 'X'] else '0'
 
-def generate_history(equipo_id, fecha_base=None):
-    """Genera historial de mantenimiento sintético"""
+def generate_maintenance_history():
+    """Genera historial de mantenimiento sintético (solo si requiere mantenimiento)"""
     history_sql = []
     
-    # Decidir cuántos mantenimientos (1 a 3)
-    num_maint = random.randint(1, 3)
+    # Decidir cuántos mantenimientos (1 a 4)
+    num_maint = random.randint(1, 4)
     
     tipos = ['preventivo', 'correctivo', 'calibracion']
-    estados = ['Realizado con éxito', 'Requiere repuestos', 'Equipo operativo', 'Calibración OK']
+    estados = ['Realizado con éxito', 'Requiere repuestos', 'Equipo operativo', 'Calibración OK', 'Pendiente de revisión']
+    proveedores = ['Proveedor Externo', 'Técnico UdeA', 'Servicio Especializado', 'Mantenimiento Interno']
     
     current_year = 2024
+    current_month = 11
     
-    for _ in range(num_maint):
+    for i in range(num_maint):
         tipo = random.choice(tipos)
-        mes = random.randint(1, 11)
+        # Generar fechas en el pasado (últimos 2 años)
         anio = current_year - random.randint(0, 2)
+        if anio == current_year:
+            mes = random.randint(1, current_month)
+        else:
+            mes = random.randint(1, 12)
         
-        desc = f"Mantenimiento {tipo} de rutina."
-        costo = random.randint(100000, 2000000)
+        descripciones = {
+            'preventivo': [
+                'Mantenimiento preventivo programado según plan anual.',
+                'Limpieza general y verificación de componentes.',
+                'Revisión de sistemas mecánicos y eléctricos.',
+                'Calibración y ajuste de parámetros operativos.'
+            ],
+            'correctivo': [
+                'Reparación de falla detectada durante operación.',
+                'Reemplazo de componente defectuoso.',
+                'Corrección de desviación en parámetros.',
+                'Solución de problema reportado por usuario.'
+            ],
+            'calibracion': [
+                'Calibración metrológica según normas ISO.',
+                'Verificación de exactitud y precisión.',
+                'Ajuste de parámetros de medición.',
+                'Certificación de calibración anual.'
+            ]
+        }
+        
+        desc = random.choice(descripciones[tipo])
+        costo = random.randint(100000, 2500000)
         obs = random.choice(estados)
+        proveedor = random.choice(proveedores)
+        
+        # Generar fecha específica
+        dia = random.randint(1, 28)
+        hora = random.randint(8, 17)
+        minuto = random.choice([0, 15, 30, 45])
+        fecha_str = f"'{anio}-{mes:02d}-{dia:02d} {hora:02d}:{minuto:02d}:00'"
         
         sql = f"""INSERT INTO `historial_mantenimientos` (
     `equipo_id`, `tipo_mantenimiento`, `mes_mantenimiento`, `anio_mantenimiento`,
     `descripcion`, `realizado_por`, `costo`, `usuario_registro`, `observaciones`, `created_at`
 ) VALUES (
     @equipo_id, '{tipo}', {mes}, {anio},
-    '{desc}', 'Proveedor Externo', {costo}, 'Sistema', '{obs}', NOW()
+    '{desc}', '{proveedor}', {costo}, 'Sistema', '{obs}', {fecha_str}
 );"""
         history_sql.append(sql)
         
     return "\n".join(history_sql)
 
+def generate_transfer_history():
+    """Genera historial de traslados sintético para todos los equipos"""
+    transfer_sql = []
+    
+    # Decidir cuántos traslados (0 a 3)
+    num_transfers = random.randint(0, 3)
+    
+    if num_transfers == 0:
+        return ""
+    
+    justificaciones = [
+        'Reubicación por reorganización de espacios',
+        'Traslado temporal para mantenimiento',
+        'Cambio de servicio por necesidades operativas',
+        'Optimización de recursos entre sedes',
+        'Préstamo temporal a otro servicio',
+        'Consolidación de equipos en nueva ubicación'
+    ]
+    
+    usuarios = ['Admin LIME', 'Coordinador Técnico', 'Jefe de Servicio', 'Responsable de Equipos']
+    
+    current_year = 2024
+    current_month = 11
+    
+    # Generar traslados en orden cronológico
+    for i in range(num_transfers):
+        # Fechas progresivas en el pasado
+        anio = current_year - random.randint(0, 2)
+        if anio == current_year:
+            mes = random.randint(1, current_month - 1) if current_month > 1 else 1
+        else:
+            mes = random.randint(1, 12)
+        
+        dia = random.randint(1, 28)
+        hora = random.randint(8, 17)
+        minuto = random.choice([0, 15, 30, 45])
+        fecha_str = f"'{anio}-{mes:02d}-{dia:02d} {hora:02d}:{minuto:02d}:00'"
+        
+        # Sedes aleatorias (1=Prado, 2=SIU, 3=San Vicente)
+        sede_origen = random.randint(1, 3)
+        sede_destino = random.choice([s for s in [1, 2, 3] if s != sede_origen])
+        
+        # Servicios aleatorios (1-18)
+        servicio_origen = random.randint(1, 18)
+        servicio_destino = random.randint(1, 18)
+        
+        justif = random.choice(justificaciones)
+        usuario = random.choice(usuarios)
+        
+        sql = f"""INSERT INTO `historial_traslados` (
+    `equipo_id`, `fecha_traslado`, `sede_origen_id`, `sede_destino_id`,
+    `servicio_origen_id`, `servicio_destino_id`, `justificacion`, `usuario_registro`, `created_at`
+) VALUES (
+    @equipo_id, {fecha_str}, {sede_origen}, {sede_destino},
+    {servicio_origen}, {servicio_destino}, '{justif}', '{usuario}', {fecha_str}
+);"""
+        transfer_sql.append(sql)
+        
+    return "\n".join(transfer_sql)
+
+
 def main():
     print("Iniciando fusión de datos...")
     
     # 1. Leer Excel
+    df = None
     try:
         df = pd.read_excel(EXCEL_FILE, sheet_name='Hoja1', skiprows=SKIP_ROWS)
-        print(f"Leídos {len(df)} registros del Excel")
+        print(f"✓ Leídos {len(df)} registros del Excel")
+    except PermissionError:
+        print("⚠ ADVERTENCIA: El archivo Excel está abierto o no tiene permisos de lectura.")
+        print("  Continuando solo con datos manuales...")
+    except FileNotFoundError:
+        print("⚠ ADVERTENCIA: Archivo Excel no encontrado.")
+        print("  Continuando solo con datos manuales...")
     except Exception as e:
-        print(f"Error leyendo Excel: {e}")
-        return
+        print(f"⚠ ADVERTENCIA: Error leyendo Excel: {e}")
+        print("  Continuando solo con datos manuales...")
     
     with open(OUTPUT_SQL, 'w', encoding='utf-8') as f:
         # Header
@@ -238,69 +340,89 @@ def main():
         f.write(MANUAL_SQL_BLOCK)
         
         # 4. Procesar Excel (Filtrando duplicados y enriqueciendo)
-        f.write("\n-- ============================================\n-- 5. EQUIPOS IMPORTADOS DESDE EXCEL (Enriquecidos)\n-- ============================================\n")
-        
-        count_excel = 0
-        for idx, row in df.iterrows():
-            serie = str(row.get('Serie', '')).strip()
+        if df is not None:
+            f.write("\n-- ============================================\n-- 5. EQUIPOS IMPORTADOS DESDE EXCEL (Enriquecidos)\n-- ============================================\n")
             
-            # Filtrar duplicados
-            if serie in MANUAL_SERIES:
-                print(f"Saltando duplicado manual: {serie}")
-                continue
+            count_excel = 0
+            for idx, row in df.iterrows():
+                serie = str(row.get('Serie', '')).strip()
                 
-            # Datos básicos
-            nombre = clean_value(row.get('Nombre del equipo', ''))
-            if nombre == 'NULL': continue
+                # Filtrar duplicados
+                if serie in MANUAL_SERIES:
+                    print(f"  Saltando duplicado manual: {serie}")
+                    continue
+                    
+                # Datos básicos
+                nombre = clean_value(row.get('Nombre del equipo', ''))
+                if nombre == 'NULL': continue
+                
+                sede_id = SEDES_MAP.get(row.get('Sede', ''), 1)
+                servicio_id = SERVICIOS_MAP.get(row.get('Proceso', ''), 1)
+                
+                # Asignar responsable aleatorio si no existe
+                resp_id = random.choice(RESPONSABLES_IDS)
+                
+                f.write(f"-- Excel Equipo {idx+1}: {row.get('Nombre del equipo')}\n")
+                f.write("INSERT INTO `equipos_equipo` (`nombre_equipo`, `codigo_interno`, `codigo_ips`, `codigo_ecri`, `ubicacion_fisica`, `marca`, `modelo`, `serie`, `clasificacion_misional`, `clasificacion_ips`, `clasificacion_riesgo`, `registro_invima`, `tiempo_vida_util`, `estado`, `sede_id`, `servicio_id`, `responsable_id`) VALUES (\n")
+                
+                vals = [
+                    nombre,
+                    clean_value(row.get('Código de inventario interno del laboratorio y/o a', '')),
+                    clean_value(row.get('Código IPS', '')),
+                    clean_value(row.get('Código ECRI', '')),
+                    clean_value(row.get('Ubicación física', '')),
+                    clean_value(row.get('Marca', '')),
+                    clean_value(row.get('Modelo', '')),
+                    clean_value(serie),
+                    clean_value(row.get('Clasificación misional', 'Extensión')),
+                    clean_value(row.get('Clasificación IPS', '')),
+                    clean_value(row.get('Clasificación de riesgo', '')),
+                    clean_value(row.get('Registro INVIMA', '')),
+                    clean_value(row.get('Tiempo de vida útil', '')),
+                    "'Activo'",
+                    str(sede_id), str(servicio_id), str(resp_id)
+                ]
+                f.write("    " + ", ".join(vals) + "\n);\n")
+                f.write("SET @equipo_id = LAST_INSERT_ID();\n\n")
+                
+                # Tablas relacionadas (simplificadas con datos del Excel o defaults)
+                # Adquisición
+                f.write("INSERT INTO `equipos_registroadquisicion` (`equipo_id`, `fecha_adquisicion`, `propietario`, `forma_adquisicion`, `en_garantia`) VALUES (@equipo_id, NULL, 'UdeA', 'Compra', 0);\n")
+                
+                # Documentación
+                hoja_vida = clean_bool(row.get('Hoja de vida'))
+                manual_op = clean_bool(row.get('Manual de operación'))
+                f.write(f"INSERT INTO `equipos_documentacionequipo` (`equipo_id`, `hoja_vida`, `manual_operacion`) VALUES (@equipo_id, {hoja_vida}, {manual_op});\n")
+                
+                # Metrología - Determinar si requiere mantenimiento (80% de probabilidad)
+                requiere_mto = random.choice([1, 1, 1, 1, 0])  # 80% requiere mantenimiento
+                freq_mto = random.choice(['Mensual', 'Trimestral', 'Semestral', 'Anual'])
+                requiere_cal = random.choice([0, 1])
+                f.write(f"INSERT INTO `equipos_informacionmetrologica` (`equipo_id`, `requiere_mantenimiento`, `frecuencia_mantenimiento`, `requiere_calibracion`) VALUES (@equipo_id, {requiere_mto}, '{freq_mto}', {requiere_cal});\n")
+                
+                # Condiciones
+                f.write("INSERT INTO `equipos_condicionesfuncionamiento` (`equipo_id`, `voltaje`) VALUES (@equipo_id, '110V');\n\n")
+                
+                # HISTORIAL DE MANTENIMIENTO (solo si requiere mantenimiento)
+                if requiere_mto == 1:
+                    maint_history = generate_maintenance_history()
+                    if maint_history:
+                        f.write(maint_history + "\n\n")
+                
+                # HISTORIAL DE TRASLADOS (siempre)
+                transfer_history = generate_transfer_history()
+                if transfer_history:
+                    f.write(transfer_history + "\n\n")
+                
+                count_excel += 1
+
             
-            sede_id = SEDES_MAP.get(row.get('Sede', ''), 1)
-            servicio_id = SERVICIOS_MAP.get(row.get('Proceso', ''), 1)
+            print(f"✓ Procesados {count_excel} equipos nuevos del Excel")
+        else:
+            print("⚠ No se procesaron equipos del Excel")
             
-            # Asignar responsable aleatorio si no existe
-            resp_id = random.choice(RESPONSABLES_IDS)
-            
-            f.write(f"-- Excel Equipo {idx+1}: {row.get('Nombre del equipo')}\n")
-            f.write("INSERT INTO `equipos_equipo` (`nombre_equipo`, `codigo_interno`, `codigo_ips`, `codigo_ecri`, `ubicacion_fisica`, `marca`, `modelo`, `serie`, `clasificacion_misional`, `clasificacion_ips`, `clasificacion_riesgo`, `registro_invima`, `tiempo_vida_util`, `estado`, `sede_id`, `servicio_id`, `responsable_id`) VALUES (\n")
-            
-            vals = [
-                nombre,
-                clean_value(row.get('Código de inventario interno del laboratorio y/o a', '')),
-                clean_value(row.get('Código IPS', '')),
-                clean_value(row.get('Código ECRI', '')),
-                clean_value(row.get('Ubicación física', '')),
-                clean_value(row.get('Marca', '')),
-                clean_value(row.get('Modelo', '')),
-                clean_value(serie),
-                clean_value(row.get('Clasificación misional', 'Extensión')),
-                clean_value(row.get('Clasificación IPS', '')),
-                clean_value(row.get('Clasificación de riesgo', '')),
-                clean_value(row.get('Registro INVIMA', '')),
-                clean_value(row.get('Tiempo de vida útil', '')),
-                "'Activo'",
-                str(sede_id), str(servicio_id), str(resp_id)
-            ]
-            f.write("    " + ", ".join(vals) + "\n);\n")
-            f.write("SET @equipo_id = LAST_INSERT_ID();\n\n")
-            
-            # Tablas relacionadas (simplificadas con datos del Excel o defaults)
-            # Adquisición
-            f.write("INSERT INTO `equipos_registroadquisicion` (`equipo_id`, `fecha_adquisicion`, `propietario`, `forma_adquisicion`, `en_garantia`) VALUES (@equipo_id, NULL, 'UdeA', 'Compra', 0);\n")
-            
-            # Documentación
-            f.write(f"INSERT INTO `equipos_documentacionequipo` (`equipo_id`, `hoja_vida`, `manual_operacion`) VALUES (@equipo_id, {clean_bool(row.get('Hoja de vida'))}, {clean_bool(row.get('Manual de operación'))});\n")
-            
-            # Metrología
-            f.write("INSERT INTO `equipos_informacionmetrologica` (`equipo_id`, `requiere_mantenimiento`, `frecuencia_mantenimiento`, `requiere_calibracion`) VALUES (@equipo_id, 1, 'Anual', 0);\n")
-            
-            # Condiciones
-            f.write("INSERT INTO `equipos_condicionesfuncionamiento` (`equipo_id`, `voltaje`) VALUES (@equipo_id, '110V');\n")
-            
-            # HISTORIAL SINTÉTICO
-            f.write(generate_history(None) + "\n\n")
-            
-            count_excel += 1
-            
-        print(f"Procesados {count_excel} equipos nuevos del Excel")
+        print(f"\n✅ Script SQL generado exitosamente: {OUTPUT_SQL}")
+        print(f"   Total: 9 equipos manuales + {count_excel if df is not None else 0} del Excel = {9 + (count_excel if df is not None else 0)} equipos")
 
 if __name__ == "__main__":
     main()

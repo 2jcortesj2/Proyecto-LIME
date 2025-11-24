@@ -5,6 +5,7 @@ import Sidebar from './components/Sidebar.vue'
 import Dashboard from './components/Dashboard.vue'
 import Mantenimientos from './components/Mantenimientos.vue'
 import EquiposPendientes from './components/EquiposPendientes.vue'
+import Inventario from './components/Inventario.vue'
 
 const currentPage = ref('Información General')
 
@@ -20,8 +21,12 @@ function showPage(page) {
       <Sidebar :currentPage="currentPage" @changePage="showPage" />
       <main class="main-content">
         <Dashboard v-if="currentPage === 'Información General'" @changePage="showPage" />
+        <Inventario v-else-if="currentPage === 'Inventario de Equipos'" />
         <Mantenimientos v-else-if="currentPage === 'Historial de Mantenimientos'" />
-        <EquiposPendientes v-else-if="currentPage === 'Equipos Pendientes'" />
+
+        <EquiposPendientes v-else-if="currentPage === 'Realizar Mantenimiento'" viewMode="vencidos" />
+        <EquiposPendientes v-else-if="currentPage === 'Proximos de Revision'" viewMode="proximos" />
+        <EquiposPendientes v-else-if="currentPage === 'Equipos Pendientes'" viewMode="all" />
         <div v-else class="page-placeholder">
           <h2 class="page-title">{{ currentPage }}</h2>
           <p style="color: #616161;">Esta página está en desarrollo.</p>

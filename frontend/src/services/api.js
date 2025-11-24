@@ -45,6 +45,11 @@ export const equiposAPI = {
     delete(id) {
         return apiClient.delete(`/equipos/${id}/`)
     },
+
+    // Obtener estadísticas de mantenimiento
+    getMaintenanceStats() {
+        return apiClient.get('/equipos/maintenance-stats/')
+    },
 }
 
 // ============================================

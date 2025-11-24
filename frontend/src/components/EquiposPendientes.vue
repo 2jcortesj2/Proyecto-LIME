@@ -1,7 +1,14 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, defineProps } from 'vue'
 import { equiposAPI } from '../services/api'
 import { filterEquiposBySearch } from '../utils/searchUtils'
+
+const props = defineProps({
+  viewMode: {
+    type: String,
+    default: 'all' // 'all', 'vencidos', 'proximos'
+  }
+})
 
 // Reactive data
 const equipos = ref([])
@@ -35,9 +42,10 @@ async function fetchEquipos() {
     loading.value = true
     const response = await equiposAPI.getAll()
     
-    // Filter only equipment that requires maintenance
+    // Filter only equipment that requires maintenance AND is active
     equipos.value = response.data.filter(eq => 
-      eq.informacion_metrologica?.requiere_mantenimiento
+      eq.informacion_metrologica?.requiere_mantenimiento &&
+      eq.estado === 'Activo'
     )
   } catch (err) {
     console.error('Error fetching equipment:', err)
@@ -199,8 +207,14 @@ function completarMantenimiento(equipo) {
   <div class="equipos-pendientes-container">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
       <div>
-        <h2 class="page-title" style="margin: 0;">Equipos Pendientes de Mantenimiento</h2>
-        <div style="color: #616161; font-size: 14px; margin-top: 5px;">Inicio / Mantenimientos / Equipos Pendientes</div>
+        <h2 class="page-title" style="margin: 0;">
+          {{ viewMode === 'vencidos' ? 'Realizar Mantenimiento' : 
+             viewMode === 'proximos' ? 'Próximos de Revisión' : 
+             'Equipos Pendientes de Mantenimiento' }}
+        </h2>
+        <div style="color: #616161; font-size: 14px; margin-top: 5px;">
+          Inicio / Mantenimientos / {{ viewMode === 'vencidos' ? 'Realizar Mantenimiento' : viewMode === 'proximos' ? 'Próximos de Revisión' : 'Equipos Pendientes' }}
+        </div>
       </div>
     </div>
 
@@ -230,7 +244,7 @@ function completarMantenimiento(equipo) {
     <!-- Content -->
     <div v-else>
       <!-- Equipos Vencidos -->
-      <div class="content-card" v-if="equiposVencidos.length > 0">
+      <div class="content-card" v-if="(viewMode === 'all' || viewMode === 'vencidos') && equiposVencidos.length > 0">
         <div class="section-header vencido">
           <h3>⚠️ Realizar Mantenimiento ({{ equiposVencidos.length }})</h3>
           <p>Equipos que requieren atención inmediata</p>
@@ -299,7 +313,7 @@ function completarMantenimiento(equipo) {
       </div>
 
       <!-- Equipos Próximos a Vencer -->
-      <div class="content-card" v-if="totalProximosBeforeFilter > 0">
+      <div class="content-card" v-if="(viewMode === 'all' || viewMode === 'proximos') && totalProximosBeforeFilter > 0">
         <div class="section-header proximo">
           <h3>⏰ Próximos a Revisión ({{ equiposProximosVencer.length }})</h3>
           <p>Equipos que requieren mantenimiento en los próximos {{ monthsFilter }} meses</p>
@@ -391,7 +405,7 @@ function completarMantenimiento(equipo) {
       </div>
 
       <!-- Equipos Normales -->
-      <div class="content-card" v-if="equiposNormales.length > 0">
+      <div class="content-card" v-if="viewMode === 'all' && equiposNormales.length > 0">
         <div class="section-header normal">
           <h3>✅ Mantenimiento Programado ({{ equiposNormales.length }})</h3>
           <p>Equipos con mantenimiento programado a más de 3 meses</p>
