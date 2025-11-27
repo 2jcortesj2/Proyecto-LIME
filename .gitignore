@@ -1,0 +1,53 @@
+# Entorno virtual Python
+venv/
+env/
+ENV/
+.venv/
+venv.bak/
+
+# Python
+*.pyc
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+db.sqlite3
+db.sqlite3-journal
+*.log
+local_settings.py
+
+# Django
+*.pot
+media/
+staticfiles/
+*.sqlite3
+
+# Node.js / Vue.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+dist/
+.DS_Store
+*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*.swn
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# OS
+Thumbs.db
+.DS_Store
