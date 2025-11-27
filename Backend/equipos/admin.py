@@ -142,13 +142,12 @@ class EquipoAdmin(admin.ModelAdmin):
     list_per_page = 25
     list_max_show_all = 200
     
-    readonly_fields = ['proceso']
+    # No readonly fields - proceso no existe en el modelo
 
     fieldsets = (
         ('Información General', {
             'fields': (
-                ('proceso', 'estado'),
-                ('sede', 'servicio'),
+                ('estado', 'sede', 'servicio'),
                 ('nombre_equipo', 'codigo_interno'),
                 ('codigo_ips', 'codigo_ecri'),
                 ('responsable', 'ubicacion_fisica'),

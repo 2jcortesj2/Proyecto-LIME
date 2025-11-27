@@ -192,7 +192,7 @@ function abrirNuevoMantenimiento() {
                   
                   <div class="detail-grid-horizontal">
                     <div class="detail-item-horizontal">
-                      <span class="detail-label">Registrado Por:</span>
+                      <span class="detail-label">Responsable Registro:</span>
                       <span class="detail-value">{{ mant.usuario_registro }}</span>
                     </div>
                     <div class="detail-item-horizontal">

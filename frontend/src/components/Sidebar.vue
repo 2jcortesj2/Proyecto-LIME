@@ -115,10 +115,10 @@ onMounted(() => {
       </div>
       <div 
         class="menu-item" 
-        :class="{ active: currentPage === 'Usuarios' }"
-        @click="changePage('Usuarios')"
+        :class="{ active: currentPage === 'Responsables' }"
+        @click="changePage('Responsables')"
       >
-        👥 Usuarios
+        👥 Responsables
       </div>
       
       <div class="divider"></div>

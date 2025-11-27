@@ -11,15 +11,13 @@ class ResponsableAdmin(admin.ModelAdmin):
         'email',
         'telefono',
         'rol_colored',
-        'estado_colored',
     )
     
-    list_filter = ('rol', 'estado')
+    list_filter = ('rol',)
     
     search_fields = (
         'nombre_completo',
         'email',
-        'cedula',
         'telefono',
     )
     
@@ -30,18 +28,16 @@ class ResponsableAdmin(admin.ModelAdmin):
     fieldsets = (
         ('Información Personal', {
             'fields': (
-                ('nombre_completo', 'cedula'),
+                'nombre_completo',
                 ('email', 'telefono'),
             )
         }),
         ('Información Laboral', {
             'fields': (
-                ('rol', 'estado'),
+                'rol',
             )
         }),
     )
-    
-    actions = ['activar_responsables', 'inactivar_responsables']
     
     def rol_colored(self, obj):
         """Muestra el rol con color"""
@@ -54,30 +50,7 @@ class ResponsableAdmin(admin.ModelAdmin):
         return format_html(
             '<span style="color: {}; font-weight: bold;">{}</span>',
             color,
-            obj.rol
+            obj.rol if obj.rol else 'N/A'
         )
     rol_colored.short_description = 'Rol'
     rol_colored.admin_order_field = 'rol'
-    
-    def estado_colored(self, obj):
-        """Muestra el estado con color"""
-        color = 'green' if obj.estado == 'Activo' else 'red'
-        return format_html(
-            '<span style="color: {}; font-weight: bold;">{}</span>',
-            color,
-            obj.estado
-        )
-    estado_colored.short_description = 'Estado'
-    estado_colored.admin_order_field = 'estado'
-    
-    def activar_responsables(self, request, queryset):
-        """Activa los responsables seleccionados"""
-        count = queryset.update(estado='Activo')
-        self.message_user(request, f'{count} responsable(s) activado(s) correctamente.')
-    activar_responsables.short_description = "Activar responsables seleccionados"
-    
-    def inactivar_responsables(self, request, queryset):
-        """Inactiva los responsables seleccionados"""
-        count = queryset.update(estado='Inactivo')
-        self.message_user(request, f'{count} responsable(s) inactivado(s) correctamente.')
-    inactivar_responsables.short_description = "Inactivar responsables seleccionados"

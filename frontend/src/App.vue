@@ -8,6 +8,7 @@ import EquiposPendientes from './components/EquiposPendientes.vue'
 import Inventario from './components/Inventario.vue'
 import Traslados from './components/Traslados.vue'
 import SedesServicios from './components/SedesServicios.vue'
+import Responsables from './components/Responsables.vue'
 
 const currentPage = ref('Información General')
 
@@ -27,6 +28,7 @@ function showPage(page) {
         <Mantenimientos v-else-if="currentPage === 'Historial de Mantenimientos'" />
         <Traslados v-else-if="currentPage === 'Traslados'" />
         <SedesServicios v-else-if="currentPage === 'Sedes y Servicios'" />
+        <Responsables v-else-if="currentPage === 'Responsables'" />
 
         <EquiposPendientes v-else-if="currentPage === 'Realizar Revisión'" viewMode="vencidos" />
         <EquiposPendientes v-else-if="currentPage === 'Proximos de Revision'" viewMode="proximos" />
