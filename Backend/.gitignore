@@ -54,8 +54,8 @@ db.sqlite3-journal
 htmlcov/
 
 # Migrations (opcional - descomenta si no quieres versionar migraciones)
-# */migrations/*.py
-# !*/migrations/__init__.py
+*/migrations/*.py
+!*/migrations/__init__.py
 
 # Temporary files
 *.tmp
