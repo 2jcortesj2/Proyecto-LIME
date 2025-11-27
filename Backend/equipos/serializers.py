@@ -13,10 +13,16 @@ class HistorialTrasladoSerializer(serializers.ModelSerializer):
     sede_destino_nombre = serializers.CharField(source='sede_destino.nombre', read_only=True)
     servicio_origen_nombre = serializers.CharField(source='servicio_origen.nombre', read_only=True)
     servicio_destino_nombre = serializers.CharField(source='servicio_destino.nombre', read_only=True)
+    fecha_display = serializers.SerializerMethodField()
 
     class Meta:
         model = HistorialTraslado
         fields = '__all__'
+    
+    def get_fecha_display(self, obj):
+        if obj.fecha_traslado:
+            return obj.fecha_traslado.strftime('%d/%m/%Y')
+        return 'N/A'
 
 class HistorialMantenimientoSerializer(serializers.ModelSerializer):
     fecha_display = serializers.ReadOnlyField()

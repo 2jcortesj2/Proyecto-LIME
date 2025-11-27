@@ -147,7 +147,7 @@ INSERT INTO `equipos_condicionesfuncionamiento` (`equipo_id`, `voltaje`, `corrie
 """
 
 def clean_value(value):
-    if pd.isna(value) or value == '' or value == 'N/A' or value == 'NA':
+    if pd.isna(value) or value == '' or value == 'N/A' or value == 'NA' or str(value).lower() == 'nan':
         return 'NULL'
     if isinstance(value, (int, float)):
         return str(value)
@@ -169,13 +169,13 @@ def generate_maintenance_history():
     estados = ['Realizado con éxito', 'Requiere repuestos', 'Equipo operativo', 'Calibración OK', 'Pendiente de revisión']
     proveedores = ['Proveedor Externo', 'Técnico UdeA', 'Servicio Especializado', 'Mantenimiento Interno']
     
-    current_year = 2024
+    current_year = 2025
     current_month = 11
     
     for i in range(num_maint):
         tipo = random.choice(tipos)
-        # Generar fechas en el pasado (últimos 2 años)
-        anio = current_year - random.randint(0, 2)
+        # Generar fechas recientes (2024-2025)
+        anio = current_year - random.randint(0, 1)  # 2024 o 2025
         if anio == current_year:
             mes = random.randint(1, current_month)
         else:
@@ -245,7 +245,7 @@ def generate_transfer_history():
     
     usuarios = ['Admin LIME', 'Coordinador Técnico', 'Jefe de Servicio', 'Responsable de Equipos']
     
-    current_year = 2024
+    current_year = 2025
     current_month = 11
     
     # Generar traslados en orden cronológico
@@ -367,17 +367,17 @@ def main():
                 
                 vals = [
                     nombre,
-                    clean_value(row.get('Código de inventario interno del laboratorio y/o a', '')),
+                    clean_value(row.get('Código de inventario interno del laboratorio y/o asignado por UdeA', '')),
                     clean_value(row.get('Código IPS', '')),
                     clean_value(row.get('Código ECRI', '')),
                     clean_value(row.get('Ubicación física', '')),
                     clean_value(row.get('Marca', '')),
                     clean_value(row.get('Modelo', '')),
                     clean_value(serie),
-                    clean_value(row.get('Clasificación misional', 'Extensión')),
-                    clean_value(row.get('Clasificación IPS', '')),
-                    clean_value(row.get('Clasificación de riesgo', '')),
-                    clean_value(row.get('Registro INVIMA', '')),
+                    clean_value(row.get('Clasificación según eje misional (Docencia y/o Investigación y/o Extensión)', 'Extensión')),
+                    clean_value(row.get('Clasificación IPS (IND-BIO-Gases)', '')),
+                    clean_value(str(row.get('Clasificación por riesgo', '')).replace('Clase ', '').replace('clase ', '').strip()),
+                    clean_value(row.get('Registro Invima/Permiso comercialización/No Requiere', '')),
                     clean_value(row.get('Tiempo de vida útil', '')),
                     "'Activo'",
                     str(sede_id), str(servicio_id), str(resp_id)

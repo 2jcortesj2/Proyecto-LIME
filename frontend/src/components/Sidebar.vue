@@ -57,6 +57,14 @@ onMounted(() => {
         🔬 Inventario de Equipos
       </div>
       
+      <div 
+        class="menu-item" 
+        :class="{ active: currentPage === 'Traslados' }"
+        @click="changePage('Traslados')"
+      >
+        🔄 Traslados
+      </div>
+
       <!-- Accordion for Mantenimientos -->
       <div class="menu-accordion">
         <div 
@@ -72,10 +80,10 @@ onMounted(() => {
         <div class="accordion-content" v-show="mantenimientosExpanded">
           <div 
             class="menu-item sub-item" 
-            :class="{ active: currentPage === 'Realizar Mantenimiento' }"
-            @click="changePage('Realizar Mantenimiento')"
+            :class="{ active: currentPage === 'Realizar Revisión' }"
+            @click="changePage('Realizar Revisión')"
           >
-            ⚠️ Realizar Mantenimiento
+            ⚠️ Realizar Revisión
             <span v-if="stats.vencidos > 0" class="count-badge danger">{{ stats.vencidos }}</span>
           </div>
           <div 
@@ -94,14 +102,6 @@ onMounted(() => {
             📋 Historial Completo
           </div>
         </div>
-      </div>
-      
-      <div 
-        class="menu-item" 
-        :class="{ active: currentPage === 'Traslados' }"
-        @click="changePage('Traslados')"
-      >
-        🔄 Traslados
       </div>
       
       <div class="divider"></div>
@@ -147,6 +147,33 @@ onMounted(() => {
   background: white;
   padding: 20px 0;
   box-shadow: 2px 0 10px rgba(0, 0, 0, 0.05);
+  overflow-y: auto;
+  max-height: 100%;
+}
+
+/* Custom scrollbar styling */
+.sidebar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sidebar::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.03);
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+  background: rgba(0, 102, 51, 0.35);
+  border-radius: 10px;
+  transition: background 0.3s;
+}
+
+.sidebar::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 102, 51, 0.6);
+}
+
+/* Firefox scrollbar */
+.sidebar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 102, 51, 0.35) rgba(0, 0, 0, 0.03);
 }
 
 .menu-item {
@@ -158,6 +185,8 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  white-space: nowrap;
+  gap: 8px;
 }
 
 .menu-item:hover {
@@ -216,6 +245,9 @@ onMounted(() => {
   font-size: 11px;
   font-weight: bold;
   margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .count-badge.danger {

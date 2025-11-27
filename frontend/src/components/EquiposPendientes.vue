@@ -208,33 +208,82 @@ function completarMantenimiento(equipo) {
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
       <div>
         <h2 class="page-title" style="margin: 0;">
-          {{ viewMode === 'vencidos' ? 'Realizar Mantenimiento' : 
+          {{ viewMode === 'vencidos' ? 'Realizar Revisión' : 
              viewMode === 'proximos' ? 'Próximos de Revisión' : 
              'Equipos Pendientes de Mantenimiento' }}
         </h2>
         <div style="color: #616161; font-size: 14px; margin-top: 5px;">
-          Inicio / Mantenimientos / {{ viewMode === 'vencidos' ? 'Realizar Mantenimiento' : viewMode === 'proximos' ? 'Próximos de Revisión' : 'Equipos Pendientes' }}
+          Inicio / Mantenimientos / {{ viewMode === 'vencidos' ? 'Realizar Revisión' : viewMode === 'proximos' ? 'Próximos de Revisión' : 'Equipos Pendientes' }}
         </div>
       </div>
     </div>
-
     <!-- Loading Skeleton -->
     <div v-if="loading">
-      <div class="content-card skeleton">
-        <div class="skeleton-line" style="width: 40%; height: 24px; margin-bottom: 20px;"></div>
-        <div class="skeleton-line" style="width: 100%; height: 60px; margin-bottom: 10px;"></div>
-        <div class="skeleton-line" style="width: 100%; height: 50px; margin-bottom: 10px;"></div>
-        <div class="skeleton-line" style="width: 100%; height: 50px; margin-bottom: 10px;"></div>
-        <div class="skeleton-line" style="width: 100%; height: 50px;"></div>
+      <!-- Skeleton for Vencidos -->
+      <div class="content-card skeleton-table" v-if="viewMode === 'all' || viewMode === 'vencidos'">
+        <div class="skeleton-block" style="width: 40%; height: 28px; margin-bottom: 20px;"></div>
+        <div class="skeleton-block" style="width: 100%; height: 50px; margin-bottom: 20px;"></div>
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 10%;">Código</th>
+              <th style="width: 20%;">Equipo</th>
+              <th style="width: 15%;">Registro INVIMA</th>
+              <th style="width: 10%;">Riesgo</th>
+              <th style="width: 15%;">Sede / Servicio</th>
+              <th style="width: 10%;">Último Mant.</th>
+              <th style="width: 10%;">Próximo Mant.</th>
+              <th style="width: 10%;">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="i in 3" :key="'vencido-'+i">
+              <td><div class="skeleton-text"></div></td>
+              <td><div class="skeleton-text"></div></td>
+              <td><div class="skeleton-text skeleton-badge"></div></td>
+              <td><div class="skeleton-text skeleton-badge"></div></td>
+              <td><div class="skeleton-text"></div></td>
+              <td><div class="skeleton-text"></div></td>
+              <td><div class="skeleton-text"></div></td>
+              <td><div class="skeleton-text skeleton-buttons"></div></td>
+            </tr>
+          </tbody>
+        </table>
       </div>
       
-      <div class="content-card skeleton" style="margin-top: 20px;">
-        <div class="skeleton-line" style="width: 40%; height: 24px; margin-bottom: 20px;"></div>
-        <div class="skeleton-line" style="width: 100%; height: 60px; margin-bottom: 10px;"></div>
-        <div class="skeleton-line" style="width: 100%; height: 50px; margin-bottom: 10px;"></div>
-        <div class="skeleton-line" style="width: 100%; height: 50px;"></div>
+      <!-- Skeleton for Proximos -->
+      <div class="content-card skeleton-table" :style="{ marginTop: (viewMode === 'all') ? '20px' : '0' }" v-if="viewMode === 'all' || viewMode === 'proximos'">
+        <div class="skeleton-block" style="width: 40%; height: 28px; margin-bottom: 20px;"></div>
+        <div class="skeleton-block" style="width: 100%; height: 50px; margin-bottom: 20px;"></div>
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 10%;">Código</th>
+              <th style="width: 20%;">Equipo</th>
+              <th style="width: 15%;">Registro INVIMA</th>
+              <th style="width: 10%;">Riesgo</th>
+              <th style="width: 15%;">Sede / Servicio</th>
+              <th style="width: 10%;">Último Mant.</th>
+              <th style="width: 10%;">Próximo Mant.</th>
+              <th style="width: 10%;">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="i in 3" :key="'proximo-'+i">
+              <td><div class="skeleton-text"></div></td>
+              <td><div class="skeleton-text"></div></td>
+              <td><div class="skeleton-text skeleton-badge"></div></td>
+              <td><div class="skeleton-text skeleton-badge"></div></td>
+              <td><div class="skeleton-text"></div></td>
+              <td><div class="skeleton-text"></div></td>
+              <td><div class="skeleton-text"></div></td>
+              <td><div class="skeleton-text skeleton-buttons"></div></td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </div>
+
 
     <!-- Error State -->
     <div v-else-if="error" class="alert alert-danger">
@@ -246,7 +295,7 @@ function completarMantenimiento(equipo) {
       <!-- Equipos Vencidos -->
       <div class="content-card" v-if="(viewMode === 'all' || viewMode === 'vencidos') && equiposVencidos.length > 0">
         <div class="section-header vencido">
-          <h3>⚠️ Realizar Mantenimiento ({{ equiposVencidos.length }})</h3>
+          <h3>⚠️ Realizar Revisión ({{ equiposVencidos.length }})</h3>
           <p>Equipos que requieren atención inmediata</p>
         </div>
         <table>
@@ -874,6 +923,68 @@ tbody tr:hover {
   100% {
     background-position: -200% 0;
   }
+}
+
+/* Skeleton Table Styles */
+.skeleton-table table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: auto;
+}
+
+.skeleton-table thead {
+  background: linear-gradient(135deg, #006633 0%, #2d5016 100%);
+  color: white;
+}
+
+.skeleton-table th {
+  padding: 15px;
+  text-align: center;
+  font-size: 13px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.skeleton-table td {
+  padding: 15px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.skeleton-text {
+  height: 16px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: loading 1.5s infinite;
+  border-radius: 4px;
+  width: 80%;
+  margin: 0 auto;
+}
+
+.skeleton-badge {
+  width: 60%;
+  height: 24px;
+  border-radius: 20px;
+}
+
+.skeleton-small {
+  width: 40%;
+}
+
+.skeleton-buttons {
+  width: 70%;
+  height: 32px;
+}
+
+.skeleton-block {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: loading 1.5s infinite;
+  border-radius: 4px;
+}
+
+@keyframes loading {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }
 </style>
 
