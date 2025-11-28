@@ -107,9 +107,7 @@ const validateEditForm = () => {
   if (!editForm.value.nombre_completo?.trim()) {
     errors.nombre_completo = 'El nombre es requerido'
   }
-  if (!editForm.value.rol?.trim()) {
-    errors.rol = 'El rol es requerido'
-  }
+  // ROL YA NO ES OBLIGATORIO EN EDITAR
   if (!editForm.value.email?.trim()) {
     errors.email = 'El email es requerido'
   } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editForm.value.email)) {
@@ -330,11 +328,11 @@ onMounted(() => {
       <table>
         <thead>
           <tr>
-            <th style="width: 30%;">Nombre</th>
-            <th style="width: 20%;">Rol</th>
-            <th style="width: 25%;">Email</th>
-            <th style="width: 15%;">Teléfono</th>
-            <th style="width: 10%; text-align: center;">Acciones</th>
+            <th style="width: 28%;">Nombre</th>
+            <th style="width: 22%;">Rol</th>
+            <th style="width: 26%;">Email</th>
+            <th style="width: 14%;">Teléfono</th>
+            <th style="width: 110px; text-align: center;">Acciones</th>
           </tr>
         </thead>
         <tbody>
@@ -356,11 +354,11 @@ onMounted(() => {
     <table v-else id="responsablesTable">
       <thead>
         <tr>
-          <th style="width: 30%;">Nombre</th>
-          <th style="width: 20%;">Rol</th>
-          <th style="width: 25%;">Email</th>
-          <th style="width: 15%;">Teléfono</th>
-          <th style="width: 10%; text-align: center;">Acciones</th>
+          <th style="width: 28%;">Nombre</th>
+          <th style="width: 22%;">Rol</th>
+          <th style="width: 26%;">Email</th>
+          <th style="width: 14%;">Teléfono</th>
+          <th style="width: 110px; text-align: center;">Acciones</th>
         </tr>
       </thead>
       <tbody>
@@ -380,16 +378,10 @@ onMounted(() => {
           <td @click.stop>
             <div style="display: flex; gap: 6px; justify-content: center;">
               <button class="action-btn edit-btn" @click="openEditModal(responsable)" title="Editar">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                </svg>
+                ✏️
               </button>
               <button class="action-btn delete-btn" @click="openDeleteModal(responsable)" title="Eliminar">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <polyline points="3 6 5 6 21 6"></polyline>
-                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                </svg>
+                🗑️
               </button>
             </div>
           </td>
@@ -523,7 +515,7 @@ onMounted(() => {
             </div>
 
             <div class="form-group">
-              <label class="form-label required">Rol</label>
+              <label class="form-label">Rol</label>
               <input 
                 type="text" 
                 v-model="editForm.rol" 
@@ -758,9 +750,9 @@ tbody tr:hover {
   background: rgba(0, 102, 51, 0.08); 
 }
 
-/* Action Buttons - Matching your design */
+/* Action Buttons - Con emojis */
 .action-btn {
-  padding: 8px;
+  padding: 6px 8px;
   border: none;
   border-radius: 6px;
   cursor: pointer;
@@ -768,8 +760,10 @@ tbody tr:hover {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  min-width: 34px;
+  height: 34px;
+  font-size: 15px;
+  line-height: 1;
 }
 
 .edit-btn {
@@ -793,11 +787,6 @@ tbody tr:hover {
   background: #cc0000;
   transform: translateY(-1px);
   box-shadow: 0 2px 6px rgba(255, 68, 68, 0.4);
-}
-
-.action-btn svg {
-  width: 16px;
-  height: 16px;
 }
 
 /* Skeleton Styles */
