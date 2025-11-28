@@ -88,9 +88,7 @@ const validateCreateForm = () => {
   if (!createForm.value.nombre_completo?.trim()) {
     errors.nombre_completo = 'El nombre es requerido'
   }
-  if (!createForm.value.rol?.trim()) {
-    errors.rol = 'El rol es requerido'
-  }
+  // Rol es opcional
   if (!createForm.value.email?.trim()) {
     errors.email = 'El email es requerido'
   } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(createForm.value.email)) {
@@ -107,7 +105,7 @@ const validateEditForm = () => {
   if (!editForm.value.nombre_completo?.trim()) {
     errors.nombre_completo = 'El nombre es requerido'
   }
-  // ROL YA NO ES OBLIGATORIO EN EDITAR
+  // Rol es opcional
   if (!editForm.value.email?.trim()) {
     errors.email = 'El email es requerido'
   } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editForm.value.email)) {
@@ -332,7 +330,7 @@ onMounted(() => {
             <th style="width: 22%;">Rol</th>
             <th style="width: 26%;">Email</th>
             <th style="width: 14%;">Teléfono</th>
-            <th style="width: 110px; text-align: center;">Acciones</th>
+            <th style="width: 10%; text-align: center;">Acciones</th>
           </tr>
         </thead>
         <tbody>
@@ -358,7 +356,7 @@ onMounted(() => {
           <th style="width: 22%;">Rol</th>
           <th style="width: 26%;">Email</th>
           <th style="width: 14%;">Teléfono</th>
-          <th style="width: 110px; text-align: center;">Acciones</th>
+          <th style="width: 10%; text-align: center;">Acciones</th>
         </tr>
       </thead>
       <tbody>
@@ -444,7 +442,7 @@ onMounted(() => {
             </div>
 
             <div class="form-group">
-              <label class="form-label required">Rol</label>
+              <label class="form-label">Rol</label>
               <input 
                 type="text" 
                 v-model="createForm.rol" 

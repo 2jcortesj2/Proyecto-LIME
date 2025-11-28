@@ -27,7 +27,7 @@ const selectedEquipoForEdit = ref(null)
 // Tabs for detail view
 const tabs = {
   info: 'Información General',
-  document os: 'Documentos',
+  documentos: 'Documentos',
   metrologia: 'Metrología',
   traslados: 'Historial Traslados',
   mantenimientos: 'Mantenimientos'
