@@ -331,10 +331,10 @@ onMounted(() => {
         <thead>
           <tr>
             <th style="width: 30%;">Nombre</th>
-            <th style="width: 22%;">Rol</th>
-            <th style="width: 28%;">Email</th>
+            <th style="width: 20%;">Rol</th>
+            <th style="width: 25%;">Email</th>
             <th style="width: 15%;">Teléfono</th>
-            <th style="width: 90px; text-align: center;">Acciones</th>
+            <th style="width: 10%; text-align: center;">Acciones</th>
           </tr>
         </thead>
         <tbody>
@@ -380,10 +380,16 @@ onMounted(() => {
           <td @click.stop>
             <div style="display: flex; gap: 6px; justify-content: center;">
               <button class="action-btn edit-btn" @click="openEditModal(responsable)" title="Editar">
-                <span>✎</span>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                </svg>
               </button>
               <button class="action-btn delete-btn" @click="openDeleteModal(responsable)" title="Eliminar">
-                <span>🗑</span>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="3 6 5 6 21 6"></polyline>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                </svg>
               </button>
             </div>
           </td>
@@ -750,6 +756,48 @@ tbody tr {
 
 tbody tr:hover { 
   background: rgba(0, 102, 51, 0.08); 
+}
+
+/* Action Buttons - Matching your design */
+.action-btn {
+  padding: 8px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+}
+
+.edit-btn {
+  background: #f5f5f5;
+  color: #ff6b35;
+}
+
+.edit-btn:hover {
+  background: #ff6b35;
+  color: white;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(255, 107, 53, 0.3);
+}
+
+.delete-btn {
+  background: #ff4444;
+  color: white;
+}
+
+.delete-btn:hover {
+  background: #cc0000;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(255, 68, 68, 0.4);
+}
+
+.action-btn svg {
+  width: 16px;
+  height: 16px;
 }
 
 /* Skeleton Styles */
