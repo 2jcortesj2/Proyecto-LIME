@@ -107,9 +107,7 @@ const validateEditForm = () => {
   if (!editForm.value.nombre_completo?.trim()) {
     errors.nombre_completo = 'El nombre es requerido'
   }
-  if (!editForm.value.rol?.trim()) {
-    errors.rol = 'El rol es requerido'
-  }
+  // ROL YA NO ES OBLIGATORIO EN EDITAR
   if (!editForm.value.email?.trim()) {
     errors.email = 'El email es requerido'
   } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editForm.value.email)) {
@@ -330,11 +328,11 @@ onMounted(() => {
       <table>
         <thead>
           <tr>
-            <th style="width: 30%;">Nombre</th>
-            <th style="width: 20%;">Rol</th>
-            <th style="width: 25%;">Email</th>
-            <th style="width: 15%;">Teléfono</th>
-            <th style="width: 10%; text-align: center;">Acciones</th>
+            <th style="width: 28%;">Nombre</th>
+            <th style="width: 22%;">Rol</th>
+            <th style="width: 26%;">Email</th>
+            <th style="width: 14%;">Teléfono</th>
+            <th style="width: 110px; text-align: center;">Acciones</th>
           </tr>
         </thead>
         <tbody>
@@ -356,11 +354,11 @@ onMounted(() => {
     <table v-else id="responsablesTable">
       <thead>
         <tr>
-          <th style="width: 30%;">Nombre</th>
-          <th style="width: 20%;">Rol</th>
-          <th style="width: 25%;">Email</th>
-          <th style="width: 15%;">Teléfono</th>
-          <th style="width: 10%; text-align: center;">Acciones</th>
+          <th style="width: 28%;">Nombre</th>
+          <th style="width: 22%;">Rol</th>
+          <th style="width: 26%;">Email</th>
+          <th style="width: 14%;">Teléfono</th>
+          <th style="width: 110px; text-align: center;">Acciones</th>
         </tr>
       </thead>
       <tbody>
@@ -379,10 +377,10 @@ onMounted(() => {
           </td>
           <td @click.stop>
             <div style="display: flex; gap: 6px; justify-content: center;">
-              <button class="btn btn-secondary btn-sm" @click="openEditModal(responsable)" title="Editar">
+              <button class="action-btn edit-btn" @click="openEditModal(responsable)" title="Editar">
                 ✏️
               </button>
-              <button class="btn btn-danger btn-sm" @click="openDeleteModal(responsable)" title="Eliminar">
+              <button class="action-btn delete-btn" @click="openDeleteModal(responsable)" title="Eliminar">
                 🗑️
               </button>
             </div>
@@ -517,7 +515,7 @@ onMounted(() => {
             </div>
 
             <div class="form-group">
-              <label class="form-label required">Rol</label>
+              <label class="form-label">Rol</label>
               <input 
                 type="text" 
                 v-model="editForm.rol" 
@@ -750,6 +748,45 @@ tbody tr {
 
 tbody tr:hover { 
   background: rgba(0, 102, 51, 0.08); 
+}
+
+/* Action Buttons - Con emojis */
+.action-btn {
+  padding: 6px 8px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 34px;
+  height: 34px;
+  font-size: 15px;
+  line-height: 1;
+}
+
+.edit-btn {
+  background: #f5f5f5;
+  color: #ff6b35;
+}
+
+.edit-btn:hover {
+  background: #ff6b35;
+  color: white;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(255, 107, 53, 0.3);
+}
+
+.delete-btn {
+  background: #ff4444;
+  color: white;
+}
+
+.delete-btn:hover {
+  background: #cc0000;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(255, 68, 68, 0.4);
 }
 
 /* Skeleton Styles */
