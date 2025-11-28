@@ -331,10 +331,10 @@ onMounted(() => {
         <thead>
           <tr>
             <th style="width: 30%;">Nombre</th>
-            <th style="width: 20%;">Rol</th>
-            <th style="width: 25%;">Email</th>
+            <th style="width: 22%;">Rol</th>
+            <th style="width: 28%;">Email</th>
             <th style="width: 15%;">Teléfono</th>
-            <th style="width: 10%; text-align: center;">Acciones</th>
+            <th style="width: 90px; text-align: center;">Acciones</th>
           </tr>
         </thead>
         <tbody>
@@ -379,11 +379,11 @@ onMounted(() => {
           </td>
           <td @click.stop>
             <div style="display: flex; gap: 6px; justify-content: center;">
-              <button class="btn btn-secondary btn-sm" @click="openEditModal(responsable)" title="Editar">
-                ✏️
+              <button class="action-btn edit-btn" @click="openEditModal(responsable)" title="Editar">
+                <span>✎</span>
               </button>
-              <button class="btn btn-danger btn-sm" @click="openDeleteModal(responsable)" title="Eliminar">
-                🗑️
+              <button class="action-btn delete-btn" @click="openDeleteModal(responsable)" title="Eliminar">
+                <span>🗑</span>
               </button>
             </div>
           </td>
