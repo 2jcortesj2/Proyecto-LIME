@@ -20,6 +20,9 @@ wheels/
 .installed.cfg
 *.egg
 
+# Python cache extended (para CPython 3.x)
+*.cpython-*.pyc
+
 # Virtual Environment
 venv/
 ENV/
