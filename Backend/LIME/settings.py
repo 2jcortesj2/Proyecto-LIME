@@ -40,7 +40,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'corsheaders',
     'sedes',
-    'servicios',
+    'ubicaciones',
     'responsables.apps.ResponsablesConfig',
     'equipos',
     'historial_traslados',

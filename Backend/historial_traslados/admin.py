@@ -10,7 +10,7 @@ class HistorialTrasladoAdmin(admin.ModelAdmin):
         'equipo',
         'fecha_traslado',
         'traslado_info',
-        'usuario_registro',
+        'responsable_registro',
     ]
     
     list_filter = [
@@ -23,7 +23,7 @@ class HistorialTrasladoAdmin(admin.ModelAdmin):
         'equipo__codigo_interno',
         'equipo__nombre_equipo',
         'justificacion',
-        'usuario_registro',
+        'responsable_registro__nombre_completo',
     ]
     
     date_hierarchy = 'fecha_traslado'
@@ -37,13 +37,13 @@ class HistorialTrasladoAdmin(admin.ModelAdmin):
             'fields': (
                 'equipo',
                 'fecha_traslado',
-                'usuario_registro',
+                'responsable_registro',
             )
         }),
         ('Origen y Destino', {
             'fields': (
-                ('sede_origen', 'servicio_origen'),
-                ('sede_destino', 'servicio_destino'),
+                ('sede_origen', 'ubicacion_origen'),
+                ('sede_destino', 'ubicacion_destino'),
             )
         }),
         ('Detalles', {
@@ -65,9 +65,9 @@ class HistorialTrasladoAdmin(admin.ModelAdmin):
             '<div><strong>A:</strong> {} / {}</div>'
             '</div>',
             obj.sede_origen.nombre if obj.sede_origen else 'N/A',
-            obj.servicio_origen.nombre if obj.servicio_origen else 'N/A',
+            obj.ubicacion_origen.nombre if obj.ubicacion_origen else 'N/A',
             obj.sede_destino.nombre if obj.sede_destino else 'N/A',
-            obj.servicio_destino.nombre if obj.servicio_destino else 'N/A',
+            obj.ubicacion_destino.nombre if obj.ubicacion_destino else 'N/A',
         )
     traslado_info.short_description = 'Traslado'
     

@@ -16,7 +16,7 @@ async function fetchSedes() {
     // All accordions closed by default
   } catch (err) {
     console.error('Error fetching sedes:', err)
-    error.value = 'Error al cargar la información de sedes y servicios.'
+    error.value = 'Error al cargar la información de sedes y ubicaciones.'
   } finally {
     loading.value = false
   }
@@ -35,14 +35,14 @@ function toggleShowAllServices(sedeId) {
   showAllServices.value.set(sedeId, !current)
 }
 
-function getVisibleServicios(sede) {
+function getVisibleUbicaciones(sede) {
   const showAll = showAllServices.value.get(sede.id) || false
-  if (!sede.servicios) return []
-  return showAll ? sede.servicios : sede.servicios.slice(0, 5)
+  if (!sede.ubicaciones) return []
+  return showAll ? sede.ubicaciones : sede.ubicaciones.slice(0, 5)
 }
 
-function hasMoreServicios(sede) {
-  return sede.servicios && sede.servicios.length > 5
+function hasMoreUbicaciones(sede) {
+  return sede.ubicaciones && sede.ubicaciones.length > 5
 }
 
 onMounted(() => {

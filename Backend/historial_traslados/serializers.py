@@ -8,10 +8,13 @@ class HistorialTrasladoSerializer(serializers.ModelSerializer):
     equipo_modelo = serializers.CharField(source='equipo.modelo', read_only=True)
     
     sede_origen_nombre = serializers.CharField(source='sede_origen.nombre', read_only=True)
-    servicio_origen_nombre = serializers.CharField(source='servicio_origen.nombre', read_only=True)
+    ubicacion_origen_nombre = serializers.CharField(source='ubicacion_origen.nombre', read_only=True)
     
     sede_destino_nombre = serializers.CharField(source='sede_destino.nombre', read_only=True)
-    servicio_destino_nombre = serializers.CharField(source='servicio_destino.nombre', read_only=True)
+    ubicacion_destino_nombre = serializers.CharField(source='ubicacion_destino.nombre', read_only=True)
+    
+    responsable_nombre = serializers.CharField(source='responsable_registro.nombre_completo', read_only=True)
+    responsable_email = serializers.CharField(source='responsable_registro.email', read_only=True)
     
     class Meta:
         model = HistorialTraslado

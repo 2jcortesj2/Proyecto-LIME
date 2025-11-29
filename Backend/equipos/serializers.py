@@ -4,15 +4,16 @@ from .models import (
     InformacionMetrologica, CondicionesFuncionamiento
 )
 from sedes.serializers import SedeSerializer, SedeSimpleSerializer
-from servicios.serializers import ServicioSerializer, ServicioSimpleSerializer
+from ubicaciones.serializers import UbicacionSerializer
 from historial_traslados.models import HistorialTraslado
 from historial_mantenimientos.models import HistorialMantenimiento
 
 class HistorialTrasladoSerializer(serializers.ModelSerializer):
     sede_origen_nombre = serializers.CharField(source='sede_origen.nombre', read_only=True)
     sede_destino_nombre = serializers.CharField(source='sede_destino.nombre', read_only=True)
-    servicio_origen_nombre = serializers.CharField(source='servicio_origen.nombre', read_only=True)
-    servicio_destino_nombre = serializers.CharField(source='servicio_destino.nombre', read_only=True)
+    ubicacion_origen_nombre = serializers.CharField(source='ubicacion_origen.nombre', read_only=True)
+    ubicacion_destino_nombre = serializers.CharField(source='ubicacion_destino.nombre', read_only=True)
+    responsable_nombre = serializers.CharField(source='responsable_registro.nombre_completo', read_only=True)
     fecha_display = serializers.SerializerMethodField()
 
     class Meta:
@@ -56,7 +57,7 @@ class CondicionesFuncionamientoSerializer(serializers.ModelSerializer):
 
 class EquipoSerializer(serializers.ModelSerializer):
     sede_info = SedeSimpleSerializer(source='sede', read_only=True)
-    servicio_info = ServicioSimpleSerializer(source='servicio', read_only=True)
+    ubicacion_info = UbicacionSerializer(source='ubicacion', read_only=True)
     responsable_nombre = serializers.CharField(source='responsable.nombre_completo', read_only=True)
     responsable_email = serializers.CharField(source='responsable.email', read_only=True)
     
@@ -75,7 +76,7 @@ class EquipoSerializer(serializers.ModelSerializer):
 class EquipoListSerializer(serializers.ModelSerializer):
     """Serializer simplificado para listados"""
     sede = SedeSimpleSerializer(read_only=True)
-    servicio = ServicioSimpleSerializer(read_only=True)
+    ubicacion = UbicacionSerializer(read_only=True)
     responsable_nombre = serializers.CharField(source='responsable.nombre_completo', read_only=True)
     responsable_email = serializers.CharField(source='responsable.email', read_only=True)
     registro_adquisicion = RegistroAdquisicionSerializer(read_only=True)
@@ -84,9 +85,9 @@ class EquipoListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Equipo
         fields = [
-            'id', 'codigo_interno', 'nombre_equipo', 
+            'id', 'proceso', 'codigo_interno', 'nombre_equipo', 
             'marca', 'modelo', 'serie', 
             'registro_invima', 'clasificacion_riesgo',
-            'sede', 'servicio', 'responsable', 'responsable_nombre', 'responsable_email',
+            'sede', 'ubicacion', 'responsable', 'responsable_nombre', 'responsable_email',
             'estado', 'registro_adquisicion', 'informacion_metrologica'
         ]

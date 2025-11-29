@@ -109,16 +109,16 @@ export const sedesAPI = {
 }
 
 // ============================================
-// SERVICIOS
+// UBICACIONES
 // ============================================
 
-export const serviciosAPI = {
+export const ubicacionesAPI = {
     getAll() {
-        return apiClient.get('/servicios/')
+        return apiClient.get('/ubicaciones/')
     },
 
     getById(id) {
-        return apiClient.get(`/servicios/${id}/`)
+        return apiClient.get(`/ubicaciones/${id}/`)
     },
 }
 
