@@ -15,9 +15,15 @@ def traslado_list(request):
         equipo_id = request.GET.get('equipo_id', None)
         
         if equipo_id:
-            traslados = HistorialTraslado.objects.filter(equipo_id=equipo_id)
+            traslados = HistorialTraslado.objects.select_related(
+                'equipo', 'sede_origen', 'sede_destino',
+                'servicio_origen', 'servicio_destino'
+            ).filter(equipo_id=equipo_id)
         else:
-            traslados = HistorialTraslado.objects.all()
+            traslados = HistorialTraslado.objects.select_related(
+                'equipo', 'sede_origen', 'sede_destino',
+                'servicio_origen', 'servicio_destino'
+            ).all()
             
         # Filtros de fecha (mes y año)
         mes = request.GET.get('mes', None)
@@ -49,6 +55,9 @@ def traslado_list(request):
 @api_view(['GET'])
 def traslado_por_equipo(request, equipo_id):
     """Obtiene el historial de traslados de un equipo específico"""
-    traslados = HistorialTraslado.objects.filter(equipo_id=equipo_id)
+    traslados = HistorialTraslado.objects.select_related(
+        'equipo', 'sede_origen', 'sede_destino',
+        'servicio_origen', 'servicio_destino'
+    ).filter(equipo_id=equipo_id)
     serializer = HistorialTrasladoSerializer(traslados, many=True)
     return Response(serializer.data)

@@ -18,7 +18,10 @@ def mantenimiento_list(request):
         equipo_id = request.GET.get('equipo_id', None)
         tipo = request.GET.get('tipo', None)
         
-        mantenimientos = HistorialMantenimiento.objects.all()
+        mantenimientos = HistorialMantenimiento.objects.select_related(
+            'equipo__sede', 'equipo__servicio', 'equipo__responsable',
+            'equipo__registro_adquisicion', 'equipo__informacion_metrologica'
+        ).all()
         
         if equipo_id:
             mantenimientos = mantenimientos.filter(equipo_id=equipo_id)
@@ -83,7 +86,10 @@ def mantenimiento_detail(request, pk):
 @api_view(['GET'])
 def mantenimiento_por_equipo(request, equipo_id):
     """Obtiene el historial de mantenimientos de un equipo específico"""
-    mantenimientos = HistorialMantenimiento.objects.filter(equipo_id=equipo_id)
+    mantenimientos = HistorialMantenimiento.objects.select_related(
+        'equipo__sede', 'equipo__servicio', 'equipo__responsable',
+        'equipo__registro_adquisicion', 'equipo__informacion_metrologica'
+    ).filter(equipo_id=equipo_id)
     serializer = HistorialMantenimientoSerializer(mantenimientos, many=True)
     return Response(serializer.data)
 
@@ -94,7 +100,10 @@ def mantenimientos_recientes(request):
     hace_3_meses = hoy - relativedelta(months=3)
     
     # Filtrar por año y mes
-    mantenimientos = HistorialMantenimiento.objects.filter(
+    mantenimientos = HistorialMantenimiento.objects.select_related(
+        'equipo__sede', 'equipo__servicio', 'equipo__responsable',
+        'equipo__registro_adquisicion', 'equipo__informacion_metrologica'
+    ).filter(
         Q(anio_mantenimiento__gt=hace_3_meses.year) |
         Q(anio_mantenimiento=hace_3_meses.year, mes_mantenimiento__gte=hace_3_meses.month)
     ).order_by('-anio_mantenimiento', '-mes_mantenimiento')
