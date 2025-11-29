@@ -85,6 +85,11 @@ classDiagram
     class InformacionMetrologica {
         +int id
         +OneToOne equipo
+        +string magnitud
+        +string rango_equipo
+        +string rango_trabajo
+        +string error_maximo
+        +string resolucion
         +bool requiere_mantenimiento
         +string frecuencia_mantenimiento
         +date ultimo_mantenimiento
@@ -93,11 +98,10 @@ classDiagram
         +string frecuencia_calibracion
         +date ultima_calibracion
         +date proxima_calibracion
-        +string magnitud
-        +string rango_equipo
-        +string rango_trabajo
-        +string resolucion
-        +string error_maximo
+        +bool requiere_calificacion
+        +string frecuencia_calificacion
+        +date ultima_calificacion
+        +date proxima_calificacion
         +fecha_proximo_mantenimiento_calculada()
         +estado_mantenimiento()
     }
@@ -120,11 +124,13 @@ classDiagram
         +string tipo_mantenimiento
         +int mes_mantenimiento
         +int anio_mantenimiento
-        +string realizado_por
         +text descripcion
-        +text observaciones
+        +string realizado_por
         +decimal costo
-        +fecha_mantenimiento()
+        +string usuario_registro
+        +text observaciones
+        +datetime created_at
+        +fecha_display()
     }
     
     class HistorialTraslado {
@@ -170,7 +176,7 @@ flowchart TB
         Pendientes[EquiposPendientes.vue]
         Mantenimientos[Mantenimientos.vue]
         Traslados[Traslados.vue]
-        SedesUbic[SedesServicios.vue]
+        SedesUbic[SedesUbicaciones.vue]
         Responsables[Responsables.vue]
         Sidebar[Sidebar.vue]
         
@@ -277,9 +283,9 @@ sequenceDiagram
     
     Usuario->>Frontend: Clic en "Nuevo Equipo"
     Frontend->>Frontend: Abrir Modal de Creación
-    Frontend->>API: Cargar Sedes/Servicios/Responsables
-    API->>Backend: GET /api/sedes/, /api/servicios/, /api/responsables/
-    Backend->>DB: SELECT * FROM sedes, servicios, responsables
+    Frontend->>API: Cargar Sedes/Ubicaciones/Responsables
+    API->>Backend: GET /api/sedes/, /api/ubicaciones/, /api/responsables/
+    Backend->>DB: SELECT * FROM sedes, ubicaciones, responsables
     DB-->>Backend: Datos
     Backend-->>API: JSON Response
     API-->>Frontend: Datos para dropdowns
@@ -319,7 +325,7 @@ graph TB
         Pendientes[EquiposPendientes.vue]
         Mantenimientos[Mantenimientos.vue]
         Traslados[Traslados.vue]
-        SedesUbic[SedesServicios.vue]
+        SedesUbic[SedesUbicaciones.vue]
         Responsables[Responsables.vue]
     end
     
@@ -398,14 +404,15 @@ graph TB
 ### Estados del Sistema
 - **Equipos**: Activo, Inactivo, Baja, En Mantenimiento
 - **Mantenimiento**: Vencido, Próximo, Normal, No Requiere, No Programado
-- **Tipo Mantenimiento**: Preventivo, Correctivo, Calibración, Verificación
+- **Tipo Mantenimiento**: Preventivo, Correctivo, Calibración, Calificación, Verificación
 
 ### Flujos Principales
 1. **Dashboard → EquiposPendientes**: Ver equipos que requieren atención
 2. **Inventario → Modal Detalle**: Ver información completa
 3. **Inventario → Modal Edición**: Modificar equipo
-4. **SedesServicios → Acordeón**: Gestionar estructura organizacional (ahora con Ubicaciones)
+4. **SedesUbicaciones → Acordeón**: Gestionar estructura organizacional (ahora con Ubicaciones)
 5. **Traslados**: Registrar movimientos de equipos entre ubicaciones
+6. **Responsables**: Gestionar personal responsable de equipos
 
 ### Cambios Recientes en el Esquema
 - **Eliminado**: Tabla `Servicio` y campo `ubicacion_fisica` en Equipo

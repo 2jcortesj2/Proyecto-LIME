@@ -20,7 +20,8 @@ frontend/
 │   │   ├── EquiposPendientes.vue
 │   │   ├── Mantenimientos.vue
 │   │   ├── Traslados.vue
-│   │   ├── SedesServicios.vue
+│   │   ├── SedesUbicaciones.vue
+│   │   ├── Responsables.vue
 │   │   └── Sidebar.vue
 │   ├── services/        # Servicios API
 │   │   └── api.js
@@ -123,22 +124,34 @@ frontend/
 - 📄 Paginación
 - 🚚 Vista de origen y destino
 
-### 6. **`SedesServicios.vue`**
-**Función**: Gestión de sedes y servicios institucionales.
+### 6. **`SedesUbicaciones.vue`**
+**Función**: Gestión de sedes y ubicaciones institucionales.
 
 **Características**:
 - 🏢 Acordeón de sedes
-- 📊 Contadores de servicios y equipos por sede
-- ➕ Botones para agregar sede/servicio
+- 📊 Contadores de ubicaciones y equipos por sede
+- ➕ Botones para agregar sede/ubicación
 - ✏️ Edición inline
 - 🎨 Diseño moderno con estadísticas en header
 
 **Mejoras visuales**:
 - Stats visuales en el header del acordeón
-- Botón "Ver más" para servicios (+5)
+- Botón "Ver más" para ubicaciones (+5)
 - Chevron animado para expandir/colapsar
 
-### 7. **`Sidebar.vue`**
+### 7. **`Responsables.vue`**
+**Función**: Gestión de personal responsable de equipos.
+
+**Características**:
+- 👥 Tabla de responsables
+- 🔍 Búsqueda por nombre, email, rol
+- 📄 Paginación
+- ➕ Modal de creación
+- ✏️ Modal de edición
+- 🗑️ Modal de eliminación
+- 📊 Estadísticas de equipos asignados y traslados registrados
+
+### 8. **`Sidebar.vue`**
 **Función**: Navegación lateral principal.
 
 **Secciones**:
@@ -148,7 +161,8 @@ frontend/
 - 📅 Próximos a Revisión
 - 🛠️ Historial de Mantenimientos
 - 🚚 Traslados
-- 🏢 Sedes y Servicios
+- 🏢 Sedes y Ubicaciones
+- 👥 Responsables
 
 **Características**:
 - Íconos descriptivos
@@ -189,9 +203,9 @@ sedesAPI.getAll()                      // GET /api/sedes/
 sedesAPI.create(sedeData)              // POST /api/sedes/
 ```
 
-#### `serviciosAPI`
+#### `ubicacionesAPI`
 ```javascript
-serviciosAPI.getAll()                  // GET /api/servicios/
+ubicacionesAPI.getAll()                # GET /api/ubicaciones/
 ```
 
 #### `responsablesAPI`
@@ -216,7 +230,7 @@ function normalizeText(text) {
 
 /**
  * Filtra equipos por búsqueda en múltiples campos
- * Búsqueda en: código, nombre, marca, modelo, serie, sede, servicio
+ * Búsqueda en: código, nombre, marca, modelo, serie, sede, ubicación
  */
 function filterEquiposBySearch(equipos, searchQuery) {
   if (!searchQuery) return equipos
@@ -231,7 +245,7 @@ function filterEquiposBySearch(equipos, searchQuery) {
       eq.modelo,
       eq.serie,
       eq.sede?.nombre,
-      eq.servicio?.nombre
+      eq.ubicacion?.nombre
     ].some(field => 
       field && normalizeText(String(field)).includes(normalized)
     )
@@ -243,7 +257,7 @@ function filterEquiposBySearch(equipos, searchQuery) {
 
 ### 1. Búsqueda Avanzada
 - **Insensible a acentos y mayúsculas**
-- **Multi-campo**: Busca en código, nombre, marca, modelo, sede, servicio
+- **Multi-campo**: Busca en código, nombre, marca, modelo, serie, sede, ubicación
 - **Tiempo real**: Filtra mientras escribe
 - **Centralizada**: Lógica reutilizable en `searchUtils.js`
 
