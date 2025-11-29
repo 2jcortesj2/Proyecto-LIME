@@ -1,6 +1,7 @@
 """
 Django management command to populate the database from Excel file.
 This command reads the F-147 inventory Excel file and creates all necessary records.
+Updated to use ALL data from Excel columns and refine parsing logic.
 """
 import os
 import re
@@ -59,19 +60,33 @@ class Command(BaseCommand):
             return
 
         try:
-            # Try header=6 first (typical for F-147 format), fallback to header=0
-            try:
-                df = pd.read_excel(file_path, header=6)
-                # Check if we got valid data
-                if df.empty or len(df.columns) < 5:
-                    df = pd.read_excel(file_path, header=0)
-            except:
-                df = pd.read_excel(file_path, header=0)
+            # Read Excel with header=None to find the correct header row
+            df_raw = pd.read_excel(file_path, header=None)
             
-            # Drop completely empty rows
+            header_row_idx = None
+            for idx, row in df_raw.iterrows():
+                row_str = ' '.join([str(val) for val in row.values if pd.notna(val)])
+                if 'Sede' in row_str and 'Proceso' in row_str:
+                    header_row_idx = idx
+                    break
+            
+            if header_row_idx is None:
+                # Fallback to row 7 (index 7) if not found
+                header_row_idx = 7
+                self.stdout.write(self.style.WARNING(f'Could not auto-detect header row. Trying row {header_row_idx}...'))
+            else:
+                self.stdout.write(self.style.SUCCESS(f'Found header at row {header_row_idx}'))
+
+            # Reload with correct header
+            df = pd.read_excel(file_path, header=header_row_idx)
             df = df.dropna(how='all')
             
+            # Clean column names (strip whitespace and newlines)
+            df.columns = [str(c).strip().replace('\n', ' ') for c in df.columns]
+            
             self.stdout.write(self.style.SUCCESS(f'Loaded {len(df)} rows from Excel'))
+            self.stdout.write(f'Found columns: {list(df.columns)[:5]}...')
+            
         except Exception as e:
             self.stdout.write(self.style.ERROR(f'Error reading Excel file: {e}'))
             self.stdout.write(self.style.WARNING('If the file is open in Excel, please close it and try again.'))
@@ -103,13 +118,13 @@ class Command(BaseCommand):
         responsables_map = {}
         equipos_list = []
 
-        self.stdout.write('Creating Sedes and Ubicaciones...')
+        self.stdout.write('Creating Sedes and Ubicaciones from Excel...')
         sedes_map, ubicaciones_map = self.create_sedes_ubicaciones(df)
         
-        self.stdout.write('Creating Responsables...')
+        self.stdout.write('Creating Responsables from Excel...')
         responsables_map = self.create_responsables(df)
         
-        self.stdout.write('Creating Equipos...')
+        self.stdout.write('Creating Equipos from Excel...')
         equipos_list = self.create_equipos(df, sedes_map, ubicaciones_map, responsables_map)
         
         self.stdout.write('Generating random Traslados...')
@@ -129,148 +144,181 @@ class Command(BaseCommand):
         sedes_map = {}
         ubicaciones_map = {}
         
-        # Expected columns: 'SEDE', 'UBICACIÓN' or similar
-        sede_col = self.find_column(df, ['SEDE', 'Sede', 'sede'])
-        ubicacion_col = self.find_column(df, ['UBICACIÓN', 'UBICACION', 'Ubicación', 'Ubicacion'])
+        # Find columns
+        sede_col = self.find_column(df, ['Sede', 'SEDE'])
+        ubicacion_col = self.find_column(df, ['Ubicación física', 'Ubicacion fisica', 'UBICACIÓN FÍSICA'])
         
-        if not sede_col or not ubicacion_col:
-            self.stdout.write(self.style.WARNING('Could not find SEDE/UBICACION columns, using defaults'))
-            # Create a default sede
-            sede = Sede.objects.create(
-                nombre='Sede Principal',
-                ciudad='Bogotá',
-                direccion='Calle 1',
-                telefono='1234567',
-                estado=True
-            )
-            sedes_map['default'] = sede
+        if sede_col and ubicacion_col:
+            unique_combinations = df[[sede_col, ubicacion_col]].drop_duplicates()
             
-            ubicacion = Ubicacion.objects.create(
-                nombre='Ubicación Principal',
-                sede=sede,
-                estado=True
-            )
-            ubicaciones_map['default'] = ubicacion
-            return sedes_map, ubicaciones_map
-        
-        # Extract unique combinations
-        unique_combinations = df[[sede_col, ubicacion_col]].drop_duplicates()
-        
-        with transaction.atomic():
-            for _, row in unique_combinations.iterrows():
-                sede_nombre = str(row[sede_col]).strip() if pd.notna(row[sede_col]) else 'Sin Sede'
-                ubicacion_nombre = str(row[ubicacion_col]).strip() if pd.notna(row[ubicacion_col]) else 'Sin Ubicación'
-                
-                # Create or get Sede
-                if sede_nombre not in sedes_map:
-                    sede = Sede.objects.create(
-                        nombre=sede_nombre,
-                        ciudad='Bogotá',  # Default, can be enhanced
-                        direccion=f'Dirección {sede_nombre}',
-                        telefono='1234567',
-                        estado=True
-                    )
-                    sedes_map[sede_nombre] = sede
-                    self.stdout.write(f'  Created Sede: {sede_nombre}')
-                
-                # Create Ubicacion
-                ubicacion_key = f'{sede_nombre}|{ubicacion_nombre}'
-                if ubicacion_key not in ubicaciones_map:
-                    ubicacion = Ubicacion.objects.create(
-                        nombre=ubicacion_nombre,
-                        sede=sedes_map[sede_nombre],
-                        estado=True
-                    )
-                    ubicaciones_map[ubicacion_key] = ubicacion
-                    self.stdout.write(f'  Created Ubicación: {ubicacion_nombre} @ {sede_nombre}')
-        
+            with transaction.atomic():
+                for _, row in unique_combinations.iterrows():
+                    if pd.notna(row[sede_col]) and pd.notna(row[ubicacion_col]):
+                        sede_nombre = str(row[sede_col]).strip()
+                        ubicacion_nombre = str(row[ubicacion_col]).strip()
+                        
+                        if not sede_nombre or not ubicacion_nombre:
+                            continue
+
+                        # Create or get Sede
+                        if sede_nombre not in sedes_map:
+                            sede, created = Sede.objects.get_or_create(
+                                nombre=sede_nombre,
+                                defaults={
+                                    'ciudad': 'Medellín',
+                                    'direccion': f'Universidad de Antioquia - {sede_nombre}',
+                                    'telefono': '6042195000',
+                                    'estado': True
+                                }
+                            )
+                            sedes_map[sede_nombre] = sede
+                            if created:
+                                self.stdout.write(f'  ✓ Sede: {sede_nombre}')
+                        
+                        # Create Ubicacion
+                        ubicacion_key = f'{sede_nombre}|{ubicacion_nombre}'
+                        if ubicacion_key not in ubicaciones_map:
+                            ubicacion, created = Ubicacion.objects.get_or_create(
+                                nombre=ubicacion_nombre,
+                                sede=sedes_map[sede_nombre],
+                                defaults={'estado': True}
+                            )
+                            ubicaciones_map[ubicacion_key] = ubicacion
+        else:
+            self.stdout.write(self.style.WARNING('Could not find Sede/Ubicacion columns'))
+
         return sedes_map, ubicaciones_map
 
     def create_responsables(self, df):
         """Create Responsable objects from Excel data"""
         responsables_map = {}
         
-        # Expected column: 'RESPONSABLE' or similar
-        resp_col = self.find_column(df, ['RESPONSABLE', 'Responsable', 'responsable', 'USUARIO', 'Usuario'])
+        # Find column
+        resp_col = self.find_column(df, ['Responsable del proceso en el que interviene el equipo y/o inventario UdeA', 'Responsable'])
         
-        if not resp_col:
-            # Create a default responsable
-            resp = Responsable.objects.create(
-                nombre_completo='Sin Asignar',
-                email='sin.asignar@example.com',
-                telefono='0000000',
-                rol='Sin Rol'
-            )
-            responsables_map['default'] = resp
-            return responsables_map
-        
-        # Extract unique responsables
-        unique_responsables = df[resp_col].dropna().unique()
-        
-        with transaction.atomic():
-            for nombre in unique_responsables:
-                nombre = str(nombre).strip()
-                if nombre and nombre not in responsables_map:
-                    # Generate a simple email
-                    email = f"{nombre.lower().replace(' ', '.')}@example.com"
+        if resp_col:
+            unique_responsables = df[resp_col].dropna().unique()
+            
+            with transaction.atomic():
+                for raw_nombre in unique_responsables:
+                    raw_nombre = str(raw_nombre).strip()
+                    if not raw_nombre:
+                        continue
+                        
+                    # Split by '/' and take the first name to avoid nesting
+                    # "Gloria Zapata / Andres Zuluaga" -> "Gloria Zapata"
+                    primary_name = raw_nombre.split('/')[0].strip()
                     
-                    # Check if email already exists
-                    counter = 1
-                    original_email = email
-                    while Responsable.objects.filter(email=email).exists():
-                        email = f"{original_email.split('@')[0]}{counter}@example.com"
-                        counter += 1
-                    
-                    resp = Responsable.objects.create(
-                        nombre_completo=nombre,
-                        email=email,
-                        telefono='0000000',
-                        rol='Responsable de Equipo'
-                    )
-                    responsables_map[nombre] = resp
-                    self.stdout.write(f'  Created Responsable: {nombre}')
+                    if primary_name and primary_name not in responsables_map:
+                        # Clean email generation
+                        # Remove dots, extra spaces, special chars
+                        clean_name = re.sub(r'[^\w\s]', '', primary_name).lower()
+                        email_name = clean_name.replace(' ', '.')
+                        email = f"{email_name}@udea.edu.co"
+                        
+                        # Handle duplicate emails
+                        counter = 1
+                        original_email = email
+                        while Responsable.objects.filter(email=email).exists():
+                            email = f"{original_email.split('@')[0]}{counter}@udea.edu.co"
+                            counter += 1
+                        
+                        resp, created = Responsable.objects.get_or_create(
+                            nombre_completo=primary_name,
+                            defaults={
+                                'email': email,
+                                'telefono': '6042195000',
+                                'rol': 'Responsable de Equipo'
+                            }
+                        )
+                        # Map the RAW name to this responsible, so lookups work
+                        responsables_map[raw_nombre] = resp
+                        if created:
+                            self.stdout.write(f'  ✓ Responsable: {primary_name} (from "{raw_nombre}")')
         
         return responsables_map
 
     def create_equipos(self, df, sedes_map, ubicaciones_map, responsables_map):
-        """Create Equipo objects and related models"""
+        """Create Equipo objects from Excel data"""
         equipos_list = []
+        inactive_count = 0
         
-        # Find relevant columns
-        nombre_col = self.find_column(df, ['NOMBRE', 'Nombre', 'EQUIPO', 'Equipo', 'DESCRIPCIÓN', 'Descripcion'])
-        sede_col = self.find_column(df, ['SEDE', 'Sede'])
-        ubicacion_col = self.find_column(df, ['UBICACIÓN', 'UBICACION', 'Ubicación'])
-        resp_col = self.find_column(df, ['RESPONSABLE', 'Responsable'])
-        marca_col = self.find_column(df, ['MARCA', 'Marca'])
-        modelo_col = self.find_column(df, ['MODELO', 'Modelo'])
-        serie_col = self.find_column(df, ['SERIE', 'Serie', 'No. SERIE', 'NÚMERO DE SERIE'])
-        
-        # Metrology columns
-        freq_calib_col = self.find_column(df, ['FRECUENCIA DE CALIBRACIÓN', 'Frecuencia de calibración', 'FRECUENCIA CALIBRACION'])
+        # Find columns
+        cols = {
+            'nombre': self.find_column(df, ['Nombre del equipo', 'Nombre']),
+            'proceso': self.find_column(df, ['Proceso']),
+            'sede': self.find_column(df, ['Sede']),
+            'ubicacion': self.find_column(df, ['Ubicación física', 'Ubicacion']),
+            'responsable': self.find_column(df, ['Responsable del proceso en el que interviene el equipo y/o inventario UdeA', 'Responsable']),
+            'codigo': self.find_column(df, ['Código de inventario interno del laboratorio y/o asignado por UdeA', 'Codigo']),
+            'codigo_ips': self.find_column(df, ['Código IPS']),
+            'codigo_ecri': self.find_column(df, ['Código ECRI']),
+            'marca': self.find_column(df, ['Marca']),
+            'modelo': self.find_column(df, ['Modelo']),
+            'serie': self.find_column(df, ['Serie']),
+            'clasificacion': self.find_column(df, ['Clasificación IPS (IND-BIO-Gases)', 'Clasificacion']),
+            'clasificacion_misional': self.find_column(df, ['Clasificación según eje misional (Docencia y/o Investigación y/o Extensión)']),
+            'clasificacion_riesgo': self.find_column(df, ['Clasificación por riesgo']),
+            'registro_invima': self.find_column(df, ['Registro Invima/Permiso comercialización/No Requiere']),
+            'vida_util': self.find_column(df, ['Tiempo de vida útil', 'Vida util']),
+            'fecha_adq': self.find_column(df, ['Antigüedad del eq. (F. adquisición)', 'Fecha adquisicion']),
+            'propietario': self.find_column(df, ['Propietario del equipo', 'Propietario']),
+            'forma_adq': self.find_column(df, ['Forma de adquisición', 'Forma adquisicion']),
+            'valor': self.find_column(df, ['Valor de compra', 'Valor']),
+            'hoja_vida': self.find_column(df, ['Hoja de vida']),
+            'manual_op': self.find_column(df, ['Manual operación (Esp)', 'Manual operacion']),
+            'manual_serv': self.find_column(df, ['Manual servicio mto (Esp)', 'Manual servicio']),
+            'req_mant': self.find_column(df, ['Mantenimiento Si/No']),
+            'req_cal': self.find_column(df, ['Calibración Si/No', 'Calibracion']),
+            'freq_mant': self.find_column(df, ['Frecuencia anual mantenimiento']),
+            'freq_cal': self.find_column(df, ['Frecuencia anual calibración', 'Frecuencia calibracion']),
+            'voltaje': self.find_column(df, ['Voltaje']),
+            'temp': self.find_column(df, ['Temperatura']),
+            'otros': self.find_column(df, ['Otros'])
+        }
         
         with transaction.atomic():
             for idx, row in df.iterrows():
                 try:
-                    # Get nombre_equipo
-                    nombre_equipo = str(row[nombre_col]).strip() if nombre_col and pd.notna(row[nombre_col]) else f'Equipo {idx+1}'
+                    # Get basic data
+                    nombre_equipo = self.get_value(row, cols['nombre'], f'Equipo {idx+1}')
+                    proceso = self.get_value(row, cols['proceso'], 'Otro')
                     
-                    # Determine proceso - LIME si el nombre empieza con LIME
-                    proceso = 'LIME' if nombre_equipo.upper().startswith('LIME') else 'Otro'
+                    # Get relations
+                    sede_nombre = self.get_value(row, cols['sede'])
+                    ubicacion_nombre = self.get_value(row, cols['ubicacion'])
+                    ubicacion_key = f'{sede_nombre}|{ubicacion_nombre}'
                     
-                    # Get sede/ubicacion
-                    sede_nombre = str(row[sede_col]).strip() if sede_col and pd.notna(row[sede_col]) else 'default'
-                    ubicacion_nombre = str(row[ubicacion_col]).strip() if ubicacion_col and pd.notna(row[ubicacion_col]) else 'default'
-                    ubicacion_key = f'{sede_nombre}|{ubicacion_nombre}' if sede_col and ubicacion_col else 'default'
+                    sede = sedes_map.get(sede_nombre)
+                    ubicacion = ubicaciones_map.get(ubicacion_key)
                     
-                    sede = sedes_map.get(sede_nombre, list(sedes_map.values())[0] if sedes_map else None)
-                    ubicacion = ubicaciones_map.get(ubicacion_key, list(ubicaciones_map.values())[0] if ubicaciones_map else None)
+                    resp_nombre = self.get_value(row, cols['responsable'])
+                    responsable = responsables_map.get(resp_nombre)
                     
-                    # Get responsable
-                    resp_nombre = str(row[resp_col]).strip() if resp_col and pd.notna(row[resp_col]) else 'default'
-                    responsable = responsables_map.get(resp_nombre, list(responsables_map.values())[0] if responsables_map else None)
+                    # Fallbacks if relations not found
+                    if not sede and sedes_map:
+                        sede = list(sedes_map.values())[0]
+                    if not ubicacion and ubicaciones_map:
+                        ubicacion = list(ubicaciones_map.values())[0]
+                    if not responsable and responsables_map:
+                        responsable = list(responsables_map.values())[0]
                     
-                    # Random estado - 1% Inactivo, 99% Activo
-                    estado = 'Inactivo' if random.random() < 0.01 else 'Activo'
+                    # Estado logic
+                    if idx == 0:
+                        estado = 'Inactivo'
+                        inactive_count += 1
+                    else:
+                        estado = 'Inactivo' if random.random() < 0.01 else 'Activo'
+                        if estado == 'Inactivo':
+                            inactive_count += 1
+                    
+                    # Clasificacion Misional: Replace ' y ' and ' e ' with ', '
+                    clasif_misional = self.get_value(row, cols['clasificacion_misional'])
+                    if clasif_misional:
+                        clasif_misional = clasif_misional.replace(' y ', ', ').replace(' e ', ', ')
+
+                    # Clasificacion Riesgo
+                    clasif_riesgo = self.get_value(row, cols['clasificacion_riesgo'])
                     
                     # Create Equipo
                     equipo = Equipo.objects.create(
@@ -279,80 +327,84 @@ class Command(BaseCommand):
                         ubicacion=ubicacion,
                         responsable=responsable,
                         nombre_equipo=nombre_equipo,
-                        codigo_interno=f'LIME-{idx+1:04d}',
-                        marca=str(row[marca_col]).strip() if marca_col and pd.notna(row[marca_col]) else None,
-                        modelo=str(row[modelo_col]).strip() if modelo_col and pd.notna(row[modelo_col]) else None,
-                        serie=str(row[serie_col]).strip() if serie_col and pd.notna(row[serie_col]) else None,
-                        clasificacion_ips=random.choice(['IND', 'BIO', 'GASES']),
+                        codigo_interno=self.get_value(row, cols['codigo']),
+                        codigo_ips=self.get_value(row, cols['codigo_ips']),
+                        codigo_ecri=self.get_value(row, cols['codigo_ecri']),
+                        marca=self.get_value(row, cols['marca']),
+                        modelo=self.get_value(row, cols['modelo']),
+                        serie=self.get_value(row, cols['serie']),
+                        clasificacion_ips=self.get_value(row, cols['clasificacion'], 'IND'),
+                        clasificacion_misional=clasif_misional,
+                        clasificacion_riesgo=clasif_riesgo,
+                        registro_invima=self.get_value(row, cols['registro_invima']),
                         estado=estado,
-                        tiempo_vida_util=random.randint(5, 15)
+                        tiempo_vida_util=self.parse_int(self.get_value(row, cols['vida_util']), random.randint(5, 15))
                     )
                     
-                    # Create RegistroAdquisicion
-                    fecha_adq = self.random_date(datetime(2015, 1, 1), datetime(2024, 1, 1))
+                    # RegistroAdquisicion
+                    fecha_adq_str = self.get_value(row, cols['fecha_adq'])
+                    fecha_adq = self.parse_date(fecha_adq_str, self.random_date(datetime(2015, 1, 1), datetime(2024, 1, 1)))
+                    
                     RegistroAdquisicion.objects.create(
                         equipo=equipo,
                         fecha_adquisicion=fecha_adq,
-                        propietario='Universidad',
-                        forma_adquisicion=random.choice(['Compra', 'Donación', 'Convenio']),
-                        valor_compra=Decimal(random.randint(1000000, 50000000))
+                        propietario=self.get_value(row, cols['propietario'], 'Universidad de Antioquia'),
+                        forma_adquisicion=self.get_value(row, cols['forma_adq'], 'Compra'),
+                        valor_compra=self.parse_decimal(self.get_value(row, cols['valor']), Decimal(random.randint(1000000, 50000000)))
                     )
                     
-                    # Create DocumentacionEquipo
+                    # DocumentacionEquipo
                     DocumentacionEquipo.objects.create(
                         equipo=equipo,
-                        hoja_vida=random.choice([True, False]),
-                        manual_operacion=random.choice([True, False]),
-                        manual_servicio=random.choice([True, False])
+                        hoja_vida=self.parse_bool(self.get_value(row, cols['hoja_vida'])),
+                        manual_operacion=self.parse_bool(self.get_value(row, cols['manual_op'])),
+                        manual_servicio=self.parse_bool(self.get_value(row, cols['manual_serv']))
                     )
                     
-                    # Create InformacionMetrologica - parse calibration frequency
-                    freq_calib = str(row[freq_calib_col]).strip() if freq_calib_col and pd.notna(row[freq_calib_col]) else ''
+                    # InformacionMetrologica
+                    req_mant = self.parse_bool(self.get_value(row, cols['req_mant']))
+                    freq_mant = self.get_value(row, cols['freq_mant'])
                     
-                    requiere_mantenimiento = random.choice([True, False])
-                    requiere_calibracion = False
-                    requiere_calificacion = False
-                    frecuencia_calibracion = None
-                    frecuencia_calificacion = None
+                    # Calibration/Qualification Logic
+                    raw_freq_cal = self.get_value(row, cols['freq_cal'])
                     
-                    # Parse frequency - format could be "1(calificación)" or "12" for months
-                    if freq_calib:
-                        if 'calificación' in freq_calib.lower() or 'calificacion' in freq_calib.lower():
-                            requiere_calificacion = True
+                    req_cal = False
+                    freq_cal = None
+                    req_qual = False
+                    freq_qual = None
+                    
+                    if raw_freq_cal:
+                        raw_freq_cal_str = str(raw_freq_cal)
+                        # Check for Qualification
+                        if 'calificación' in raw_freq_cal_str.lower() or 'calificacion' in raw_freq_cal_str.lower():
+                            req_qual = True
                             # Extract number
-                            match = re.search(r'(\d+)', freq_calib)
+                            match = re.search(r'(\d+)', raw_freq_cal_str)
                             if match:
-                                months = int(match.group(1))
-                                frecuencia_calificacion = f'{months} meses'
+                                freq_qual = f"{match.group(1)} meses" # Assuming months if just number
+                            else:
+                                freq_qual = raw_freq_cal_str # Keep original if no number found
                         else:
-                            requiere_calibracion = True
-                            match = re.search(r'(\d+)', freq_calib)
-                            if match:
-                                months = int(match.group(1))
-                                frecuencia_calibracion = f'{months} meses'
-                    else:
-                        # Even if Excel doesn't have frequency, randomly assign some equipment
-                        # to require calibration or qualification for testing
-                        rand_val = random.random()
-                        if rand_val < 0.15:  # 15% chance
-                            requiere_calibracion = True
-                            frecuencia_calibracion = random.choice(['6 meses', '12 meses', '24 meses'])
-                        elif rand_val < 0.25:  # Additional 10% chance
-                            requiere_calificacion = True
-                            frecuencia_calificacion = random.choice(['12 meses', '24 meses'])
+                            # It's calibration
+                            req_cal = True
+                            freq_cal = raw_freq_cal_str
+                    
+                    # Random calibration if missing (only if not qualification)
+                    if not req_cal and not req_qual and random.random() < 0.15:
+                        req_cal = True
+                        freq_cal = random.choice(['6 meses', '12 meses'])
                     
                     info_metro = InformacionMetrologica.objects.create(
                         equipo=equipo,
-                        requiere_mantenimiento=requiere_mantenimiento,
-                        frecuencia_mantenimiento='6 meses' if requiere_mantenimiento else None,
-                        requiere_calibracion=requiere_calibracion,
-                        frecuencia_calibracion=frecuencia_calibracion,
-                        requiere_calificacion=requiere_calificacion,
-                        frecuencia_calificacion=frecuencia_calificacion
+                        requiere_mantenimiento=req_mant,
+                        frecuencia_mantenimiento=freq_mant if req_mant else None,
+                        requiere_calibracion=req_cal,
+                        frecuencia_calibracion=freq_cal if req_cal else None,
+                        requiere_calificacion=req_qual,
+                        frecuencia_calificacion=freq_qual if req_qual else None
                     )
                     
-                    # Create CondicionesFuncionamiento
-                    # Add decommissioning reason for inactive equipment
+                    # CondicionesFuncionamiento
                     otros_text = None
                     if estado == 'Inactivo':
                         razones = [
@@ -366,9 +418,9 @@ class Command(BaseCommand):
                     
                     CondicionesFuncionamiento.objects.create(
                         equipo=equipo,
-                        voltaje='110V' if random.random() > 0.3 else '220V',
-                        temperatura='15-25°C',
-                        otros=otros_text
+                        voltaje=self.get_value(row, cols['voltaje']),
+                        temperatura=self.get_value(row, cols['temp']),
+                        otros=otros_text or self.get_value(row, cols['otros'])
                     )
                     
                     equipos_list.append({
@@ -381,54 +433,37 @@ class Command(BaseCommand):
                         self.stdout.write(f'  Created {idx + 1} equipos...')
                 
                 except Exception as e:
-                    self.stdout.write(self.style.WARNING(f'  Error creating equipo at row {idx}: {e}'))
+                    self.stdout.write(self.style.WARNING(f'  Error at row {idx}: {e}'))
                     continue
         
+        self.stdout.write(f'  ✓ Created {len(equipos_list)} equipos ({inactive_count} inactive)')
         return equipos_list
 
     def generate_traslados(self, equipos_list, sedes_map, ubicaciones_map, responsables_map):
         """Generate random transfer history"""
-        
         if not equipos_list:
             return
         
         ubicaciones_list = list(ubicaciones_map.values())
-        
-        # Need at least 2 ubicaciones to generate traslados
         if len(ubicaciones_list) < 2:
-            self.stdout.write(self.style.WARNING('  Skipping traslados: need at least 2 ubicaciones'))
             return
         
-        # Generate traslados for ~30% of equipos
         num_traslados = int(len(equipos_list) * 0.3)
         selected_equipos = random.sample(equipos_list, min(num_traslados, len(equipos_list)))
-        
         responsables_list = list(responsables_map.values())
-        
         traslados_created = 0
         
         with transaction.atomic():
             for equipo_data in selected_equipos:
                 equipo = equipo_data['equipo']
-                
-                # Generate 1-3 traslados per selected equipo
-                num_traslados_equipo = random.randint(1, 3)
-                
-                # Start from acquisition date
                 current_date = equipo_data['fecha_adq']
                 current_ubicacion = equipo.ubicacion
                 
-                for _ in range(num_traslados_equipo):
-                    # Random date between current and Nov 2025
-                    fecha_traslado = self.random_date(
-                        current_date,
-                        datetime(2025, 11, 30)
-                    )
-                    
-                    # Pick a different ubicacion
+                for _ in range(random.randint(1, 3)):
+                    fecha_traslado = self.random_date(current_date, datetime(2025, 11, 30))
                     available_ubicaciones = [u for u in ubicaciones_list if u != current_ubicacion]
                     if not available_ubicaciones:
-                        break  # No other ubicaciones available
+                        break
                     new_ubicacion = random.choice(available_ubicaciones)
                     
                     HistorialTraslado.objects.create(
@@ -446,7 +481,6 @@ class Command(BaseCommand):
                     current_date = fecha_traslado
                     traslados_created += 1
                 
-                # Update equipo's current ubicacion
                 equipo.ubicacion = current_ubicacion
                 equipo.sede = current_ubicacion.sede
                 equipo.save()
@@ -455,53 +489,46 @@ class Command(BaseCommand):
 
     def generate_maintenance_history(self, equipos_list):
         """Generate maintenance/calibration/qualification history"""
-        
         mantenimientos_created = 0
-        
         with transaction.atomic():
             for equipo_data in equipos_list:
                 equipo = equipo_data['equipo']
                 info_metro = equipo_data['info_metro']
                 fecha_adq = equipo_data['fecha_adq']
                 
-                # Generate maintenance history
                 if info_metro.requiere_mantenimiento and info_metro.frecuencia_mantenimiento:
-                    months_interval = self.parse_frequency(info_metro.frecuencia_mantenimiento)
                     mantenimientos_created += self.generate_history_entries(
-                        equipo, fecha_adq, months_interval, 'Preventivo', 'Mantenimiento'
+                        equipo, fecha_adq, self.parse_frequency(info_metro.frecuencia_mantenimiento), 'preventivo', 'Mantenimiento'
                     )
                 
-                # Generate calibration history
                 if info_metro.requiere_calibracion and info_metro.frecuencia_calibracion:
-                    months_interval = self.parse_frequency(info_metro.frecuencia_calibracion)
                     mantenimientos_created += self.generate_history_entries(
-                        equipo, fecha_adq, months_interval, 'Calibración', 'Calibración'
+                        equipo, fecha_adq, self.parse_frequency(info_metro.frecuencia_calibracion), 'calibracion', 'Calibración'
                     )
                 
-                # Generate qualification history
                 if info_metro.requiere_calificacion and info_metro.frecuencia_calificacion:
-                    months_interval = self.parse_frequency(info_metro.frecuencia_calificacion)
                     mantenimientos_created += self.generate_history_entries(
-                        equipo, fecha_adq, months_interval, 'Verificación', 'Calificación'
+                        equipo, fecha_adq, self.parse_frequency(info_metro.frecuencia_calificacion), 'calificacion', 'Calificación'
                     )
         
         self.stdout.write(f'  Generated {mantenimientos_created} maintenance records')
 
     def generate_history_entries(self, equipo, fecha_inicio, months_interval, tipo_mant, descripcion_base):
-        """Generate periodic history entries up to Nov 2025"""
-        
+        """Generate periodic history entries"""
         if months_interval <= 0:
             return 0
         
         count = 0
-        current_date = fecha_inicio
+        # Limit history to recent times to avoid too many records
+        limit_date = datetime(2024, 1, 1)
+        if isinstance(fecha_inicio, date) and not isinstance(fecha_inicio, datetime):
+            fecha_inicio = datetime.combine(fecha_inicio, datetime.min.time())
+            
+        current_date = max(fecha_inicio, limit_date)
         end_date = datetime(2025, 11, 30)
         
         while current_date <= end_date:
-            # Add some random variation (±15 days)
-            variation_days = random.randint(-15, 15)
-            fecha_mant = current_date + timedelta(days=variation_days)
-            
+            fecha_mant = current_date + timedelta(days=random.randint(-15, 15))
             if fecha_mant > end_date:
                 break
             
@@ -512,40 +539,88 @@ class Command(BaseCommand):
                 anio_mantenimiento=fecha_mant.year,
                 realizado_por='Proveedor Externo' if random.random() > 0.3 else 'Personal Interno',
                 descripcion=f'{descripcion_base} programado',
-                costo=Decimal(random.randint(100000, 2000000))
+                costo=Decimal(random.randint(100000, 2000000)),
+                usuario_registro='Sistema'
             )
-            
             count += 1
-            
-            # Move to next interval
             current_date = current_date + timedelta(days=30 * months_interval)
-        
-        # Update last maintenance dates in InformacionMetrologica
-        if count > 0 and hasattr(equipo, 'informacion_metrologica'):
-            info = equipo.informacion_metrologica
-            last_date = fecha_mant.date() if isinstance(fecha_mant, datetime) else fecha_mant
             
-            if tipo_mant == 'Preventivo':
-                info.ultimo_mantenimiento = last_date
-            elif tipo_mant == 'Calibración':
-                info.ultima_calibracion = last_date
-            elif tipo_mant == 'Verificación':
-                info.ultima_calificacion = last_date
-            
-            info.save()
+            # Update last dates
+            if count > 0 and hasattr(equipo, 'informacion_metrologica'):
+                info = equipo.informacion_metrologica
+                last_date = fecha_mant.date() if isinstance(fecha_mant, datetime) else fecha_mant
+                if tipo_mant == 'preventivo':
+                    info.ultimo_mantenimiento = last_date
+                elif tipo_mant == 'calibracion':
+                    info.ultima_calibracion = last_date
+                elif tipo_mant == 'calificacion':
+                    info.ultima_calificacion = last_date
+                info.save()
         
         return count
 
+    # Helper methods
+    def get_value(self, row, column_name, default=None):
+        if not column_name:
+            return default
+        try:
+            if column_name in row.index and pd.notna(row[column_name]):
+                val = str(row[column_name]).strip()
+                return val if val and val not in ['nan', 'NaN', ''] else default
+        except:
+            pass
+        return default
+
+    def find_column(self, df, possible_names):
+        for col in df.columns:
+            col_str = str(col).strip()
+            if col_str in possible_names:
+                return col
+            if col_str.upper() in [n.upper() for n in possible_names]:
+                return col
+            for name in possible_names:
+                if name.upper() in col_str.upper():
+                    return col
+        return None
+
+    def parse_int(self, value, default=0):
+        try:
+            if value:
+                return int(float(str(value).replace(',', '').replace('.', '')))
+        except:
+            pass
+        return default
+
+    def parse_decimal(self, value, default=Decimal('0')):
+        try:
+            if value:
+                return Decimal(str(value).replace(',', '').replace('$', '').strip())
+        except:
+            pass
+        return default
+
+    def parse_bool(self, value):
+        if not value:
+            return False
+        val_str = str(value).strip().upper()
+        return val_str in ['SI', 'SÍ', 'YES', 'TRUE', '1', 'X']
+
+    def parse_date(self, value, default):
+        if not value:
+            return default
+        try:
+            if isinstance(value, (date, datetime)):
+                return value
+            return pd.to_datetime(value).to_pydatetime()
+        except:
+            return default
+
     def parse_frequency(self, freq_str):
-        """Parse frequency string and return interval in months"""
         if not freq_str:
             return 0
-        
         match = re.search(r'(\d+)', freq_str)
         if match:
             return int(match.group(1))
-        
-        # Default patterns
         if 'semestral' in freq_str.lower():
             return 6
         elif 'trimestral' in freq_str.lower():
@@ -554,36 +629,17 @@ class Command(BaseCommand):
             return 1
         elif 'anual' in freq_str.lower() or 'año' in freq_str.lower():
             return 12
-        
-        return 12  # Default to annual
+        return 12
 
     def random_date(self, start, end):
-        """Generate a random date between start and end"""
         if isinstance(start, datetime):
             start_date = start
         else:
             start_date = datetime.combine(start, datetime.min.time())
-        
         if isinstance(end, datetime):
             end_date = end
         else:
             end_date = datetime.combine(end, datetime.min.time())
-        
         delta = end_date - start_date
         random_days = random.randint(0, delta.days)
         return start_date + timedelta(days=random_days)
-
-    def find_column(self, df, possible_names):
-        """Find a column in the dataframe by possible names"""
-        for col in df.columns:
-            col_str = str(col).strip()
-            if col_str in possible_names:
-                return col
-            # Case-insensitive match
-            if col_str.upper() in [n.upper() for n in possible_names]:
-                return col
-            # Partial match for cases like "SEDE (UBICACIÓN)"
-            for name in possible_names:
-                if name.upper() in col_str.upper():
-                    return col
-        return None

@@ -19,7 +19,7 @@ def mantenimiento_list(request):
         tipo = request.GET.get('tipo', None)
         
         mantenimientos = HistorialMantenimiento.objects.select_related(
-            'equipo__sede', 'equipo__servicio', 'equipo__responsable',
+            'equipo__sede', 'equipo__responsable',
             'equipo__registro_adquisicion', 'equipo__informacion_metrologica'
         ).all()
         
@@ -87,7 +87,7 @@ def mantenimiento_detail(request, pk):
 def mantenimiento_por_equipo(request, equipo_id):
     """Obtiene el historial de mantenimientos de un equipo específico"""
     mantenimientos = HistorialMantenimiento.objects.select_related(
-        'equipo__sede', 'equipo__servicio', 'equipo__responsable',
+        'equipo__sede', 'equipo__responsable',
         'equipo__registro_adquisicion', 'equipo__informacion_metrologica'
     ).filter(equipo_id=equipo_id)
     serializer = HistorialMantenimientoSerializer(mantenimientos, many=True)
@@ -101,7 +101,7 @@ def mantenimientos_recientes(request):
     
     # Filtrar por año y mes
     mantenimientos = HistorialMantenimiento.objects.select_related(
-        'equipo__sede', 'equipo__servicio', 'equipo__responsable',
+        'equipo__sede', 'equipo__responsable',
         'equipo__registro_adquisicion', 'equipo__informacion_metrologica'
     ).filter(
         Q(anio_mantenimiento__gt=hace_3_meses.year) |
