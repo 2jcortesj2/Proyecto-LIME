@@ -117,23 +117,16 @@ def maintenance_stats(request):
     proximos = 0
     normales = 0
     
-    print(f"\n=== MAINTENANCE STATS DEBUG ===")
-    print(f"Total equipos activos: {equipos.count()}")
-    
     for equipo in equipos:
         if hasattr(equipo, 'informacion_metrologica') and equipo.informacion_metrologica:
             if equipo.informacion_metrologica.requiere_mantenimiento:
                 estado = equipo.informacion_metrologica.estado_mantenimiento
-                print(f"Equipo {equipo.codigo_interno}: estado={estado}, fecha_proxima={equipo.informacion_metrologica.fecha_proximo_mantenimiento_calculada}")
                 if estado == 'Vencido':
                     vencidos += 1
                 elif estado == 'Próximo':
                     proximos += 1
                 elif estado == 'Normal':
                     normales += 1
-    
-    print(f"Vencidos: {vencidos}, Próximos: {proximos}, Normales: {normales}")
-    print(f"=== END DEBUG ===\n")
     
     return Response({
         'vencidos': vencidos,
