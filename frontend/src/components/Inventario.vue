@@ -195,15 +195,15 @@ const selectedEquipoForAction = ref(null)
 
 // Catalogs for dropdowns
 const sedes = ref([])
-const ubicaciones = ref([])
+const servicios = ref([])
 const responsables = ref([])
-const ubicacionesFiltradas = computed(() => {
-  if (!createForm.value.sede) return ubicaciones.value
-  return ubicaciones.value.filter(s => s.sede === createForm.value.sede)
+const serviciosFiltrados = computed(() => {
+  if (!createForm.value.sede) return servicios.value
+  return servicios.value.filter(s => s.sede === createForm.value.sede)
 })
-const ubicacionesFiltradasEdit = computed(() => {
-  if (!editForm.value.sede) return ubicaciones.value
-  return ubicaciones.value.filter(s => s.sede === editForm.value.sede)
+const serviciosFiltradosEdit = computed(() => {
+  if (!editForm.value.sede) return servicios.value
+  return servicios.value.filter(s => s.sede === editForm.value.sede)
 })
 
 // Form state and loading
@@ -359,11 +359,11 @@ const fetchSedes = async () => {
   }
 }
 
-const fetchUbicaciones = async () => {
+const fetchServicios = async () => {
   try {
-    const response = await fetch('http://127.0.0.1:8000/api/ubicaciones/')
-    if (!response.ok) throw new Error('Error al cargar ubicaciones')
-    ubicaciones.value = await response.json()
+    const response = await fetch('http://127.0.0.1:8000/api/servicios/')
+    if (!response.ok) throw new Error('Error al cargar servicios')
+    servicios.value = await response.json()
   } catch (err) {
     console.error('Error fetching ubicaciones:', err)
   }
@@ -1666,7 +1666,7 @@ onMounted(() => {
                 <label class="form-label required">Proceso</label>
                 <select class="form-select" v-model="editForm.servicio">
                   <option value="" disabled>Seleccione un servicio</option>
-                  <option v-for="ubicacion in ubicacionesFiltradasEdit" :key="ubicacion.id" :value="ubicacion.id">{{ ubicacion.nombre }}</option>
+                  <option v-for="servicio in serviciosFiltradosEdit" :key="servicio.id" :value="servicio.id">{{ servicio.nombre }}</option>
                 </select>
                 <span v-if="formErrors.servicio" class="error-message">{{ formErrors.servicio }}</span>
               </div>

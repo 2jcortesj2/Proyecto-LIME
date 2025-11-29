@@ -1,0 +1,57 @@
+Header Row: 6
+Total Rows: 55
+Total Columns: 51
+
+ALL COLUMNS:
+================================================================================
+ 0. INFORMACIÓN GENERAL EQUIPOS                        | Sample: Sede
+ 1. Unnamed: 1                                         | Sample: Proceso
+ 2. Unnamed: 2                                         | Sample: Nombre del equipo
+ 3. Unnamed: 3                                         | Sample: Código de inventario interno del laboratorio y/o asignado por UdeA
+ 4. Unnamed: 4                                         | Sample: Código IPS
+ 5. Unnamed: 5                                         | Sample: Código ECRI
+ 6. Unnamed: 6                                         | Sample: Responsable del proceso en el que interviene el equipo y/o inventario UdeA
+ 7. Unnamed: 7                                         | Sample: Ubicación física
+ 8. Unnamed: 8                                         | Sample: Marca
+ 9. Unnamed: 9                                         | Sample: Modelo
+10. Unnamed: 10                                        | Sample: Serie
+11. Unnamed: 11                                        | Sample: Clasificación según eje misional (Docencia y/o Investigación y/o Extensión)
+12. Unnamed: 12                                        | Sample: Clasificación IPS (IND-BIO-Gases)
+13. Unnamed: 13                                        | Sample: Clasificación por riesgo
+14. Unnamed: 14                                        | Sample: Registro Invima/Permiso comercialización/No Requiere
+15. Unnamed: 15                                        | Sample: Tiempo de vida útil
+16. REGISTRO HISTÓRICO                                 | Sample: Antigüedad del eq. (F. adquisición)
+17. Unnamed: 17                                        | Sample: Propietario del equipo
+18. Unnamed: 18                                        | Sample: Fecha de fabricación
+19. Unnamed: 19                                        | Sample: NIT
+20. Unnamed: 20                                        | Sample: Proveedor equipo
+21. Unnamed: 21                                        | Sample: Está en garantía (Si/No)
+22. Unnamed: 22                                        | Sample: Fecha finalización garantía
+23. Unnamed: 23                                        | Sample: Forma de adquisición
+24. Unnamed: 24                                        | Sample: Tipo de documento
+25. Unnamed: 25                                        | Sample: Número de documento
+26. Unnamed: 26                                        | Sample: Valor de compra
+27. INVENTARIO DE DOCUMENTOS                           | Sample: Hoja de vida
+28. Unnamed: 28                                        | Sample: Registro de importación
+29. Unnamed: 29                                        | Sample: Manual operación (Esp)
+30. Unnamed: 30                                        | Sample: Manual servicio mto (Esp)
+31. Unnamed: 31                                        | Sample: Guía Rápida de uso
+32. Unnamed: 32                                        | Sample: Instructivo de manejo rápido de equipos
+33. Unnamed: 33                                        | Sample: Protocolo Mto Prev.
+34. Unnamed: 34                                        | Sample: Frecuencia metrológica fabricante
+35. INFORMACIÓN METROLÓGICA ADMINISTRATIVA             | Sample: Mantenimiento Si/No
+36. Unnamed: 36                                        | Sample: Frecuencia anual mantenimiento
+37. Unnamed: 37                                        | Sample: Calibración Si/No
+38. Unnamed: 38                                        | Sample: Frecuencia anual calibración
+39. INFORMACIÓN METROLÓGICA TÉCNICA                    | Sample: Magnitud
+40. Unnamed: 40                                        | Sample: Rango del equipo
+41. Unnamed: 41                                        | Sample: Resolución
+42. Unnamed: 42                                        | Sample: Rango de trabajo
+43. Unnamed: 43                                        | Sample: Error máximo permitido
+44. CONDICIONES DE FUNCIONAMIENTO                      | Sample: Voltaje
+45. Unnamed: 45                                        | Sample: Corriente
+46. Unnamed: 46                                        | Sample: Humedad relativa
+47. Unnamed: 47                                        | Sample: Temperatura
+48. Unnamed: 48                                        | Sample: Dimensiones
+49. Unnamed: 49                                        | Sample: Peso
+50. Unnamed: 50                                        | Sample: Otros
