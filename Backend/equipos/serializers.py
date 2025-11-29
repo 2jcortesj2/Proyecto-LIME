@@ -3,8 +3,8 @@ from .models import (
     Equipo, RegistroAdquisicion, DocumentacionEquipo,
     InformacionMetrologica, CondicionesFuncionamiento
 )
-from sedes.serializers import SedeSerializer
-from servicios.serializers import ServicioSerializer
+from sedes.serializers import SedeSerializer, SedeSimpleSerializer
+from servicios.serializers import ServicioSerializer, ServicioSimpleSerializer
 from historial_traslados.models import HistorialTraslado
 from historial_mantenimientos.models import HistorialMantenimiento
 
@@ -55,8 +55,8 @@ class CondicionesFuncionamientoSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class EquipoSerializer(serializers.ModelSerializer):
-    sede_info = SedeSerializer(source='sede', read_only=True)
-    servicio_info = ServicioSerializer(source='servicio', read_only=True)
+    sede_info = SedeSimpleSerializer(source='sede', read_only=True)
+    servicio_info = ServicioSimpleSerializer(source='servicio', read_only=True)
     responsable_nombre = serializers.CharField(source='responsable.nombre_completo', read_only=True)
     responsable_email = serializers.CharField(source='responsable.email', read_only=True)
     
@@ -74,8 +74,8 @@ class EquipoSerializer(serializers.ModelSerializer):
 
 class EquipoListSerializer(serializers.ModelSerializer):
     """Serializer simplificado para listados"""
-    sede = SedeSerializer(read_only=True)
-    servicio = ServicioSerializer(read_only=True)
+    sede = SedeSimpleSerializer(read_only=True)
+    servicio = ServicioSimpleSerializer(read_only=True)
     responsable_nombre = serializers.CharField(source='responsable.nombre_completo', read_only=True)
     responsable_email = serializers.CharField(source='responsable.email', read_only=True)
     registro_adquisicion = RegistroAdquisicionSerializer(read_only=True)

@@ -23,6 +23,11 @@ const tabs = {
   mantenimientos: 'Mantenimientos'
 }
 
+const trasladosCache = ref(new Map())
+const mantenimientosCache = ref(new Map())
+const trasladosLoading = ref(false)
+const mantenimientosLoading = ref(false)
+
 const fetchEquipos = async () => {
   loading.value = true
   try {
@@ -37,19 +42,60 @@ const fetchEquipos = async () => {
   }
 }
 
+// Ya no necesitamos fetchEquipoDetalle para la vista básica porque el listado trae todo
+// Solo lo usaríamos si necesitáramos recargar datos frescos de un solo equipo
 const fetchEquipoDetalle = async (id) => {
+  // Esta función se mantiene por compatibilidad pero ya no se llama automáticamente al expandir
   detailLoading.value = true
-  selectedEquipo.value = null
   try {
     const response = await fetch(`http://127.0.0.1:8000/api/equipos/${id}/`)
     if (!response.ok) throw new Error('Error al cargar detalle del equipo')
-    selectedEquipo.value = await response.json()
+    const data = await response.json()
+    
+    // Actualizar el equipo en la lista local
+    const index = equipos.value.findIndex(e => e.id === id)
+    if (index !== -1) {
+      equipos.value[index] = { ...equipos.value[index], ...data }
+    }
+    selectedEquipo.value = data
   } catch (err) {
     console.error(err)
-    // Fallback to list item if fetch fails, though it won't have history
-    selectedEquipo.value = equipos.value.find(e => e.id === id)
   } finally {
     detailLoading.value = false
+  }
+}
+
+const fetchTraslados = async (equipoId) => {
+  if (trasladosCache.value.has(equipoId)) return
+  
+  trasladosLoading.value = true
+  try {
+    const response = await fetch(`http://127.0.0.1:8000/api/traslados/?equipo_id=${equipoId}`)
+    if (response.ok) {
+      const data = await response.json()
+      trasladosCache.value.set(equipoId, data)
+    }
+  } catch (err) {
+    console.error('Error fetching traslados:', err)
+  } finally {
+    trasladosLoading.value = false
+  }
+}
+
+const fetchMantenimientos = async (equipoId) => {
+  if (mantenimientosCache.value.has(equipoId)) return
+  
+  mantenimientosLoading.value = true
+  try {
+    const response = await fetch(`http://127.0.0.1:8000/api/mantenimientos/?equipo_id=${equipoId}`)
+    if (response.ok) {
+      const data = await response.json()
+      mantenimientosCache.value.set(equipoId, data)
+    }
+  } catch (err) {
+    console.error('Error fetching mantenimientos:', err)
+  } finally {
+    mantenimientosLoading.value = false
   }
 }
 
@@ -88,12 +134,20 @@ const toggleDetalle = (id) => {
   } else {
     expandedEquipoId.value = id
     activeTab.value = 'info' // Reset tab
-    fetchEquipoDetalle(id)
+    // OPTIMIZACIÓN: Usar datos locales en lugar de hacer fetch
+    selectedEquipo.value = equipos.value.find(e => e.id === id)
   }
 }
 
 const setActiveTab = (tab) => {
   activeTab.value = tab
+  
+  // Lazy loading para pestañas de historial
+  if (tab === 'traslados' && expandedEquipoId.value) {
+    fetchTraslados(expandedEquipoId.value)
+  } else if (tab === 'mantenimientos' && expandedEquipoId.value) {
+    fetchMantenimientos(expandedEquipoId.value)
+  }
 }
 
 const getRiesgoBadgeClass = (riesgo) => {
@@ -1114,27 +1168,35 @@ onMounted(() => {
                     <div v-show="activeTab === 'traslados'" class="detalle-content active">
                       <div class="detalle-section" style="grid-column: 1 / -1;">
                           <h4 class="detalle-section-title">Historial de Traslados</h4>
-                          <table v-if="selectedEquipo.traslados && selectedEquipo.traslados.length > 0" class="tabla-mantenimientos">
-                            <thead>
-                              <tr>
-                                <th>Fecha</th>
-                                <th>Origen</th>
-                                <th>Destino</th>
-                                <th>Justificación</th>
-                                <th>Usuario</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              <tr v-for="traslado in selectedEquipo.traslados" :key="traslado.id">
-                                <td>{{ traslado.fecha_display }}</td>
-                                <td>{{ traslado.sede_origen_nombre }} / {{ traslado.servicio_origen_nombre }}</td>
-                                <td>{{ traslado.sede_destino_nombre }} / {{ traslado.servicio_destino_nombre }}</td>
-                                <td>{{ traslado.justificacion }}</td>
-                                <td>{{ traslado.usuario_registro }}</td>
-                              </tr>
-                            </tbody>
-                          </table>
-                          <p v-else style="padding: 20px; color: #666;">No hay traslados registrados.</p>
+                          
+                          <div v-if="trasladosLoading" style="text-align: center; padding: 20px;">
+                            <div class="spinner" style="display: inline-block; width: 30px; height: 30px; border: 3px solid #f3f3f3; border-top: 3px solid #006633; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                            <p style="color: #666; font-size: 13px; margin-top: 10px;">Cargando historial...</p>
+                          </div>
+                          
+                          <div v-else>
+                            <table v-if="trasladosCache.get(equipo.id) && trasladosCache.get(equipo.id).length > 0" class="tabla-mantenimientos">
+                              <thead>
+                                <tr>
+                                  <th>Fecha</th>
+                                  <th>Origen</th>
+                                  <th>Destino</th>
+                                  <th>Justificación</th>
+                                  <th>Usuario</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                <tr v-for="traslado in trasladosCache.get(equipo.id)" :key="traslado.id">
+                                  <td>{{ traslado.fecha_display }}</td>
+                                  <td>{{ traslado.sede_origen_nombre }} / {{ traslado.servicio_origen_nombre }}</td>
+                                  <td>{{ traslado.sede_destino_nombre }} / {{ traslado.servicio_destino_nombre }}</td>
+                                  <td>{{ traslado.justificacion }}</td>
+                                  <td>{{ traslado.usuario_registro }}</td>
+                                </tr>
+                              </tbody>
+                            </table>
+                            <p v-else style="padding: 20px; color: #666;">No hay traslados registrados.</p>
+                          </div>
                       </div>
                     </div>
 
@@ -1142,29 +1204,37 @@ onMounted(() => {
                     <div v-show="activeTab === 'mantenimientos'" class="detalle-content active">
                       <div class="detalle-section" style="grid-column: 1 / -1;">
                           <h4 class="detalle-section-title">Historial de Mantenimientos</h4>
-                          <table v-if="selectedEquipo.mantenimientos && selectedEquipo.mantenimientos.length > 0" class="tabla-mantenimientos">
-                            <thead>
-                              <tr>
-                                <th>Fecha</th>
-                                <th>Tipo</th>
-                                <th>Realizado Por</th>
-                                <th>Costo</th>
-                                <th>Descripción</th>
-                                <th>Observaciones</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              <tr v-for="mant in selectedEquipo.mantenimientos" :key="mant.id">
-                                <td>{{ mant.fecha_display }}</td>
-                                <td style="text-transform: capitalize;">{{ mant.tipo_mantenimiento }}</td>
-                                <td>{{ mant.realizado_por }}</td>
-                                <td>${{ mant.costo }}</td>
-                                <td>{{ mant.descripcion }}</td>
-                                <td>{{ mant.observaciones || 'N/A' }}</td>
-                              </tr>
-                            </tbody>
-                          </table>
-                          <p v-else style="padding: 20px; color: #666;">No hay mantenimientos registrados.</p>
+                          
+                          <div v-if="mantenimientosLoading" style="text-align: center; padding: 20px;">
+                            <div class="spinner" style="display: inline-block; width: 30px; height: 30px; border: 3px solid #f3f3f3; border-top: 3px solid #006633; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                            <p style="color: #666; font-size: 13px; margin-top: 10px;">Cargando historial...</p>
+                          </div>
+                          
+                          <div v-else>
+                            <table v-if="mantenimientosCache.get(equipo.id) && mantenimientosCache.get(equipo.id).length > 0" class="tabla-mantenimientos">
+                              <thead>
+                                <tr>
+                                  <th>Fecha</th>
+                                  <th>Tipo</th>
+                                  <th>Realizado Por</th>
+                                  <th>Costo</th>
+                                  <th>Descripción</th>
+                                  <th>Observaciones</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                <tr v-for="mant in mantenimientosCache.get(equipo.id)" :key="mant.id">
+                                  <td>{{ mant.fecha_display }}</td>
+                                  <td style="text-transform: capitalize;">{{ mant.tipo_mantenimiento }}</td>
+                                  <td>{{ mant.realizado_por }}</td>
+                                  <td>${{ mant.costo }}</td>
+                                  <td>{{ mant.descripcion }}</td>
+                                  <td>{{ mant.observaciones || 'N/A' }}</td>
+                                </tr>
+                              </tbody>
+                            </table>
+                            <p v-else style="padding: 20px; color: #666;">No hay mantenimientos registrados.</p>
+                          </div>
                       </div>
                     </div>
                   </div>

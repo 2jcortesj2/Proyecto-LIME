@@ -12,6 +12,12 @@ class SedeServicioSerializer(serializers.ModelSerializer):
     def get_num_equipos(self, obj):
         return obj.equipos.count()
 
+class SedeSimpleSerializer(serializers.ModelSerializer):
+    """Serializer ligero para listados y selects"""
+    class Meta:
+        model = Sede
+        fields = ['id', 'nombre', 'ciudad']
+
 class SedeSerializer(serializers.ModelSerializer):
     servicios = SedeServicioSerializer(many=True, read_only=True)
     total_servicios = serializers.SerializerMethodField()

@@ -13,7 +13,10 @@ def equipo_list(request):
     POST: Crea un nuevo equipo
     """
     if request.method == 'GET':
-        equipos = Equipo.objects.all()
+        equipos = Equipo.objects.select_related(
+            'sede', 'servicio', 'responsable',
+            'registro_adquisicion', 'informacion_metrologica'
+        ).all()
         
         # Filtros opcionales
         sede_id = request.GET.get('sede_id', None)
@@ -91,7 +94,10 @@ def equipos_proximos_mantenimiento(request):
     from datetime import timedelta
     fecha_limite = datetime.now().date() + timedelta(days=30)
     
-    equipos = Equipo.objects.filter(
+    equipos = Equipo.objects.select_related(
+        'sede', 'servicio', 'responsable',
+        'registro_adquisicion', 'informacion_metrologica'
+    ).filter(
         informacion_metrologica__proximo_mantenimiento__lte=fecha_limite,
         informacion_metrologica__requiere_mantenimiento=True,
         estado='Activo'
@@ -105,7 +111,7 @@ def maintenance_stats(request):
     Retorna estadísticas de mantenimiento usando la misma lógica del modelo.
     Esto garantiza consistencia entre el dashboard y las tablas de equipos.
     """
-    equipos = Equipo.objects.filter(estado='Activo')
+    equipos = Equipo.objects.select_related('informacion_metrologica').filter(estado='Activo')
     
     vencidos = 0
     proximos = 0
