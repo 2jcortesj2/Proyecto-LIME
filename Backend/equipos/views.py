@@ -14,20 +14,20 @@ def equipo_list(request):
     """
     if request.method == 'GET':
         equipos = Equipo.objects.select_related(
-            'sede', 'servicio', 'responsable',
+            'sede', 'ubicacion', 'responsable',
             'registro_adquisicion', 'informacion_metrologica'
         ).all()
         
         # Filtros opcionales
         sede_id = request.GET.get('sede_id', None)
-        servicio_id = request.GET.get('servicio_id', None)
+        ubicacion_id = request.GET.get('ubicacion_id', None)
         estado_equipo = request.GET.get('estado', None)
         busqueda = request.GET.get('busqueda', None)
         
         if sede_id:
             equipos = equipos.filter(sede_id=sede_id)
-        if servicio_id:
-            equipos = equipos.filter(servicio_id=servicio_id)
+        if ubicacion_id:
+            equipos = equipos.filter(ubicacion_id=ubicacion_id)
         if estado_equipo:
             equipos = equipos.filter(estado=estado_equipo)
         if busqueda:
@@ -95,7 +95,7 @@ def equipos_proximos_mantenimiento(request):
     fecha_limite = datetime.now().date() + timedelta(days=30)
     
     equipos = Equipo.objects.select_related(
-        'sede', 'servicio', 'responsable',
+        'sede', 'ubicacion', 'responsable',
         'registro_adquisicion', 'informacion_metrologica'
     ).filter(
         informacion_metrologica__proximo_mantenimiento__lte=fecha_limite,

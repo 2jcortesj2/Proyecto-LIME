@@ -133,6 +133,11 @@ class InformacionMetrologica(models.Model):
     ultima_calibracion = models.DateField(null=True, blank=True)
     proxima_calibracion = models.DateField(null=True, blank=True)
 
+    requiere_calificacion = models.BooleanField(default=False)
+    frecuencia_calificacion = models.CharField(max_length=50, null=True, blank=True)
+    ultima_calificacion = models.DateField(null=True, blank=True)
+    proxima_calificacion = models.DateField(null=True, blank=True)
+
     def __str__(self):
         return f"Info Metrológica - {self.equipo}"
 
