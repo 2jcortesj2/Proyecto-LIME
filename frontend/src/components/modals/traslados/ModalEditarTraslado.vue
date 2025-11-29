@@ -33,7 +33,7 @@
               </select>
             </div>
             <div class="form-group">
-              <label class="form-label">Servicio Origen</label>
+              <label class="form-label">Ubicación Origen</label>
               <select v-model="localForm.servicio_origen" class="form-select">
                 <option v-for="servicio in servicios" :key="servicio.id" :value="servicio.id">{{ servicio.nombre }}</option>
               </select>
@@ -50,7 +50,7 @@
               </select>
             </div>
             <div class="form-group">
-              <label class="form-label">Servicio Destino</label>
+              <label class="form-label">Ubicación Destino</label>
               <select v-model="localForm.servicio_destino" class="form-select">
                 <option v-for="servicio in servicios" :key="servicio.id" :value="servicio.id">{{ servicio.nombre }}</option>
               </select>

@@ -195,15 +195,15 @@ const selectedEquipoForAction = ref(null)
 
 // Catalogs for dropdowns
 const sedes = ref([])
-const servicios = ref([])
+const ubicaciones = ref([])
 const responsables = ref([])
-const serviciosFiltrados = computed(() => {
-  if (!createForm.value.sede) return servicios.value
-  return servicios.value.filter(s => s.sede === createForm.value.sede)
+const ubicacionesFiltradas = computed(() => {
+  if (!createForm.value.sede) return ubicaciones.value
+  return ubicaciones.value.filter(s => s.sede === createForm.value.sede)
 })
-const serviciosFiltradosEdit = computed(() => {
-  if (!editForm.value.sede) return servicios.value
-  return servicios.value.filter(s => s.sede === editForm.value.sede)
+const ubicacionesFiltradasEdit = computed(() => {
+  if (!editForm.value.sede) return ubicaciones.value
+  return ubicaciones.value.filter(s => s.sede === editForm.value.sede)
 })
 
 // Form state and loading
@@ -359,13 +359,13 @@ const fetchSedes = async () => {
   }
 }
 
-const fetchServicios = async () => {
+const fetchUbicaciones = async () => {
   try {
-    const response = await fetch('http://127.0.0.1:8000/api/servicios/')
-    if (!response.ok) throw new Error('Error al cargar servicios')
-    servicios.value = await response.json()
+    const response = await fetch('http://127.0.0.1:8000/api/ubicaciones/')
+    if (!response.ok) throw new Error('Error al cargar ubicaciones')
+    ubicaciones.value = await response.json()
   } catch (err) {
-    console.error('Error fetching servicios:', err)
+    console.error('Error fetching ubicaciones:', err)
   }
 }
 
@@ -837,7 +837,7 @@ const openCreateModal = async () => {
   resetCreateForm()
   // Load catalogs if not already loaded
   if (sedes.value.length === 0) await fetchSedes()
-  if (servicios.value.length === 0) await fetchServicios()
+  if (ubicaciones.value.length === 0) await fetchUbicaciones()
   if (responsables.value.length === 0) await fetchResponsables()
   
   showCreateModal.value = true
@@ -856,7 +856,7 @@ const setActiveTabCreate = (tab) => {
 const openEditModal = async (equipo) => {
   // Load catalogs if not already loaded
   if (sedes.value.length === 0) await fetchSedes()
-  if (servicios.value.length === 0) await fetchServicios()
+  if (ubicaciones.value.length === 0) await fetchUbicaciones()
   if (responsables.value.length === 0) await fetchResponsables()
 
   loadEquipoDataIntoEditForm(equipo)
@@ -941,7 +941,7 @@ onMounted(() => {
               <th style="width: 19%;">Equipo</th>
               <th style="width: 18%;">Registro Invima</th>
               <th style="width: 6%; text-align: center;">Riesgo</th>
-              <th style="width: 10%;">Sede / Servicio</th>
+              <th style="width: 10%;">Sede / Ubicación</th>
               <th style="width: 12%;">Encargado</th>
               <th style="width: 10%;">Estado</th>
               <th style="width: 18%;">Acciones</th>
@@ -971,7 +971,7 @@ onMounted(() => {
             <th style="width: 19%;">Equipo</th>
             <th style="width: 18%;">Registro Invima</th>
             <th style="width: 6%; text-align: center;">Riesgo</th>
-            <th style="width: 10%;">Sede / Servicio</th>
+            <th style="width: 10%;">Sede / Ubicación</th>
             <th style="width: 12%;">Encargado</th>
             <th style="width: 10%; text-align: center;">Estado</th>
             <th style="width: 18%;">Acciones</th>
@@ -1069,7 +1069,7 @@ onMounted(() => {
                           <div class="detalle-item"><span class="detalle-label">Responsable:</span><span class="detalle-value">{{ selectedEquipo.responsable_nombre || 'N/A' }}</span></div>
                           <div class="detalle-item"><span class="detalle-label">Ubicación:</span><span class="detalle-value">{{ selectedEquipo.ubicacion_fisica }}</span></div>
                           <div class="detalle-item"><span class="detalle-label">Sede:</span><span class="detalle-value">{{ selectedEquipo.sede_info?.nombre }}</span></div>
-                          <div class="detalle-item"><span class="detalle-label">Servicio:</span><span class="detalle-value">{{ selectedEquipo.servicio_info?.nombre }}</span></div>
+                          <div class="detalle-item"><span class="detalle-label">Proceso:</span><span class="detalle-value">{{ selectedEquipo.servicio_info?.nombre }}</span></div>
                         </div>
                         <div class="detalle-section">
                           <h4 class="detalle-section-title">B. Información del Equipo</h4>
@@ -1297,7 +1297,7 @@ onMounted(() => {
                 </select>
               </div>
               <div class="form-group">
-                <label class="form-label required">Servicio</label>
+                <label class="form-label required">Proceso</label>
                 <select class="form-select">
                   <option value="">Seleccione un servicio</option>
                   <option value="1">LIME Central</option>
@@ -1663,10 +1663,10 @@ onMounted(() => {
                 <span v-if="formErrors.sede" class="error-message">{{ formErrors.sede }}</span>
               </div>
               <div class="form-group">
-                <label class="form-label required">Servicio</label>
+                <label class="form-label required">Proceso</label>
                 <select class="form-select" v-model="editForm.servicio">
                   <option value="" disabled>Seleccione un servicio</option>
-                  <option v-for="servicio in serviciosFiltradosEdit" :key="servicio.id" :value="servicio.id">{{ servicio.nombre }}</option>
+                  <option v-for="ubicacion in ubicacionesFiltradasEdit" :key="ubicacion.id" :value="ubicacion.id">{{ ubicacion.nombre }}</option>
                 </select>
                 <span v-if="formErrors.servicio" class="error-message">{{ formErrors.servicio }}</span>
               </div>

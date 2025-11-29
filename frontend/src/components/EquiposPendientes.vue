@@ -230,7 +230,7 @@ function completarMantenimiento(equipo) {
               <th style="width: 20%;">Equipo</th>
               <th style="width: 15%;">Registro INVIMA</th>
               <th style="width: 10%;">Riesgo</th>
-              <th style="width: 15%;">Sede / Servicio</th>
+              <th style="width: 15%;">Sede / Ubicación</th>
               <th style="width: 10%;">Último Mant.</th>
               <th style="width: 10%;">Próximo Mant.</th>
               <th style="width: 10%;">Acciones</th>
@@ -262,7 +262,7 @@ function completarMantenimiento(equipo) {
               <th style="width: 20%;">Equipo</th>
               <th style="width: 15%;">Registro INVIMA</th>
               <th style="width: 10%;">Riesgo</th>
-              <th style="width: 15%;">Sede / Servicio</th>
+              <th style="width: 15%;">Sede / Ubicación</th>
               <th style="width: 10%;">Último Mant.</th>
               <th style="width: 10%;">Próximo Mant.</th>
               <th style="width: 10%;">Acciones</th>
@@ -305,7 +305,7 @@ function completarMantenimiento(equipo) {
               <th>Equipo</th>
               <th>Registro INVIMA</th>
               <th>Riesgo</th>
-              <th>Sede / Servicio</th>
+              <th>Sede / Ubicación</th>
               <th>Último Mant.</th>
               <th>Próximo Mant.</th>
               <th>Acciones</th>
@@ -395,7 +395,7 @@ function completarMantenimiento(equipo) {
               <th>Equipo</th>
               <th>Registro INVIMA</th>
               <th>Riesgo</th>
-              <th>Sede / Servicio</th>
+              <th>Sede / Ubicación</th>
               <th>Último Mant.</th>
               <th>Próximo Mant.</th>
               <th>Acciones</th>
@@ -466,7 +466,7 @@ function completarMantenimiento(equipo) {
               <th>Equipo</th>
               <th>Registro INVIMA</th>
               <th>Riesgo</th>
-              <th>Sede / Servicio</th>
+              <th>Sede / Ubicación</th>
               <th>Último Mant.</th>
               <th>Próximo Mant.</th>
               <th>Frecuencia</th>

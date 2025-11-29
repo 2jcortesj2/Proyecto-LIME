@@ -28,12 +28,12 @@
               <span v-if="formErrors.sede" class="error-message">{{ formErrors.sede }}</span>
             </div>
             <div class="form-group">
-              <label class="form-label required">Servicio</label>
+              <label class="form-label required">Ubicación</label>
               <select class="form-select" v-model="localForm.servicio">
                 <option value="" disabled>Seleccione un servicio</option>
-                <option v-for="servicio in serviciosFiltrados" :key="servicio.id" :value="servicio.id">{{ servicio.nombre }}</option>
+                <option v-for="ubicacion in ubicacionesFiltrados" :key="ubicacion.id" :value="ubicacion.id">{{ ubicacion.nombre }}</option>
               </select>
-              <span v-if="formErrors.servicio" class="error-message">{{ formErrors.servicio }}</span>
+              <span v-if="formErrors.ubicacion" class="error-message">{{ formErrors.ubicacion }}</span>
             </div>
             <div class="form-group">
               <label class="form-label required">Nombre del Equipo</label>
@@ -408,7 +408,7 @@ const props = defineProps({
     type: Array,
     default: () => []
   },
-  servicios: {
+  ubicaciones: {
     type: Array,
     default: () => []
   },
@@ -437,9 +437,9 @@ const localForm = computed({
   set: (value) => emit('update:formData', value)
 })
 
-const serviciosFiltrados = computed(() => {
-  if (!localForm.value.sede) return props.servicios
-  return props.servicios.filter(s => s.sede === localForm.value.sede)
+const ubicacionesFiltrados = computed(() => {
+  if (!localForm.value.sede) return props.ubicaciones
+  return props.ubicaciones.filter(s => s.sede === localForm.value.sede)
 })
 
 // Watch for changes to propagate to parent
