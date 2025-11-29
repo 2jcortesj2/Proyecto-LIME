@@ -1,8 +1,9 @@
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted } from 'vue'
 import { fetchEquipos, fetchEquipoDetalle, deleteEquipo } from '../services/api/equiposApi'
 import EquipoCreateModal from './equipos/EquipoCreateModal.vue'
 import EquipoEditModal from './equipos/EquipoEditModal.vue'
+import EquipoTabla from './equipos/EquipoTabla.vue'
 
 // State
 const equipos = ref([])
@@ -13,11 +14,7 @@ const searchQuery = ref('')
 const expandedEquipoId = ref(null)
 const selectedEquipo = ref(null)
 const activeTab = ref('info')
-
-// Pagination state
-const currentPage = ref(1)
 const itemsPerPage = ref(10)
-const itemsPerPageOptions = [10, 20, 50, 100]
 
 // Modal States
 const showCreateModal = ref(false)
@@ -32,27 +29,6 @@ const tabs = {
   traslados: 'Historial Traslados',
   mantenimientos: 'Mantenimientos'
 }
-
-// ===== COMPUTED PROPERTIES =====
-const filteredEquipos = computed(() => {
-  if (!searchQuery.value) return equipos.value
-  const query = searchQuery.value.toLowerCase()
-  return equipos.value.filter(eq => 
-    (eq.nombre_equipo && eq.nombre_equipo.toLowerCase().includes(query)) ||
-    (eq.codigo_interno && eq.codigo_interno.toLowerCase().includes(query)) ||
-    (eq.marca && eq.marca.toLowerCase().includes(query)) ||
-    (eq.modelo && eq.modelo.toLowerCase().includes(query)) ||
-    (eq.serie && eq.serie.toLowerCase().includes(query))
-  )
-})
-
-const totalPages = computed(() => Math.ceil(filteredEquipos.value.length / itemsPerPage.value))
-
-const paginatedEquipos = computed(() => {
-  const start = (currentPage.value - 1) * itemsPerPage.value
-  const end = start + itemsPerPage.value
-  return filteredEquipos.value.slice(start, end)
-})
 
 // ===== DATA FETCHING =====
 const loadEquipos = async () => {
@@ -96,13 +72,6 @@ const toggleDetalle = (id) => {
 
 const setActiveTab = (tab) => {
   activeTab.value = tab
-}
-
-// Pagination
-function changePage(page) {
-  if (page >= 1 && page <= totalPages.value) {
-    currentPage.value = page
-  }
 }
 
 // ===== MODAL HANDLERS =====
@@ -204,295 +173,162 @@ onMounted(() => {
     </div>
 
     <!-- Main Content Card -->
-    <div class="content-card">
-      <!-- Search Bar -->
-      <div class="search-filter-container">
-        <div class="search-section">
-          <input 
-            type="text" 
-            class="search-input" 
-            placeholder="🔍 Buscar por código, nombre, marca, modelo o serie..." 
-            v-model="searchQuery"
-          >
-          <button 
-            v-if="searchQuery" 
-            @click="searchQuery = ''" 
-            class="clear-search-btn"
-            title="Limpiar búsqueda"
-          >
-            ✕
-          </button>
-        </div>
-        <button class="filter-button">☰ Filtrar y Ordenar</button>
-      </div>
+    <EquipoTabla
+      :equipos="equipos"
+      :loading="loading"
+      :error="error"
+      v-model:searchQuery="searchQuery"
+      v-model:itemsPerPage="itemsPerPage"
+      :expandedEquipoId="expandedEquipoId"
+      @toggleDetail="toggleDetalle"
+      @edit="openEditModal"
+      @delete="handleDelete"
+    >
+      <template #detail="{ equipo }">
+        <div class="detalle-container">
+          <div v-if="detailLoading" style="padding: 40px; text-align: center;">
+            Cargando detalles...
+          </div>
+          <div v-else-if="selectedEquipo">
+            <div class="detalle-header">
+              <div class="detalle-title">📋 Detalle del Equipo - {{ selectedEquipo.nombre_equipo }} ({{ selectedEquipo.codigo_interno }})</div>
+              <button class="btn btn-secondary btn-sm" @click="toggleDetalle(equipo.id)">✕ Cerrar</button>
+            </div>
 
-      <!-- Skeleton Loader -->
-      <div v-if="loading" class="skeleton-table">
-        <table>
-          <thead>
-            <tr>
-              <th style="width: 7%;">Código</th>
-              <th style="width: 19%;">Equipo</th>
-              <th style="width: 18%;">Registro Invima</th>
-              <th style="width: 6%; text-align: center;">Riesgo</th>
-              <th style="width: 10%;">Sede / Servicio</th>
-              <th style="width: 12%;">Encargado</th>
-              <th style="width: 10%;">Estado</th>
-              <th style="width: 18%;">Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="i in 8" :key="i">
-              <td><div class="skeleton-text"></div></td>
-              <td><div class="skeleton-text"></div></td>
-              <td><div class="skeleton-text skeleton-badge"></div></td>
-              <td style="text-align: center;"><div class="skeleton-text skeleton-small" style="margin: 0 auto;"></div></td>
-              <td><div class="skeleton-text"></div></td>
-              <td><div class="skeleton-text"></div></td>
-              <td><div class="skeleton-text skeleton-badge"></div></td>
-              <td><div class="skeleton-text skeleton-buttons"></div></td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+            <!-- Detail Tabs -->
+            <div class="detalle-tabs">
+              <div 
+                v-for="(label, key) in tabs" 
+                :key="key"
+                class="detalle-tab" 
+                :class="{ active: activeTab === key }"
+                @click="setActiveTab(key)"
+              >
+                {{ label }}
+              </div>
+            </div>
 
-      <!-- Error State -->
-      <div v-else-if="error" style="color: red; text-align: center; padding: 40px;">{{ error }}</div>
-
-      <!-- Equipment Table -->
-      <table v-else id="equiposTable">
-        <thead>
-          <tr>
-            <th style="width: 7%;">Código</th>
-            <th style="width: 19%;">Equipo</th>
-            <th style="width: 18%;">Registro Invima</th>
-            <th style="width: 6%; text-align: center;">Riesgo</th>
-            <th style="width: 10%;">Sede / Servicio</th>
-            <th style="width: 12%;">Encargado</th>
-            <th style="width: 10%; text-align: center;">Estado</th>
-            <th style="width: 18%;">Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          <template v-for="equipo in paginatedEquipos" :key="equipo.id">
-            <!-- Main Row -->
-            <tr :data-equipo="equipo.id" @click="toggleDetalle(equipo.id)" :class="{ 'row-active': expandedEquipoId === equipo.id }">
-              <td><strong>{{ equipo.codigo_interno }}</strong></td>
-              <td>
-                <div style="font-weight: 600;">{{ equipo.nombre_equipo }}</div>
-                <div style="font-size: 11px; color: #616161;">{{ equipo.marca }} - {{ equipo.modelo }}</div>
-              </td>
-              <td>
-                <span v-if="equipo.registro_invima" class="invima-badge">{{ equipo.registro_invima }}</span>
-                <span v-else class="invima-badge" style="background: rgba(158, 158, 158, 0.1); color: #9e9e9e;">N/A</span>
-              </td>
-              <td style="text-align: center;">
-                <span class="risk-box" :class="getRiesgoBadgeClass(equipo.clasificacion_riesgo)">
-                  {{ equipo.clasificacion_riesgo || 'N/A' }}
-                </span>
-              </td>
-              <td>
-                <div style="font-weight: 600; font-size: 14px;">{{ equipo.sede?.nombre || 'N/A' }}</div>
-                <div style="font-size: 12px; color: #616161;">{{ equipo.servicio?.nombre || 'N/A' }}</div>
-              </td>
-              <td>{{ equipo.responsable_nombre || 'N/A' }}</td>
-              <td style="text-align: center;">
-                <span class="estado-badge" :class="getEstadoBadgeClass(equipo.estado)">
-                  {{ formatEstado(equipo.estado) }}
-                </span>
-              </td>
-              <td @click.stop>
-                <div style="display: flex; gap: 6px;">
-                  <button 
-                    class="btn btn-info btn-sm btn-ver" 
-                    :class="{ 'btn-ver-active': expandedEquipoId === equipo.id }"
-                    @click="toggleDetalle(equipo.id)"
-                  >👁️</button>
-                  <button class="btn btn-secondary btn-sm" @click="openEditModal(equipo)">✏️</button>
-                  <button class="btn btn-danger btn-sm" @click="handleDelete(equipo)">🗑️</button>
+            <!-- Tab Content: Información General -->
+            <div v-show="activeTab === 'info'" class="detalle-content active">
+              <div class="detalle-grid">
+                <div class="detalle-section">
+                  <h4 class="detalle-section-title">A. Información General</h4>
+                  <div class="detalle-item"><span class="detalle-label">Proceso:</span><span class="detalle-value">LIME</span></div>
+                  <div class="detalle-item"><span class="detalle-label">Código Interno:</span><span class="detalle-value"><strong>{{ selectedEquipo.codigo_interno }}</strong></span></div>
+                  <div class="detalle-item"><span class="detalle-label">Código IPS:</span><span class="detalle-value">{{ selectedEquipo.codigo_ips || 'Pendiente' }}</span></div>
+                  <div class="detalle-item"><span class="detalle-label">Responsable:</span><span class="detalle-value">{{ selectedEquipo.responsable_nombre || 'N/A' }}</span></div>
+                  <div class="detalle-item"><span class="detalle-label">Ubicación:</span><span class="detalle-value">{{ selectedEquipo.ubicacion_fisica }}</span></div>
+                  <div class="detalle-item"><span class="detalle-label">Sede:</span><span class="detalle-value">{{ selectedEquipo.sede_info?.nombre }}</span></div>
+                  <div class="detalle-item"><span class="detalle-label">Servicio:</span><span class="detalle-value">{{ selectedEquipo.servicio_info?.nombre }}</span></div>
                 </div>
-              </td>
-            </tr>
-
-            <!-- Detail Row -->
-            <tr v-if="expandedEquipoId === equipo.id" class="detalle-row active">
-              <td colspan="8" class="detalle-cell">
-                <div class="detalle-container">
-                  <div v-if="detailLoading" style="padding: 40px; text-align: center;">
-                    Cargando detalles...
-                  </div>
-                  <div v-else-if="selectedEquipo">
-                    <div class="detalle-header">
-                      <div class="detalle-title">📋 Detalle del Equipo - {{ selectedEquipo.nombre_equipo }} ({{ selectedEquipo.codigo_interno }})</div>
-                      <button class="btn btn-secondary btn-sm" @click="toggleDetalle(equipo.id)">✕ Cerrar</button>
-                    </div>
-
-                    <!-- Detail Tabs -->
-                    <div class="detalle-tabs">
-                      <div 
-                        v-for="(label, key) in tabs" 
-                        :key="key"
-                        class="detalle-tab" 
-                        :class="{ active: activeTab === key }"
-                        @click="setActiveTab(key)"
-                      >
-                        {{ label }}
-                      </div>
-                    </div>
-
-                    <!-- Tab Content: Información General -->
-                    <div v-show="activeTab === 'info'" class="detalle-content active">
-                      <div class="detalle-grid">
-                        <div class="detalle-section">
-                          <h4 class="detalle-section-title">A. Información General</h4>
-                          <div class="detalle-item"><span class="detalle-label">Proceso:</span><span class="detalle-value">LIME</span></div>
-                          <div class="detalle-item"><span class="detalle-label">Código Interno:</span><span class="detalle-value"><strong>{{ selectedEquipo.codigo_interno }}</strong></span></div>
-                          <div class="detalle-item"><span class="detalle-label">Código IPS:</span><span class="detalle-value">{{ selectedEquipo.codigo_ips || 'Pendiente' }}</span></div>
-                          <div class="detalle-item"><span class="detalle-label">Responsable:</span><span class="detalle-value">{{ selectedEquipo.responsable_nombre || 'N/A' }}</span></div>
-                          <div class="detalle-item"><span class="detalle-label">Ubicación:</span><span class="detalle-value">{{ selectedEquipo.ubicacion_fisica }}</span></div>
-                          <div class="detalle-item"><span class="detalle-label">Sede:</span><span class="detalle-value">{{ selectedEquipo.sede_info?.nombre }}</span></div>
-                          <div class="detalle-item"><span class="detalle-label">Servicio:</span><span class="detalle-value">{{ selectedEquipo.servicio_info?.nombre }}</span></div>
-                        </div>
-                        <div class="detalle-section">
-                          <h4 class="detalle-section-title">B. Información del Equipo</h4>
-                          <div class="detalle-item"><span class="detalle-label">Nombre:</span><span class="detalle-value">{{ selectedEquipo.nombre_equipo }}</span></div>
-                          <div class="detalle-item"><span class="detalle-label">Marca:</span><span class="detalle-value">{{ selectedEquipo.marca }}</span></div>
-                          <div class="detalle-item"><span class="detalle-label">Modelo:</span><span class="detalle-value">{{ selectedEquipo.modelo }}</span></div>
-                          <div class="detalle-item"><span class="detalle-label">Serie:</span><span class="detalle-value">{{ selectedEquipo.serie }}</span></div>
-                          <div class="detalle-item"><span class="detalle-label">Clasif. IPS:</span><span class="detalle-value">{{ selectedEquipo.clasificacion_ips }}</span></div>
-                          <div class="detalle-item">
-                            <span class="detalle-label">Registro INVIMA:</span>
-                            <span class="detalle-value">
-                              <span v-if="selectedEquipo.registro_invima" class="invima-badge">{{ selectedEquipo.registro_invima }}</span>
-                              <span v-else style="color: #999;">N/A</span>
-                            </span>
-                          </div>
-                        </div>
-                        <div class="detalle-section" style="grid-column: 1 / -1;">
-                          <h4 class="detalle-section-title">C. Registro Histórico</h4>
-                          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;">
-                            <div class="detalle-item"><span class="detalle-label">Fecha Adquisición:</span><span class="detalle-value">{{ selectedEquipo.registro_adquisicion?.fecha_adquisicion }}</span></div>
-                            <div class="detalle-item"><span class="detalle-label">Propietario:</span><span class="detalle-value">{{ selectedEquipo.registro_adquisicion?.propietario }}</span></div>
-                            <div class="detalle-item"><span class="detalle-label">Forma Adquisición:</span><span class="detalle-value">{{ selectedEquipo.registro_adquisicion?.forma_adquisicion }}</span></div>
-                            <div class="detalle-item"><span class="detalle-label">Proveedor:</span><span class="detalle-value">{{ selectedEquipo.registro_adquisicion?.nombre_proveedor }}</span></div>
-                            <div class="detalle-item"><span class="detalle-label">En Garantía:</span><span class="detalle-value">{{ selectedEquipo.registro_adquisicion?.en_garantia ? 'Sí' : 'No' }}</span></div>
-                            <div class="detalle-item"><span class="detalle-label">Documento:</span><span class="detalle-value">{{ selectedEquipo.registro_adquisicion?.tipo_documento }} #{{ selectedEquipo.registro_adquisicion?.numero_documento }}</span></div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <!-- Tab Content: Documentos -->
-                    <div v-show="activeTab === 'documentos'" class="detalle-content active">
-                      <div class="detalle-section" style="grid-column: 1 / -1;">
-                        <h4 class="detalle-section-title">D. Inventario de Documentos</h4>
-                        <div class="documentos-grid">
-                          <div class="documento-item">
-                            <span :class="selectedEquipo.documentacion?.hoja_vida ? 'check-icon' : 'x-icon'">{{ selectedEquipo.documentacion?.hoja_vida ? '✅' : '❌' }}</span>
-                            <span>Hoja de Vida</span>
-                          </div>
-                          <div class="documento-item">
-                            <span :class="selectedEquipo.documentacion?.registro_importacion ? 'check-icon' : 'x-icon'">{{ selectedEquipo.documentacion?.registro_importacion ? '✅' : '❌' }}</span>
-                            <span>Registro Importación</span>
-                          </div>
-                          <div class="documento-item">
-                            <span :class="selectedEquipo.documentacion?.manual_operacion ? 'check-icon' : 'x-icon'">{{ selectedEquipo.documentacion?.manual_operacion ? '✅' : '❌' }}</span>
-                            <span>Manual Operación (Esp)</span>
-                          </div>
-                          <div class="documento-item">
-                            <span :class="selectedEquipo.documentacion?.manual_servicio ? 'check-icon' : 'x-icon'">{{ selectedEquipo.documentacion?.manual_servicio ? '✅' : '❌' }}</span>
-                            <span>Manual Servicio</span>
-                          </div>
-                          <div class="documento-item">
-                            <span :class="selectedEquipo.documentacion?.guia_rapida ? 'check-icon' : 'x-icon'">{{ selectedEquipo.documentacion?.guia_rapida ? '✅' : '❌' }}</span>
-                            <span>Guía Rápida</span>
-                          </div>
-                          <div class="documento-item">
-                            <span class="x-icon">❌</span>
-                            <span>Instructivo Manejo</span>
-                          </div>
-                          <div class="documento-item">
-                            <span :class="selectedEquipo.documentacion?.protocolo_mto_preventivo ? 'check-icon' : 'x-icon'">{{ selectedEquipo.documentacion?.protocolo_mto_preventivo ? '✅' : '❌' }}</span>
-                            <span>Protocolo Mto Prev</span>
-                          </div>
-                          <div class="documento-item">
-                            <span :class="selectedEquipo.documentacion?.frecuencia_metrologica ? 'check-icon' : 'x-icon'">{{ selectedEquipo.documentacion?.frecuencia_metrologica ? '✅' : '❌' }}</span>
-                            <span>Frecuencia Metrológica</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <!-- Tab Content: Metrología -->
-                    <div v-show="activeTab === 'metrologia'" class="detalle-content active">
-                      <div class="detalle-grid">
-                        <div class="detalle-section">
-                          <h4 class="detalle-section-title">E. Info Metrológica Administrativa</h4>
-                          <div class="detalle-item"><span class="detalle-label">Requiere Mantenimiento:</span><span class="detalle-value">{{ selectedEquipo.informacion_metrologica?.requiere_mantenimiento ? '✅ Sí' : 'No' }}</span></div>
-                          <div class="detalle-item"><span class="detalle-label">Frecuencia:</span><span class="detalle-value">{{ selectedEquipo.informacion_metrologica?.frecuencia_mantenimiento }}</span></div>
-                          <div class="detalle-item"><span class="detalle-label">Último Mantenimiento:</span><span class="detalle-value">{{ formatFecha(selectedEquipo.informacion_metrologica?.ultimo_mantenimiento) }}</span></div>
-                          <div class="detalle-item"><span class="detalle-label">Próximo Mantenimiento:</span><span class="detalle-value">{{ formatFecha(selectedEquipo.informacion_metrologica?.fecha_proximo_mantenimiento_calculada) }}</span></div>
-                          <div class="detalle-item"><span class="detalle-label">Estado Mantenimiento:</span><span class="detalle-value"><strong>{{ selectedEquipo.informacion_metrologica?.estado_mantenimiento || 'N/A' }}</strong></span></div>
-                          <div class="detalle-item"><span class="detalle-label">Requiere Calibración:</span><span class="detalle-value">{{ selectedEquipo.informacion_metrologica?.requiere_calibracion ? '✅ Sí' : 'No' }}</span></div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <!-- Tab Content: Traslados -->
-                    <div v-show="activeTab === 'traslados'" class="detalle-content active">
-                      <p v-if="!selectedEquipo.historial_traslados || selectedEquipo.historial_traslados.length === 0">
-                        No hay historial de traslados disponible
-                      </p>
-                      <div v-else>
-                        <!-- Display traslados here -->
-                      </div>
-                    </div>
-
-                    <!-- Tab Content: Mantenimientos -->
-                    <div v-show="activeTab === 'mantenimientos'" class="detalle-content active">
-                      <p v-if="!selectedEquipo.historial_mantenimientos || selectedEquipo.historial_mantenimientos.length === 0">
-                        No hay historial de mantenimientos disponible
-                      </p>
-                      <div v-else>
-                        <!-- Display mantenimientos here -->
-                      </div>
-                    </div>
+                <div class="detalle-section">
+                  <h4 class="detalle-section-title">B. Información del Equipo</h4>
+                  <div class="detalle-item"><span class="detalle-label">Nombre:</span><span class="detalle-value">{{ selectedEquipo.nombre_equipo }}</span></div>
+                  <div class="detalle-item"><span class="detalle-label">Marca:</span><span class="detalle-value">{{ selectedEquipo.marca }}</span></div>
+                  <div class="detalle-item"><span class="detalle-label">Modelo:</span><span class="detalle-value">{{ selectedEquipo.modelo }}</span></div>
+                  <div class="detalle-item"><span class="detalle-label">Serie:</span><span class="detalle-value">{{ selectedEquipo.serie }}</span></div>
+                  <div class="detalle-item"><span class="detalle-label">Clasif. IPS:</span><span class="detalle-value">{{ selectedEquipo.clasificacion_ips }}</span></div>
+                  <div class="detalle-item">
+                    <span class="detalle-label">Registro INVIMA:</span>
+                    <span class="detalle-value">
+                      <span v-if="selectedEquipo.registro_invima" class="invima-badge">{{ selectedEquipo.registro_invima }}</span>
+                      <span v-else style="color: #999;">N/A</span>
+                    </span>
                   </div>
                 </div>
-              </td>
-            </tr>
-          </template>
-        </tbody>
-      </table>
+                <div class="detalle-section" style="grid-column: 1 / -1;">
+                  <h4 class="detalle-section-title">C. Registro Histórico</h4>
+                  <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;">
+                    <div class="detalle-item"><span class="detalle-label">Fecha Adquisición:</span><span class="detalle-value">{{ selectedEquipo.registro_adquisicion?.fecha_adquisicion }}</span></div>
+                    <div class="detalle-item"><span class="detalle-label">Propietario:</span><span class="detalle-value">{{ selectedEquipo.registro_adquisicion?.propietario }}</span></div>
+                    <div class="detalle-item"><span class="detalle-label">Forma Adquisición:</span><span class="detalle-value">{{ selectedEquipo.registro_adquisicion?.forma_adquisicion }}</span></div>
+                    <div class="detalle-item"><span class="detalle-label">Proveedor:</span><span class="detalle-value">{{ selectedEquipo.registro_adquisicion?.nombre_proveedor }}</span></div>
+                    <div class="detalle-item"><span class="detalle-label">En Garantía:</span><span class="detalle-value">{{ selectedEquipo.registro_adquisicion?.en_garantia ? 'Sí' : 'No' }}</span></div>
+                    <div class="detalle-item"><span class="detalle-label">Documento:</span><span class="detalle-value">{{ selectedEquipo.registro_adquisicion?.tipo_documento }} #{{ selectedEquipo.registro_adquisicion?.numero_documento }}</span></div>
+                  </div>
+                </div>
+              </div>
+            </div>
 
-      <!-- Empty State -->
-      <div v-if="!loading && filteredEquipos.length === 0" style="text-align: center; padding: 40px; color: #616161;">
-        No se encontraron equipos
-      </div>
+            <!-- Tab Content: Documentos -->
+            <div v-show="activeTab === 'documentos'" class="detalle-content active">
+              <div class="detalle-section" style="grid-column: 1 / -1;">
+                <h4 class="detalle-section-title">D. Inventario de Documentos</h4>
+                <div class="documentos-grid">
+                  <div class="documento-item">
+                    <span :class="selectedEquipo.documentacion?.hoja_vida ? 'check-icon' : 'x-icon'">{{ selectedEquipo.documentacion?.hoja_vida ? '✅' : '❌' }}</span>
+                    <span>Hoja de Vida</span>
+                  </div>
+                  <div class="documento-item">
+                    <span :class="selectedEquipo.documentacion?.registro_importacion ? 'check-icon' : 'x-icon'">{{ selectedEquipo.documentacion?.registro_importacion ? '✅' : '❌' }}</span>
+                    <span>Registro Importación</span>
+                  </div>
+                  <div class="documento-item">
+                    <span :class="selectedEquipo.documentacion?.manual_operacion ? 'check-icon' : 'x-icon'">{{ selectedEquipo.documentacion?.manual_operacion ? '✅' : '❌' }}</span>
+                    <span>Manual Operación (Esp)</span>
+                  </div>
+                  <div class="documento-item">
+                    <span :class="selectedEquipo.documentacion?.manual_servicio ? 'check-icon' : 'x-icon'">{{ selectedEquipo.documentacion?.manual_servicio ? '✅' : '❌' }}</span>
+                    <span>Manual Servicio</span>
+                  </div>
+                  <div class="documento-item">
+                    <span :class="selectedEquipo.documentacion?.guia_rapida ? 'check-icon' : 'x-icon'">{{ selectedEquipo.documentacion?.guia_rapida ? '✅' : '❌' }}</span>
+                    <span>Guía Rápida</span>
+                  </div>
+                  <div class="documento-item">
+                    <span class="x-icon">❌</span>
+                    <span>Instructivo Manejo</span>
+                  </div>
+                  <div class="documento-item">
+                    <span :class="selectedEquipo.documentacion?.protocolo_mto_preventivo ? 'check-icon' : 'x-icon'">{{ selectedEquipo.documentacion?.protocolo_mto_preventivo ? '✅' : '❌' }}</span>
+                    <span>Protocolo Mto Prev</span>
+                  </div>
+                  <div class="documento-item">
+                    <span :class="selectedEquipo.documentacion?.frecuencia_metrologica ? 'check-icon' : 'x-icon'">{{ selectedEquipo.documentacion?.frecuencia_metrologica ? '✅' : '❌' }}</span>
+                    <span>Frecuencia Metrológica</span>
+                  </div>
+                </div>
+              </div>
+            </div>
 
-      <!-- Pagination Footer -->
-      <div v-if="!loading && filteredEquipos.length > 0" class="pagination-footer">
-        <div class="items-per-page">
-          <span>Mostrar</span>
-          <select v-model.number="itemsPerPage" @change="currentPage = 1" class="page-select">
-            <option v-for="option in itemsPerPageOptions" :key="option" :value="option">
-              {{ option }}
-            </option>
-          </select>
-          <span>registros</span>
+            <!-- Tab Content: Metrología -->
+            <div v-show="activeTab === 'metrologia'" class="detalle-content active">
+              <div class="detalle-grid">
+                <div class="detalle-section">
+                  <h4 class="detalle-section-title">E. Info Metrológica Administrativa</h4>
+                  <div class="detalle-item"><span class="detalle-label">Requiere Mantenimiento:</span><span class="detalle-value">{{ selectedEquipo.informacion_metrologica?.requiere_mantenimiento ? '✅ Sí' : 'No' }}</span></div>
+                  <div class="detalle-item"><span class="detalle-label">Frecuencia:</span><span class="detalle-value">{{ selectedEquipo.informacion_metrologica?.frecuencia_mantenimiento }}</span></div>
+                  <div class="detalle-item"><span class="detalle-label">Último Mantenimiento:</span><span class="detalle-value">{{ formatFecha(selectedEquipo.informacion_metrologica?.ultimo_mantenimiento) }}</span></div>
+                  <div class="detalle-item"><span class="detalle-label">Próximo Mantenimiento:</span><span class="detalle-value">{{ formatFecha(selectedEquipo.informacion_metrologica?.fecha_proximo_mantenimiento_calculada) }}</span></div>
+                  <div class="detalle-item"><span class="detalle-label">Estado Mantenimiento:</span><span class="detalle-value"><strong>{{ selectedEquipo.informacion_metrologica?.estado_mantenimiento || 'N/A' }}</strong></span></div>
+                  <div class="detalle-item"><span class="detalle-label">Requiere Calibración:</span><span class="detalle-value">{{ selectedEquipo.informacion_metrologica?.requiere_calibracion ? '✅ Sí' : 'No' }}</span></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tab Content: Traslados -->
+            <div v-show="activeTab === 'traslados'" class="detalle-content active">
+              <p v-if="!selectedEquipo.historial_traslados || selectedEquipo.historial_traslados.length === 0">
+                No hay historial de traslados disponible
+              </p>
+              <div v-else>
+                <!-- Display traslados here -->
+              </div>
+            </div>
+
+            <!-- Tab Content: Mantenimientos -->
+            <div v-show="activeTab === 'mantenimientos'" class="detalle-content active">
+              <p v-if="!selectedEquipo.historial_mantenimientos || selectedEquipo.historial_mantenimientos.length === 0">
+                No hay historial de mantenimientos disponible
+              </p>
+              <div v-else>
+                <!-- Display mantenimientos here -->
+              </div>
+            </div>
+          </div>
         </div>
-        
-        <div class="page-navigation">
-          <button class="page-btn" :disabled="currentPage === 1" @click="changePage(currentPage - 1)">Anterior</button>
-          <span class="page-info">
-            Página 
-            <input type="number" v-model.number="currentPage" min="1" :max="totalPages" class="page-input" @change="changePage(currentPage)">
-            de {{ totalPages }}
-          </span>
-          <button class="page-btn" :disabled="currentPage === totalPages" @click="changePage(currentPage + 1)">Siguiente</button>
-        </div>
-      </div>
-    </div>
+      </template>
+    </EquipoTabla>
 
     <!-- Modals -->
     <EquipoCreateModal 

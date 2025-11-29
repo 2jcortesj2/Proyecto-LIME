@@ -6,7 +6,7 @@
         <input 
           type="text" 
           v-model="localSearchQuery" 
-          placeholder="🔍 Buscar por nombre, código, marca, modelo o serie..." 
+          placeholder="🔍 Buscar por código, nombre, marca, modelo o serie..." 
           class="search-input"
         >
         <button 
@@ -26,21 +26,25 @@
       <table>
         <thead>
           <tr>
-            <th style="width: 20%;">Código Interno</th>
-            <th style="width: 25%;">Nombre</th>
-            <th style="width: 15%;">Marca</th>
-            <th style="width: 15%;">Modelo</th>
-            <th style="width: 15%;">Riesgo</th>
-            <th style="width: 10%; text-align: center;">Acciones</th>
+            <th style="width: 7%;">Código</th>
+            <th style="width: 19%;">Equipo</th>
+            <th style="width: 18%;">Registro Invima</th>
+            <th style="width: 6%; text-align: center;">Riesgo</th>
+            <th style="width: 10%;">Sede / Servicio</th>
+            <th style="width: 12%;">Encargado</th>
+            <th style="width: 10%;">Estado</th>
+            <th style="width: 18%;">Acciones</th>
           </tr>
         </thead>
         <tbody>
           <tr v-for="i in 8" :key="i">
             <td><div class="skeleton-text"></div></td>
             <td><div class="skeleton-text"></div></td>
+            <td><div class="skeleton-text skeleton-badge"></div></td>
+            <td style="text-align: center;"><div class="skeleton-text skeleton-small" style="margin: 0 auto;"></div></td>
             <td><div class="skeleton-text"></div></td>
             <td><div class="skeleton-text"></div></td>
-            <td><div class="skeleton-text"></div></td>
+            <td><div class="skeleton-text skeleton-badge"></div></td>
             <td><div class="skeleton-text skeleton-buttons"></div></td>
           </tr>
         </tbody>
@@ -54,51 +58,66 @@
     <table v-else id="equiposTable">
       <thead>
         <tr>
-          <th style="width: 20%;">Código Interno</th>
-          <th style="width: 25%;">Nombre</th>
-          <th style="width: 15%;">Marca</th>
-          <th style="width: 15%;">Modelo</th>
-          <th style="width: 15%;">Riesgo</th>
-          <th style="width: 10%; text-align: center;">Acciones</th>
+          <th style="width: 7%;">Código</th>
+          <th style="width: 19%;">Equipo</th>
+          <th style="width: 18%;">Registro Invima</th>
+          <th style="width: 6%; text-align: center;">Riesgo</th>
+          <th style="width: 10%;">Sede / Servicio</th>
+          <th style="width: 12%;">Encargado</th>
+          <th style="width: 10%; text-align: center;">Estado</th>
+          <th style="width: 18%;">Acciones</th>
         </tr>
       </thead>
       <tbody>
         <template v-for="equipo in paginatedEquipos" :key="equipo.id">
           <!-- Main Row -->
-          <tr @click="$emit('toggleDetail', equipo.id)" style="cursor: pointer;">
-            <td>
-              <div style="font-weight: 600; color: #006633;">{{ equipo.codigo_interno }}</div>
-            </td>
+          <tr 
+            :data-equipo="equipo.id" 
+            @click="$emit('toggleDetail', equipo.id)" 
+            :class="{ 'row-active': expandedEquipoId === equipo.id }"
+            style="cursor: pointer;"
+          >
+            <td><strong>{{ equipo.codigo_interno }}</strong></td>
             <td>
               <div style="font-weight: 600;">{{ equipo.nombre_equipo }}</div>
-              <div style="font-size: 12px; color: #9e9e9e;">{{ equipo.serie }}</div>
+              <div style="font-size: 11px; color: #616161;">{{ equipo.marca }} - {{ equipo.modelo }}</div>
             </td>
             <td>
-              <div style="font-size: 14px; color: #616161;">{{ equipo.marca || 'N/A' }}</div>
+              <span v-if="equipo.registro_invima" class="invima-badge">{{ equipo.registro_invima }}</span>
+              <span v-else class="invima-badge" style="background: rgba(158, 158, 158, 0.1); color: #9e9e9e;">N/A</span>
             </td>
-            <td>
-              <div style="font-size: 14px; color: #616161;">{{ equipo.modelo || 'N/A' }}</div>
-            </td>
-            <td>
-              <span :class="['badge', getRiesgoBadgeClass(equipo.clasificacion_riesgo)]">
+            <td style="text-align: center;">
+              <span class="risk-box" :class="getRiesgoBadgeClass(equipo.clasificacion_riesgo)">
                 {{ equipo.clasificacion_riesgo || 'N/A' }}
               </span>
             </td>
+            <td>
+              <div style="font-weight: 600; font-size: 14px;">{{ equipo.sede?.nombre || 'N/A' }}</div>
+              <div style="font-size: 12px; color: #616161;">{{ equipo.servicio?.nombre || 'N/A' }}</div>
+            </td>
+            <td>{{ equipo.responsable_nombre || 'N/A' }}</td>
+            <td style="text-align: center;">
+              <span class="estado-badge" :class="getEstadoBadgeClass(equipo.estado)">
+                {{ formatEstado(equipo.estado) }}
+              </span>
+            </td>
             <td @click.stop>
-              <div style="display: flex; gap: 6px; justify-content: center;">
-                <button class="btn btn-secondary btn-sm" @click="$emit('edit', equipo)" title="Editar">
-                  ✏️
-                </button>
-                <button class="btn btn-danger btn-sm" @click="$emit('delete', equipo)" title="Eliminar">
-                  🗑️
-                </button>
+              <div style="display: flex; gap: 6px;">
+                <button 
+                  class="btn btn-info btn-sm btn-ver" 
+                  :class="{ 'btn-ver-active': expandedEquipoId === equipo.id }"
+                  @click="$emit('toggleDetail', equipo.id)"
+                  title="Ver Detalle"
+                >👁️</button>
+                <button class="btn btn-secondary btn-sm" @click="$emit('edit', equipo)" title="Editar">✏️</button>
+                <button class="btn btn-danger btn-sm" @click="$emit('delete', equipo)" title="Eliminar">🗑️</button>
               </div>
             </td>
           </tr>
 
           <!-- Expanded Detail Row (slot for parent to provide content) -->
-          <tr v-if="expandedEquipoId === equipo.id" class="detail-row">
-            <td colspan="6">
+          <tr v-if="expandedEquipoId === equipo.id" class="detalle-row active">
+            <td colspan="8" class="detalle-cell">
               <slot name="detail" :equipo="equipo"></slot>
             </td>
           </tr>
@@ -213,11 +232,26 @@ function changePage(page) {
   }
 }
 
+// Helper Functions
 function getRiesgoBadgeClass(riesgo) {
-  if (!riesgo) return 'badge-secondary'
-  if (riesgo === 'III' || riesgo === 'IIb') return 'badge-danger'
-  if (riesgo === 'IIa') return 'badge-warning'
-  return 'badge-success'
+  if (!riesgo) return 'risk-box-secondary'
+  if (riesgo === 'III' || riesgo === 'IIb') return 'risk-box-danger'
+  if (riesgo === 'IIa') return 'risk-box-warning'
+  return 'risk-box-success'
+}
+
+function getEstadoBadgeClass(estado) {
+  if (!estado) return 'estado-inactivo'
+  if (estado === 'Activo') return 'estado-activo'
+  if (estado === 'En Mantenimiento' || estado === 'Mantenimiento') return 'estado-mantenimiento'
+  if (estado === 'Baja') return 'estado-baja'
+  return 'estado-inactivo'
+}
+
+function formatEstado(estado) {
+  if (!estado) return 'N/A'
+  if (estado === 'En Mantenimiento') return 'Mantenimiento'
+  return estado
 }
 </script>
 
@@ -317,7 +351,7 @@ thead {
 
 th {
   padding: 15px;
-  text-align: center;
+  text-align: left;
   font-size: 13px;
   text-transform: uppercase;
   font-weight: bold;
@@ -328,6 +362,7 @@ td {
   padding: 15px;
   border-bottom: 1px solid #e0e0e0;
   font-size: 14px;
+  vertical-align: middle;
 }
 
 tbody tr {
@@ -339,40 +374,97 @@ tbody tr:hover {
   background: rgba(0, 102, 51, 0.08);
 }
 
-.detail-row {
+.row-active {
+  background: rgba(0, 102, 51, 0.05) !important;
+  border-left: 4px solid #006633;
+}
+
+/* Detalle Row */
+.detalle-row {
   background: #f9f9f9 !important;
 }
 
-.detail-row:hover {
+.detalle-row:hover {
   background: #f9f9f9 !important;
+}
+
+.detalle-cell {
+  padding: 0 !important;
 }
 
 /* Badges */
-.badge {
+.invima-badge {
+  background: #e3f2fd;
+  color: #1565c0;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  display: inline-block;
+  border: 1px solid #bbdefb;
+}
+
+.risk-box {
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  display: inline-block;
+  min-width: 35px;
+  text-align: center;
+}
+
+.risk-box-danger {
+  background: rgba(255, 0, 0, 0.1);
+  color: #d32f2f;
+  border: 2px solid rgba(255, 0, 0, 0.3);
+}
+
+.risk-box-warning {
+  background: rgba(255, 165, 0, 0.1);
+  color: #e65100;
+  border: 2px solid rgba(255, 165, 0, 0.3);
+}
+
+.risk-box-success {
+  background: rgba(76, 175, 80, 0.1);
+  color: #2e7d32;
+  border: 2px solid rgba(76, 175, 80, 0.3);
+}
+
+.risk-box-secondary {
+  background: rgba(158, 158, 158, 0.1);
+  color: #757575;
+  border: 2px solid rgba(158, 158, 158, 0.3);
+}
+
+.estado-badge {
   padding: 4px 12px;
   border-radius: 12px;
   font-size: 12px;
   font-weight: 600;
   text-transform: uppercase;
+  display: inline-block;
 }
 
-.badge-danger {
-  background: #ffebee;
-  color: #c62828;
-}
-
-.badge-warning {
-  background: #fff3e0;
-  color: #e65100;
-}
-
-.badge-success {
-  background: #e8f5e9;
+.estado-activo {
+  background: rgba(76, 175, 80, 0.15);
   color: #2e7d32;
 }
 
-.badge-secondary {
-  background: #f5f5f5;
+.estado-mantenimiento {
+  background: rgba(255, 152, 0, 0.15);
+  color: #e65100;
+}
+
+.estado-baja {
+  background: rgba(244, 67, 54, 0.15);
+  color: #d32f2f;
+}
+
+.estado-inactivo {
+  background: rgba(158, 158, 158, 0.15);
   color: #757575;
 }
 
@@ -410,6 +502,20 @@ tbody tr:hover {
   background: #d32f2f;
 }
 
+.btn-info {
+  background: #2196f3;
+  color: white;
+}
+
+.btn-ver {
+  transition: all 0.3s;
+}
+
+.btn-ver-active {
+  background: #006633;
+  transform: scale(1.1);
+}
+
 /* Skeleton Loading */
 .skeleton-table {
   width: 100%;
@@ -423,8 +529,18 @@ tbody tr:hover {
   border-radius: 4px;
 }
 
+.skeleton-badge {
+  width: 60%;
+  height: 24px;
+}
+
+.skeleton-small {
+  width: 40px;
+  height: 24px;
+}
+
 .skeleton-buttons {
-  width: 70%;
+  width: 120px;
   height: 32px;
   margin: 0 auto;
 }
