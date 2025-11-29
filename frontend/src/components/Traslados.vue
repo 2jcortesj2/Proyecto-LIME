@@ -11,6 +11,23 @@ const currentPage = ref(1)
 const itemsPerPage = ref(10)
 const itemsPerPageOptions = [10, 20, 50, 100]
 
+// Filter Panel State
+const showFilterPanel = ref(false)
+
+// Filter State
+const filtros = ref({
+  sedes_origen: [],
+  sedes_destino: [],
+  servicios_origen: [],
+  servicios_destino: [],
+  usuarios: [],
+  fecha_desde: '',
+  fecha_hasta: ''
+})
+
+const ordenamiento = ref('fecha-desc')
+
+
 // Modal state
 const showEditModal = ref(false)
 const showDeleteModal = ref(false)
@@ -61,15 +78,109 @@ const fetchCatalogs = async () => {
   }
 }
 
+
+// Get unique values for filters
+const sedesOrigenUnicas = computed(() => {
+  const sedesOrigen = traslados.value
+    .map(t => ({ id: t.sede_origen, nombre: t.sede_origen_nombre }))
+    .filter((sede, index, self) => sede.id && sede.nombre && 
+      self.findIndex(s => s.id === sede.id) === index)
+  return sedesOrigen.sort((a, b) => a.nombre.localeCompare(b.nombre))
+})
+
+const sedesDestinoUnicas = computed(() => {
+  const sedesDestino = traslados.value
+    .map(t => ({ id: t.sede_destino, nombre: t.sede_destino_nombre }))
+    .filter((sede, index, self) => sede.id && sede.nombre && 
+      self.findIndex(s => s.id === sede.id) === index)
+  return sedesDestino.sort((a, b) => a.nombre.localeCompare(b.nombre))
+})
+
+const serviciosOrigenUnicos = computed(() => {
+  const serviciosOrigen = traslados.value
+    .map(t => ({ id: t.servicio_origen, nombre: t.servicio_origen_nombre }))
+    .filter((servicio, index, self) => servicio.id && servicio.nombre && 
+      self.findIndex(s => s.id === servicio.id) === index)
+  return serviciosOrigen.sort((a, b) => a.nombre.localeCompare(b.nombre))
+})
+
+const serviciosDestinoUnicos = computed(() => {
+  const serviciosDestino = traslados.value
+    .map(t => ({ id: t.servicio_destino, nombre: t.servicio_destino_nombre }))
+    .filter((servicio, index, self) => servicio.id && servicio.nombre && 
+      self.findIndex(s => s.id === servicio.id) === index)
+  return serviciosDestino.sort((a, b) => a.nombre.localeCompare(b.nombre))
+})
+
+const usuariosUnicos = computed(() => {
+  const usuarios = [...new Set(traslados.value.map(t => t.usuario_registro))].filter(Boolean)
+  return usuarios.sort()
+})
+
 const filteredTraslados = computed(() => {
-  if (!searchQuery.value) return traslados.value
-  const query = searchQuery.value.toLowerCase()
-  return traslados.value.filter(t => 
-    (t.equipo_codigo && t.equipo_codigo.toLowerCase().includes(query)) ||
-    (t.equipo_nombre && t.equipo_nombre.toLowerCase().includes(query)) ||
-    (t.equipo_marca && t.equipo_marca.toLowerCase().includes(query)) ||
-    (t.equipo_modelo && t.equipo_modelo.toLowerCase().includes(query))
-  )
+  let result = traslados.value
+
+  // Filtro por búsqueda
+  if (searchQuery.value) {
+    const query = searchQuery.value.toLowerCase()
+    result = result.filter(t => 
+      (t.equipo_codigo && t.equipo_codigo.toLowerCase().includes(query)) ||
+      (t.equipo_nombre && t.equipo_nombre.toLowerCase().includes(query)) ||
+      (t.equipo_marca && t.equipo_marca.toLowerCase().includes(query)) ||
+      (t.equipo_modelo && t.equipo_modelo.toLowerCase().includes(query))
+    )
+  }
+
+  // Filtro por sedes origen
+  if (filtros.value.sedes_origen.length > 0) {
+    result = result.filter(t => filtros.value.sedes_origen.some(s => s.id === t.sede_origen))
+  }
+
+  // Filtro por sedes destino
+  if (filtros.value.sedes_destino.length > 0) {
+    result = result.filter(t => filtros.value.sedes_destino.some(s => s.id === t.sede_destino))
+  }
+
+  // Filtro por servicios origen
+  if (filtros.value.servicios_origen.length > 0) {
+    result = result.filter(t => filtros.value.servicios_origen.some(s => s.id === t.servicio_origen))
+  }
+
+  // Filtro por servicios destino
+  if (filtros.value.servicios_destino.length > 0) {
+    result = result.filter(t => filtros.value.servicios_destino.some(s => s.id === t.servicio_destino))
+  }
+
+  // Filtro por usuarios
+  if (filtros.value.usuarios.length > 0) {
+    result = result.filter(t => filtros.value.usuarios.includes(t.usuario_registro))
+  }
+
+  // Filtro por rango de fechas
+  if (filtros.value.fecha_desde) {
+    result = result.filter(t => t.fecha_traslado >= filtros.value.fecha_desde)
+  }
+  if (filtros.value.fecha_hasta) {
+    result = result.filter(t => t.fecha_traslado <= filtros.value.fecha_hasta)
+  }
+
+  // Ordenamiento
+  switch (ordenamiento.value) {
+    case 'fecha-desc':
+      result.sort((a, b) => new Date(b.fecha_traslado) - new Date(a.fecha_traslado))
+      break
+    case 'fecha-asc':
+      result.sort((a, b) => new Date(a.fecha_traslado) - new Date(b.fecha_traslado))
+      break
+    case 'equipo-asc':
+      result.sort((a, b) => (a.equipo_nombre || '').localeCompare(b.equipo_nombre || ''))
+      break
+    case 'equipo-desc':
+      result.sort((a, b) => (b.equipo_nombre || '').localeCompare(a.equipo_nombre || ''))
+      break
+  }
+
+  return result
 })
 
 // Pagination computed properties
@@ -87,6 +198,83 @@ function changePage(page) {
     currentPage.value = page
   }
 }
+
+
+// Filter methods
+function toggleFilterPanel() {
+  showFilterPanel.value = !showFilterPanel.value
+}
+
+function toggleSedeOrigenFilter(sede) {
+  const index = filtros.value.sedes_origen.findIndex(s => s.id === sede.id)
+  if (index > -1) {
+    filtros.value.sedes_origen.splice(index, 1)
+  } else {
+    filtros.value.sedes_origen.push(sede)
+  }
+  currentPage.value = 1
+}
+
+function toggleSedeDestinoFilter(sede) {
+  const index = filtros.value.sedes_destino.findIndex(s => s.id === sede.id)
+  if (index > -1) {
+    filtros.value.sedes_destino.splice(index, 1)
+  } else {
+    filtros.value.sedes_destino.push(sede)
+  }
+  currentPage.value = 1
+}
+
+function toggleServicioOrigenFilter(servicio) {
+  const index = filtros.value.servicios_origen.findIndex(s => s.id === servicio.id)
+  if (index > -1) {
+    filtros.value.servicios_origen.splice(index, 1)
+  } else {
+    filtros.value.servicios_origen.push(servicio)
+  }
+  currentPage.value = 1
+}
+
+function toggleServicioDestinoFilter(servicio) {
+  const index = filtros.value.servicios_destino.findIndex(s => s.id === servicio.id)
+  if (index > -1) {
+    filtros.value.servicios_destino.splice(index, 1)
+  } else {
+    filtros.value.servicios_destino.push(servicio)
+  }
+  currentPage.value = 1
+}
+
+function toggleUsuarioFilter(usuario) {
+  const index = filtros.value.usuarios.indexOf(usuario)
+  if (index > -1) {
+    filtros.value.usuarios.splice(index, 1)
+  } else {
+    filtros.value.usuarios.push(usuario)
+  }
+  currentPage.value = 1
+}
+
+function borrarTodosFiltros() {
+  filtros.value.sedes_origen = []
+  filtros.value.sedes_destino = []
+  filtros.value.servicios_origen = []
+  filtros.value.servicios_destino = []
+  filtros.value.usuarios = []
+  filtros.value.fecha_desde = ''
+  filtros.value.fecha_hasta = ''
+  ordenamiento.value = 'fecha-desc'
+  currentPage.value = 1
+}
+
+const filtrosActivos = computed(() => {
+  let count = filtros.value.sedes_origen.length + filtros.value.sedes_destino.length + 
+              filtros.value.servicios_origen.length + filtros.value.servicios_destino.length +
+              filtros.value.usuarios.length
+  if (filtros.value.fecha_desde) count++
+  if (filtros.value.fecha_hasta) count++
+  return count
+})
 
 const formatFecha = (fecha) => {
   if (!fecha) return 'N/A'
@@ -250,6 +438,10 @@ onMounted(() => {
             v-model="searchQuery"
           >
         </div>
+        <button class="filter-button" @click="toggleFilterPanel">
+          ☰ Filtrar y Ordenar
+          <span v-if="filtrosActivos > 0" class="filter-badge">{{ filtrosActivos }}</span>
+        </button>
       </div>
 
       <!-- Skeleton Loader -->
@@ -552,6 +744,155 @@ onMounted(() => {
       </div>
     </div>
   </div>
+
+    <!-- FILTER PANEL -->
+    <div class="filtro-overlay" :class="{ active: showFilterPanel }" @click="showFilterPanel = false"></div>
+    <div class="filtro-panel" :class="{ active: showFilterPanel }">
+      <div class="filtro-header">
+        <h3>FILTRAR Y ORDENAR</h3>
+        <button class="borrar-todo" @click="borrarTodosFiltros">Borrar todo</button>
+      </div>
+
+      <div class="filtro-body">
+        <!-- Ordenar por -->
+        <div class="filtro-section">
+          <button class="filtro-section-title" @click="e => e.target.classList.toggle('collapsed')">
+            Ordenar por
+            <span class="arrow">▼</span>
+          </button>
+          <div class="filtro-content">
+            <label class="filtro-item">
+              <input type="radio" v-model="ordenamiento" value="fecha-desc">
+              <span>Fecha (Más reciente)</span>
+            </label>
+            <label class="filtro-item">
+              <input type="radio" v-model="ordenamiento" value="fecha-asc">
+              <span>Fecha (Más antiguo)</span>
+            </label>
+            <label class="filtro-item">
+              <input type="radio" v-model="ordenamiento" value="equipo-asc">
+              <span>Equipo (A-Z)</span>
+            </label>
+            <label class="filtro-item">
+              <input type="radio" v-model="ordenamiento" value="equipo-desc">
+              <span>Equipo (Z-A)</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Sede Origen -->
+        <div class="filtro-section" v-if="sedesOrigenUnicas.length > 0">
+          <button class="filtro-section-title" @click="e => e.target.classList.toggle('collapsed')">
+            Sede Origen
+            <span class="arrow">▼</span>
+          </button>
+          <div class="filtro-content">
+            <label class="filtro-item" v-for="sede in sedesOrigenUnicas" :key="sede.id">
+              <input 
+                type="checkbox" 
+                :checked="filtros.sedes_origen.some(s => s.id === sede.id)"
+                @change="toggleSedeOrigenFilter(sede)"
+              >
+              <span>{{ sede.nombre }}</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Sede Destino -->
+        <div class="filtro-section" v-if="sedesDestinoUnicas.length > 0">
+          <button class="filtro-section-title" @click="e => e.target.classList.toggle('collapsed')">
+            Sede Destino
+            <span class="arrow">▼</span>
+          </button>
+          <div class="filtro-content">
+            <label class="filtro-item" v-for="sede in sedesDestinoUnicas" :key="sede.id">
+              <input 
+                type="checkbox" 
+                :checked="filtros.sedes_destino.some(s => s.id === sede.id)"
+                @change="toggleSedeDestinoFilter(sede)"
+              >
+              <span>{{ sede.nombre }}</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Servicio Origen -->
+        <div class="filtro-section" v-if="serviciosOrigenUnicos.length > 0">
+          <button class="filtro-section-title" @click="e => e.target.classList.toggle('collapsed')">
+            Servicio Origen
+            <span class="arrow">▼</span>
+          </button>
+          <div class="filtro-content">
+            <label class="filtro-item" v-for="servicio in serviciosOrigenUnicos" :key="servicio.id">
+              <input 
+                type="checkbox" 
+                :checked="filtros.servicios_origen.some(s => s.id === servicio.id)"
+                @change="toggleServicioOrigenFilter(servicio)"
+              >
+              <span>{{ servicio.nombre }}</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Servicio Destino -->
+        <div class="filtro-section" v-if="serviciosDestinoUnicos.length > 0">
+          <button class="filtro-section-title" @click="e => e.target.classList.toggle('collapsed')">
+            Servicio Destino
+            <span class="arrow">▼</span>
+          </button>
+          <div class="filtro-content">
+            <label class="filtro-item" v-for="servicio in serviciosDestinoUnicos" :key="servicio.id">
+              <input 
+                type="checkbox" 
+                :checked="filtros.servicios_destino.some(s => s.id === servicio.id)"
+                @change="toggleServicioDestinoFilter(servicio)"
+              >
+              <span>{{ servicio.nombre }}</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Usuario que Registró -->
+        <div class="filtro-section" v-if="usuariosUnicos.length > 0">
+          <button class="filtro-section-title" @click="e => e.target.classList.toggle('collapsed')">
+            Registrado Por
+            <span class="arrow">▼</span>
+          </button>
+          <div class="filtro-content">
+            <label class="filtro-item" v-for="usuario in usuariosUnicos" :key="usuario">
+              <input 
+                type="checkbox" 
+                :checked="filtros.usuarios.includes(usuario)"
+                @change="toggleUsuarioFilter(usuario)"
+              >
+              <span>{{ usuario }}</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Rango de Fechas -->
+        <div class="filtro-section">
+          <button class="filtro-section-title" @click="e => e.target.classList.toggle('collapsed')">
+            Rango de Fechas
+            <span class="arrow">▼</span>
+          </button>
+          <div class="filtro-content">
+            <div class="form-group" style="margin-bottom: 10px;">
+              <label style="font-size: 13px; color: #616161; margin-bottom: 5px; display: block;">Desde:</label>
+              <input type="date" v-model="filtros.fecha_desde" class="form-input" style="font-size: 13px;">
+            </div>
+            <div class="form-group">
+              <label style="font-size: 13px; color: #616161; margin-bottom: 5px; display: block;">Hasta:</label>
+              <input type="date" v-model="filtros.fecha_hasta" class="form-input" style="font-size: 13px;">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="filtro-footer">
+        <p>{{ filteredTraslados.length }} traslados encontrados</p>
+      </div>
+    </div>
 </template>
 
 <style scoped>
@@ -786,6 +1127,217 @@ tr:hover {
   color: #666;
   font-style: italic;
   cursor: default;
+  text-align: center;
+}
+
+/* FILTER PANEL STYLES */
+.search-filter-container { 
+  display: flex; 
+  gap: 20px; 
+  margin-bottom: 25px; 
+  align-items: center; 
+}
+
+.filter-button { 
+  padding: 14px 24px; 
+  background: white; 
+  border: 2px solid #006633; 
+  color: #006633; 
+  border-radius: 8px; 
+  cursor: pointer; 
+  font-weight: 600; 
+  font-size: 14px;
+  display: flex; 
+  align-items: center; 
+  gap: 8px; 
+  transition: all 0.3s ease;
+  white-space: nowrap;
+  position: relative;
+}
+
+.filter-button:hover { 
+  background: #006633; 
+  color: white; 
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 102, 51, 0.2);
+}
+
+.filter-badge {
+  background: #006633;
+  color: white;
+  border-radius: 50%;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.filter-button:hover .filter-badge {
+  background: white;
+  color: #006633;
+}
+
+.filtro-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 998;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+}
+
+.filtro-overlay.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+.filtro-panel {
+  position: fixed;
+  top: 0;
+  right: -400px;
+  width: 400px;
+  height: 100vh;
+  background: white;
+  box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
+  z-index: 999;
+  transition: right 0.3s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+.filtro-panel.active {
+  right: 0;
+}
+
+.filtro-header {
+  padding: 25px;
+  border-bottom: 2px solid #e0e0e0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: linear-gradient(90deg, rgba(0, 102, 51, 0.05) 0%, transparent 100%);
+}
+
+.filtro-header h3 {
+  font-size: 18px;
+  color: #006633;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.borrar-todo {
+  background: none;
+  border: none;
+  color: #f44336;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 14px;
+  text-decoration: underline;
+  padding: 5px 10px;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.borrar-todo:hover {
+  background: rgba(244, 67, 54, 0.1);
+}
+
+.filtro-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+}
+
+.filtro-section {
+  margin-bottom: 20px;
+  border-bottom: 1px solid #e0e0e0;
+  padding-bottom: 15px;
+}
+
+.filtro-section:last-child {
+  border-bottom: none;
+}
+
+.filtro-section-title {
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  font-size: 15px;
+  font-weight: 700;
+  color: #212121;
+  padding: 12px 0;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.filtro-section-title .arrow {
+  transition: transform 0.3s;
+  color: #006633;
+  font-size: 12px;
+}
+
+.filtro-section-title.collapsed .arrow {
+  transform: rotate(-90deg);
+}
+
+.filtro-section-title.collapsed + .filtro-content {
+  display: none;
+}
+
+.filtro-content {
+  padding-top: 10px;
+}
+
+.filtro-item {
+  display: flex;
+  align-items: center;
+  padding: 10px 0;
+  cursor: pointer;
+  transition: background 0.2s;
+  border-radius: 4px;
+  padding-left: 10px;
+}
+
+.filtro-item:hover {
+  background: rgba(0, 102, 51, 0.05);
+}
+
+.filtro-item input[type="checkbox"],
+.filtro-item input[type="radio"] {
+  margin-right: 12px;
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: #006633;
+}
+
+.filtro-item span {
+  font-size: 14px;
+  color: #424242;
+}
+
+.filtro-footer {
+  padding: 20px 25px;
+  border-top: 2px solid #e0e0e0;
+  background: #f5f5f5;
+}
+
+.filtro-footer p {
+  font-size: 14px;
+  color: #616161;
+  font-weight: 600;
   text-align: center;
 }
 </style>

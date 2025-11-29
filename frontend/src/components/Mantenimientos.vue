@@ -6,6 +6,7 @@ import { mantenimientosAPI } from '../services/api'
 const mantenimientos = ref([])
 const loading = ref(true)
 const error = ref(null)
+const searchQuery = ref('')
 
 // Pagination state
 const currentPage = ref(1)
@@ -14,6 +15,19 @@ const itemsPerPageOptions = [5, 10, 20, 50]
 
 // Accordion state
 const expandedRows = ref(new Set())
+
+// Filter Panel State
+const showFilterPanel = ref(false)
+
+// Filter State
+const filtros = ref({
+  tipos: [],
+  proveedores: [],
+  anios: [],
+  meses: []
+})
+
+const ordenamiento = ref('reciente')
 
 const mesesNombres = [
   'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
@@ -38,13 +52,96 @@ onMounted(() => {
   fetchMantenimientos()
 })
 
+// Get unique values for filters
+const tiposUnicos = computed(() => {
+  const tipos = [...new Set(mantenimientos.value.map(m => m.tipo_mantenimiento))].filter(Boolean)
+  return tipos.sort()
+})
+
+const proveedoresUnicos = computed(() => {
+  const proveedores = [...new Set(mantenimientos.value.map(m => m.realizado_por))].filter(Boolean)
+  return proveedores.sort()
+})
+
+const aniosUnicos = computed(() => {
+  const anios = [...new Set(mantenimientos.value.map(m => m.anio_mantenimiento))].filter(Boolean)
+  return anios.sort((a, b) => b - a) // Más reciente primero
+})
+
+// Filtered mantenimientos
+const filteredMantenimientos = computed(() => {
+  let result = mantenimientos.value
+
+  // Filtro por búsqueda
+  if (searchQuery.value) {
+    const query = searchQuery.value.toLowerCase()
+    result = result.filter(mant => 
+      (mant.equipo?.codigo_interno && mant.equipo.codigo_interno.toLowerCase().includes(query)) ||
+      (mant.equipo?.nombre_equipo && mant.equipo.nombre_equipo.toLowerCase().includes(query)) ||
+      (mant.tipo_mantenimiento && mant.tipo_mantenimiento.toLowerCase().includes(query)) ||
+      (mant.realizado_por && mant.realizado_por.toLowerCase().includes(query))
+    )
+  }
+
+  // Filtro por tipos
+  if (filtros.value.tipos.length > 0) {
+    result = result.filter(mant => filtros.value.tipos.includes(mant.tipo_mantenimiento))
+  }
+
+  // Filtro por proveedores
+  if (filtros.value.proveedores.length > 0) {
+    result = result.filter(mant => filtros.value.proveedores.includes(mant.realizado_por))
+  }
+
+  // Filtro por años
+  if (filtros.value.anios.length > 0) {
+    result = result.filter(mant => filtros.value.anios.includes(mant.anio_mantenimiento))
+  }
+
+  // Filtro por meses
+  if (filtros.value.meses.length > 0) {
+    result = result.filter(mant => filtros.value.meses.includes(mant.mes_mantenimiento))
+  }
+
+  // Ordenamiento
+  switch (ordenamiento.value) {
+    case 'reciente':
+      result.sort((a, b) => {
+        if (b.anio_mantenimiento !== a.anio_mantenimiento) {
+          return b.anio_mantenimiento - a.anio_mantenimiento
+        }
+        return b.mes_mantenimiento - a.mes_mantenimiento
+      })
+      break
+    case 'antiguo':
+      result.sort((a, b) => {
+        if (a.anio_mantenimiento !== b.anio_mantenimiento) {
+          return a.anio_mantenimiento - b.anio_mantenimiento
+        }
+        return a.mes_mantenimiento - b.mes_mantenimiento
+      })
+      break
+    case 'costo-mayor':
+      result.sort((a, b) => (b.costo || 0) - (a.costo || 0))
+      break
+    case 'costo-menor':
+      result.sort((a, b) => (a.costo || 0) - (b.costo || 0))
+      break
+    case 'equipo-asc':
+      result.sort((a, b) => (a.equipo?.nombre_equipo || '').localeCompare(b.equipo?.nombre_equipo || ''))
+      break
+  }
+
+  return result
+})
+
 // Pagination Logic
-const totalPages = computed(() => Math.ceil(mantenimientos.value.length / itemsPerPage.value))
+const totalPages = computed(() => Math.ceil(filteredMantenimientos.value.length / itemsPerPage.value))
 
 const paginatedMantenimientos = computed(() => {
   const start = (currentPage.value - 1) * itemsPerPage.value
   const end = start + itemsPerPage.value
-  return mantenimientos.value.slice(start, end)
+  return filteredMantenimientos.value.slice(start, end)
 })
 
 function changePage(page) {
@@ -52,6 +149,65 @@ function changePage(page) {
     currentPage.value = page
   }
 }
+
+// Filter methods
+function toggleFilterPanel() {
+  showFilterPanel.value = !showFilterPanel.value
+}
+
+function toggleTipoFilter(tipo) {
+  const index = filtros.value.tipos.indexOf(tipo)
+  if (index > -1) {
+    filtros.value.tipos.splice(index, 1)
+  } else {
+    filtros.value.tipos.push(tipo)
+  }
+  currentPage.value = 1
+}
+
+function toggleProveedorFilter(proveedor) {
+  const index = filtros.value.proveedores.indexOf(proveedor)
+  if (index > -1) {
+    filtros.value.proveedores.splice(index, 1)
+  } else {
+    filtros.value.proveedores.push(proveedor)
+  }
+  currentPage.value = 1
+}
+
+function toggleAnioFilter(anio) {
+  const index = filtros.value.anios.indexOf(anio)
+  if (index > -1) {
+    filtros.value.anios.splice(index, 1)
+  } else {
+    filtros.value.anios.push(anio)
+  }
+  currentPage.value = 1
+}
+
+function toggleMesFilter(mes) {
+  const index = filtros.value.meses.indexOf(mes)
+  if (index > -1) {
+    filtros.value.meses.splice(index, 1)
+  } else {
+    filtros.value.meses.push(mes)
+  }
+  currentPage.value = 1
+}
+
+function borrarTodosFiltros() {
+  filtros.value.tipos = []
+  filtros.value.proveedores = []
+  filtros.value.anios = []
+  filtros.value.meses = []
+  ordenamiento.value = 'reciente'
+  currentPage.value = 1
+}
+
+const filtrosActivos = computed(() => {
+  return filtros.value.tipos.length + filtros.value.proveedores.length + 
+         filtros.value.anios.length + filtros.value.meses.length
+})
 
 // Accordion Logic
 function toggleRow(id) {
@@ -94,7 +250,6 @@ function getTipoBadgeClass(tipo) {
 }
 
 function abrirNuevoMantenimiento() {
-  // Aquí se implementaría la lógica para crear un nuevo mantenimiento
   alert('Funcionalidad en desarrollo')
 }
 </script>
@@ -132,12 +287,20 @@ function abrirNuevoMantenimiento() {
     <div v-else class="content-card">
       <div class="search-filter-container">
         <div class="search-section">
-          <input type="text" class="search-input" placeholder="🔍 Buscar por código, equipo, tipo o proveedor...">
+          <input 
+            type="text" 
+            v-model="searchQuery"
+            class="search-input" 
+            placeholder="🔍 Buscar por código, equipo, tipo o proveedor..."
+          >
         </div>
-        <button class="filter-button">☰ Filtrar y Ordenar</button>
+        <button class="filter-button" @click="toggleFilterPanel">
+          ☰ Filtrar y Ordenar
+          <span v-if="filtrosActivos > 0" class="filter-badge">{{ filtrosActivos }}</span>
+        </button>
       </div>
 
-      <table v-if="mantenimientos.length > 0">
+      <table v-if="filteredMantenimientos.length > 0">
         <thead>
           <tr>
             <th>Código Equipo</th>
@@ -201,14 +364,12 @@ function abrirNuevoMantenimiento() {
                     </div>
                   </div>
 
-                  <!-- Observaciones Section - Will include edit history in the future -->
+                  <!-- Observaciones Section -->
                   <div class="observaciones-section" v-if="mant.observaciones">
                     <h4 class="observaciones-title">💬 Observaciones</h4>
                     <div class="observaciones-content">
                       {{ mant.observaciones }}
                     </div>
-                    <!-- Future: Automatic edit history will be appended here -->
-                    <!-- Example: "Editado el 23/11/2024 10:30 por Admin LIME - Motivo: Corrección de costo" -->
                   </div>
                 </div>
               </td>
@@ -217,14 +378,14 @@ function abrirNuevoMantenimiento() {
         </tbody>
       </table>
       <p v-else style="text-align: center; color: #616161; padding: 40px;">
-        No hay mantenimientos registrados
+        No se encontraron mantenimientos
       </p>
 
       <!-- Pagination Footer -->
-      <div class="pagination-footer" v-if="mantenimientos.length > 0">
+      <div class="pagination-footer" v-if="filteredMantenimientos.length > 0">
         <div class="items-per-page">
           <span>Mostrar</span>
-          <select v-model="itemsPerPage" class="page-select">
+          <select v-model.number="itemsPerPage" @change="currentPage = 1" class="page-select">
             <option v-for="opt in itemsPerPageOptions" :key="opt" :value="opt">{{ opt }}</option>
           </select>
           <span>registros</span>
@@ -239,6 +400,123 @@ function abrirNuevoMantenimiento() {
           </span>
           <button class="page-btn" :disabled="currentPage === totalPages" @click="changePage(currentPage + 1)">Siguiente</button>
         </div>
+      </div>
+    </div>
+
+    <!-- FILTER PANEL -->
+    <div class="filtro-overlay" :class="{ active: showFilterPanel }" @click="showFilterPanel = false"></div>
+    <div class="filtro-panel" :class="{ active: showFilterPanel }">
+      <div class="filtro-header">
+        <h3>FILTRAR Y ORDENAR</h3>
+        <button class="borrar-todo" @click="borrarTodosFiltros">Borrar todo</button>
+      </div>
+
+      <div class="filtro-body">
+        <!-- Ordenar por -->
+        <div class="filtro-section">
+          <button class="filtro-section-title" @click="e => e.target.classList.toggle('collapsed')">
+            Ordenar por
+            <span class="arrow">▼</span>
+          </button>
+          <div class="filtro-content">
+            <label class="filtro-item">
+              <input type="radio" v-model="ordenamiento" value="reciente">
+              <span>Más recientes</span>
+            </label>
+            <label class="filtro-item">
+              <input type="radio" v-model="ordenamiento" value="antiguo">
+              <span>Más antiguos</span>
+            </label>
+            <label class="filtro-item">
+              <input type="radio" v-model="ordenamiento" value="costo-mayor">
+              <span>Costo (Mayor a Menor)</span>
+            </label>
+            <label class="filtro-item">
+              <input type="radio" v-model="ordenamiento" value="costo-menor">
+              <span>Costo (Menor a Mayor)</span>
+            </label>
+            <label class="filtro-item">
+              <input type="radio" v-model="ordenamiento" value="equipo-asc">
+              <span>Equipo (A-Z)</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Tipo de Mantenimiento -->
+        <div class="filtro-section" v-if="tiposUnicos.length > 0">
+          <button class="filtro-section-title" @click="e => e.target.classList.toggle('collapsed')">
+            Tipo de Mantenimiento
+            <span class="arrow">▼</span>
+          </button>
+          <div class="filtro-content">
+            <label class="filtro-item" v-for="tipo in tiposUnicos" :key="tipo">
+              <input 
+                type="checkbox" 
+                :checked="filtros.tipos.includes(tipo)"
+                @change="toggleTipoFilter(tipo)"
+              >
+              <span>{{ getTipoLabel(tipo) }}</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Año -->
+        <div class="filtro-section" v-if="aniosUnicos.length > 0">
+          <button class="filtro-section-title" @click="e => e.target.classList.toggle('collapsed')">
+            Año
+            <span class="arrow">▼</span>
+          </button>
+          <div class="filtro-content">
+            <label class="filtro-item" v-for="anio in aniosUnicos" :key="anio">
+              <input 
+                type="checkbox" 
+                :checked="filtros.anios.includes(anio)"
+                @change="toggleAnioFilter(anio)"
+              >
+              <span>{{ anio }}</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Mes -->
+        <div class="filtro-section">
+          <button class="filtro-section-title" @click="e => e.target.classList.toggle('collapsed')">
+            Mes
+            <span class="arrow">▼</span>
+          </button>
+          <div class="filtro-content">
+            <label class="filtro-item" v-for="(mes, index) in mesesNombres" :key="index">
+              <input 
+                type="checkbox" 
+                :checked="filtros.meses.includes(index + 1)"
+                @change="toggleMesFilter(index + 1)"
+              >
+              <span>{{ mes }}</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Realizado Por -->
+        <div class="filtro-section" v-if="proveedoresUnicos.length > 0">
+          <button class="filtro-section-title" @click="e => e.target.classList.toggle('collapsed')">
+            Realizado Por
+            <span class="arrow">▼</span>
+          </button>
+          <div class="filtro-content">
+            <label class="filtro-item" v-for="proveedor in proveedoresUnicos" :key="proveedor">
+              <input 
+                type="checkbox" 
+                :checked="filtros.proveedores.includes(proveedor)"
+                @change="toggleProveedorFilter(proveedor)"
+              >
+              <span>{{ proveedor }}</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="filtro-footer">
+        <p>{{ filteredMantenimientos.length }} mantenimientos encontrados</p>
       </div>
     </div>
   </div>
@@ -300,27 +578,93 @@ function abrirNuevoMantenimiento() {
 .filter-button {
   padding: 10px 20px;
   background: white;
-  border: 1px solid #e0e0e0;
+  border: 2px solid #006633;
   border-radius: 8px;
-  color: #616161;
+  color: #006633;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s;
   display: flex;
   align-items: center;
   gap: 8px;
+  position: relative;
 }
 
 .filter-button:hover {
-  background: #f5f5f5;
+  background: #006633;
+  color: white;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 102, 51, 0.2);
+}
+
+.filter-badge {
+  background: #006633;
+  color: white;
+  border-radius: 50%;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.filter-button:hover .filter-badge {
+  background: white;
   color: #006633;
-  border-color: #006633;
+}
+
+.btn {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.3s;
+  font-size: 14px;
+}
+
+.btn-primary {
+  background: #006633;
+  color: white;
+}
+
+.btn-primary:hover {
+  background: #2d5016;
+  transform: translateY(-2px);
+}
+
+.btn-sm {
+  padding: 6px 12px;
+  font-size: 12px;
+}
+
+.btn-info {
+  background: #00a99d;
+  color: white;
+}
+
+.btn-secondary {
+  background: #e0e0e0;
+  color: #424242;
+}
+
+.btn-danger {
+  background: #f44336;
+  color: white;
+}
+
+.btn-close {
+  position: absolute;
+  top: 25px;
+  right: 25px;
 }
 
 table {
   width: 100%;
   border-collapse: collapse;
-  table-layout: auto;
+  min-width: 800px;
 }
 
 thead {
@@ -333,7 +677,6 @@ th {
   text-align: left;
   font-size: 13px;
   text-transform: uppercase;
-  white-space: nowrap;
   font-weight: 600;
 }
 
@@ -341,90 +684,24 @@ td {
   padding: 15px;
   border-bottom: 1px solid #e0e0e0;
   font-size: 14px;
-  vertical-align: middle;
+}
+
+.col-codigo {
+  width: 120px;
 }
 
 tbody tr {
-  cursor: pointer;
+  background: white;
   transition: all 0.2s;
-  position: relative;
 }
 
 tbody tr:hover {
-  background: rgba(0, 102, 51, 0.08);
+  background: rgba(0, 102, 51, 0.04);
 }
 
-tbody tr:hover td:first-child {
-  font-weight: 600;
-}
-
-tbody tr td:last-child {
-  cursor: default;
-}
-
-.btn {
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.2s;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 500;
-}
-
-.btn-primary {
-  background: #006633;
-  color: white;
-  padding: 10px 20px;
-}
-
-.btn-primary:hover {
-  background: #2d5016;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 102, 51, 0.2);
-}
-
-.btn-sm {
-  padding: 8px 16px;
-  font-size: 13px;
-}
-
-.btn-info {
-  background: #00a99d;
-  color: white;
-}
-
-.btn-info:hover {
-  opacity: 0.9;
-}
-
-.btn-secondary {
-  background: #d0d0d0;
-  color: #212121;
-}
-
-.btn-secondary:hover {
-  background: #c0c0c0;
-}
-
-.btn-close {
-  background: #b0b0b0;
-  color: #212121;
-  font-weight: 600;
-}
-
-.btn-close:hover {
-  background: #a0a0a0;
-}
-
-.btn-danger {
-  background: #f44336;
-  color: white;
-}
-
-.btn-danger:hover {
-  opacity: 0.9;
+tbody tr.row-active {
+  background: rgba(0, 102, 51, 0.12) !important;
+  border-left: 4px solid #006633;
 }
 
 .badge {
@@ -476,15 +753,6 @@ tbody tr td:last-child {
 }
 
 /* Accordion Styles */
-tbody tr.row-active {
-  background: rgba(0, 102, 51, 0.12) !important;
-  border-left: 4px solid #006633;
-}
-
-.accordion-details-row {
-  display: none;
-}
-
 .accordion-details-row {
   display: table-row;
 }
@@ -524,12 +792,6 @@ tbody tr.row-active {
   gap: 10px;
 }
 
-.detail-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 25px;
-}
-
 .detail-grid-horizontal {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -560,42 +822,6 @@ tbody tr.row-active {
   color: #212121;
   font-size: 14px;
   font-weight: 500;
-}
-
-.detail-section {
-  background: white;
-  padding: 20px;
-  border-radius: 8px;
-  border-left: 4px solid #006633;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-}
-
-.detail-section-title {
-  font-size: 14px;
-  color: #006633;
-  font-weight: 700;
-  margin-bottom: 15px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  border-bottom: 2px solid #f0f0f0;
-  padding-bottom: 8px;
-}
-
-.detail-item {
-  display: flex;
-  margin-bottom: 12px;
-  font-size: 14px;
-  line-height: 1.5;
-}
-
-.detail-label {
-  font-weight: 600;
-  color: #616161;
-  min-width: 140px;
-}
-
-.detail-value {
-  color: #212121;
 }
 
 .observaciones-section {
@@ -710,6 +936,168 @@ tbody tr.row-active {
   background: white;
 }
 
+/* FILTER PANEL STYLES */
+.filtro-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 998;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+}
+
+.filtro-overlay.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+.filtro-panel {
+  position: fixed;
+  top: 0;
+  right: -400px;
+  width: 400px;
+  height: 100vh;
+  background: white;
+  box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
+  z-index: 999;
+  transition: right 0.3s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+.filtro-panel.active {
+  right: 0;
+}
+
+.filtro-header {
+  padding: 25px;
+  border-bottom: 2px solid #e0e0e0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: linear-gradient(90deg, rgba(0, 102, 51, 0.05) 0%, transparent 100%);
+}
+
+.filtro-header h3 {
+  font-size: 18px;
+  color: #006633;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.borrar-todo {
+  background: none;
+  border: none;
+  color: #f44336;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 14px;
+  text-decoration: underline;
+  padding: 5px 10px;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.borrar-todo:hover {
+  background: rgba(244, 67, 54, 0.1);
+}
+
+.filtro-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+}
+
+.filtro-section {
+  margin-bottom: 20px;
+  border-bottom: 1px solid #e0e0e0;
+  padding-bottom: 15px;
+}
+
+.filtro-section:last-child {
+  border-bottom: none;
+}
+
+.filtro-section-title {
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  font-size: 15px;
+  font-weight: 700;
+  color: #212121;
+  padding: 12px 0;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.filtro-section-title .arrow {
+  transition: transform 0.3s;
+  color: #006633;
+  font-size: 12px;
+}
+
+.filtro-section-title.collapsed .arrow {
+  transform: rotate(-90deg);
+}
+
+.filtro-section-title.collapsed + .filtro-content {
+  display: none;
+}
+
+.filtro-content {
+  padding-top: 10px;
+}
+
+.filtro-item {
+  display: flex;
+  align-items: center;
+  padding: 10px 0;
+  cursor: pointer;
+  transition: background 0.2s;
+  border-radius: 4px;
+  padding-left: 10px;
+}
+
+.filtro-item:hover {
+  background: rgba(0, 102, 51, 0.05);
+}
+
+.filtro-item input[type="checkbox"],
+.filtro-item input[type="radio"] {
+  margin-right: 12px;
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: #006633;
+}
+
+.filtro-item span {
+  font-size: 14px;
+  color: #424242;
+}
+
+.filtro-footer {
+  padding: 20px 25px;
+  border-top: 2px solid #e0e0e0;
+  background: #f5f5f5;
+}
+
+.filtro-footer p {
+  font-size: 14px;
+  color: #616161;
+  font-weight: 600;
+  text-align: center;
+}
+
 /* Skeleton Loading Styles */
 .skeleton {
   animation: skeleton-loading 1s linear infinite alternate;
@@ -731,4 +1119,3 @@ tbody tr.row-active {
   }
 }
 </style>
-

@@ -15,6 +15,22 @@ const currentPage = ref(1)
 const itemsPerPage = ref(10)
 const itemsPerPageOptions = [10, 20, 50, 100]
 
+
+// Filter Panel State
+const showFilterPanel = ref(false)
+
+// Filter State
+const filtros = ref({
+  sedes: [],
+  servicios: [],
+  riesgos: [],
+  estados: [],
+  responsables: [],
+  tiene_invima: null // null, 'si', 'no'
+})
+
+const ordenamiento = ref('codigo-asc')
+
 // Mapeo de pestañas
 const tabs = {
   info: 'Información General',
@@ -99,16 +115,105 @@ const fetchMantenimientos = async (equipoId) => {
   }
 }
 
+// Get unique values for filters
+const sedesUnicas = computed(() => {
+  const sedes = equipos.value
+    .map(e => e.sede)
+    .filter((sede, index, self) => sede && self.findIndex(s => s?.id === sede?.id) === index)
+  return sedes.sort((a, b) => (a?.nombre || '').localeCompare(b?.nombre || ''))
+})
+
+const serviciosUnicos = computed(() => {
+  const servicios = equipos.value
+    .map(e => e.servicio)
+    .filter((servicio, index, self) => servicio && self.findIndex(s => s?.id === servicio?.id) === index)
+  return servicios.sort((a, b) => (a?.nombre || '').localeCompare(b?.nombre || ''))
+})
+
+const riesgosUnicos = computed(() => {
+  const riesgos = [...new Set(equipos.value.map(e => e.clasificacion_riesgo))].filter(Boolean)
+  const orden = ['I', 'IIa', 'IIb', 'III']
+  return riesgos.sort((a, b) => orden.indexOf(a) - orden.indexOf(b))
+})
+
+const responsablesUnicos = computed(() => {
+  const responsables = [...new Set(equipos.value.map(e => e.responsable_nombre))].filter(Boolean)
+  return responsables.sort()
+})
+
+// Filtered equipos
 const filteredEquipos = computed(() => {
-  if (!searchQuery.value) return equipos.value
-  const query = searchQuery.value.toLowerCase()
-  return equipos.value.filter(eq => 
-    (eq.nombre_equipo && eq.nombre_equipo.toLowerCase().includes(query)) ||
-    (eq.codigo_interno && eq.codigo_interno.toLowerCase().includes(query)) ||
-    (eq.marca && eq.marca.toLowerCase().includes(query)) ||
-    (eq.modelo && eq.modelo.toLowerCase().includes(query)) ||
-    (eq.serie && eq.serie.toLowerCase().includes(query))
-  )
+  let result = equipos.value
+
+  // Filtro por búsqueda
+  if (searchQuery.value) {
+    const query = searchQuery.value.toLowerCase()
+    result = result.filter(eq => 
+      (eq.nombre_equipo && eq.nombre_equipo.toLowerCase().includes(query)) ||
+      (eq.codigo_interno && eq.codigo_interno.toLowerCase().includes(query)) ||
+      (eq.marca && eq.marca.toLowerCase().includes(query)) ||
+      (eq.modelo && eq.modelo.toLowerCase().includes(query)) ||
+      (eq.serie && eq.serie.toLowerCase().includes(query))
+    )
+  }
+
+  // Filtro por sedes
+  if (filtros.value.sedes.length > 0) {
+    result = result.filter(eq => 
+      eq.sede && filtros.value.sedes.some(s => s.id === eq.sede.id)
+    )
+  }
+
+  // Filtro por servicios
+  if (filtros.value.servicios.length > 0) {
+    result = result.filter(eq => 
+      eq.servicio && filtros.value.servicios.some(s => s.id === eq.servicio.id)
+    )
+  }
+
+  // Filtro por riesgos
+  if (filtros.value.riesgos.length > 0) {
+    result = result.filter(eq => filtros.value.riesgos.includes(eq.clasificacion_riesgo))
+  }
+
+  // Filtro por estados
+  if (filtros.value.estados.length > 0) {
+    result = result.filter(eq => filtros.value.estados.includes(eq.estado))
+  }
+
+  // Filtro por responsables
+  if (filtros.value.responsables.length > 0) {
+    result = result.filter(eq => filtros.value.responsables.includes(eq.responsable_nombre))
+  }
+
+  // Filtro por tiene INVIMA
+  if (filtros.value.tiene_invima === 'si') {
+    result = result.filter(eq => eq.registro_invima)
+  } else if (filtros.value.tiene_invima === 'no') {
+    result = result.filter(eq => !eq.registro_invima)
+  }
+
+  // Ordenamiento
+  switch (ordenamiento.value) {
+    case 'codigo-asc':
+      result.sort((a, b) => (a.codigo_interno || '').localeCompare(b.codigo_interno || ''))
+      break
+    case 'codigo-desc':
+      result.sort((a, b) => (b.codigo_interno || '').localeCompare(a.codigo_interno || ''))
+      break
+    case 'nombre-asc':
+      result.sort((a, b) => (a.nombre_equipo || '').localeCompare(b.nombre_equipo || ''))
+      break
+    case 'nombre-desc':
+      result.sort((a, b) => (b.nombre_equipo || '').localeCompare(a.nombre_equipo || ''))
+      break
+    case 'riesgo-mayor':
+      const ordenRiesgo = { 'III': 4, 'IIb': 3, 'IIa': 2, 'I': 1 }
+      result.sort((a, b) => (ordenRiesgo[b.clasificacion_riesgo] || 0) - (ordenRiesgo[a.clasificacion_riesgo] || 0))
+      break
+  }
+
+  return result
 })
 
 // Pagination computed properties
@@ -896,6 +1001,79 @@ const closeConfirmModal = () => {
   showConfirmModal.value = false
 }
 
+
+// Filter methods
+function toggleFilterPanel() {
+  showFilterPanel.value = !showFilterPanel.value
+}
+
+function toggleSedeFilter(sede) {
+  const index = filtros.value.sedes.findIndex(s => s.id === sede.id)
+  if (index > -1) {
+    filtros.value.sedes.splice(index, 1)
+  } else {
+    filtros.value.sedes.push(sede)
+  }
+  currentPage.value = 1
+}
+
+function toggleServicioFilter(servicio) {
+  const index = filtros.value.servicios.findIndex(s => s.id === servicio.id)
+  if (index > -1) {
+    filtros.value.servicios.splice(index, 1)
+  } else {
+    filtros.value.servicios.push(servicio)
+  }
+  currentPage.value = 1
+}
+
+function toggleRiesgoFilter(riesgo) {
+  const index = filtros.value.riesgos.indexOf(riesgo)
+  if (index > -1) {
+    filtros.value.riesgos.splice(index, 1)
+  } else {
+    filtros.value.riesgos.push(riesgo)
+  }
+  currentPage.value = 1
+}
+
+function toggleEstadoFilter(estado) {
+  const index = filtros.value.estados.indexOf(estado)
+  if (index > -1) {
+    filtros.value.estados.splice(index, 1)
+  } else {
+    filtros.value.estados.push(estado)
+  }
+  currentPage.value = 1
+}
+
+function toggleResponsableFilter(responsable) {
+  const index = filtros.value.responsables.indexOf(responsable)
+  if (index > -1) {
+    filtros.value.responsables.splice(index, 1)
+  } else {
+    filtros.value.responsables.push(responsable)
+  }
+  currentPage.value = 1
+}
+
+function borrarTodosFiltros() {
+  filtros.value.sedes = []
+  filtros.value.servicios = []
+  filtros.value.riesgos = []
+  filtros.value.estados = []
+  filtros.value.responsables = []
+  filtros.value.tiene_invima = null
+  ordenamiento.value = 'codigo-asc'
+  currentPage.value = 1
+}
+
+const filtrosActivos = computed(() => {
+  return filtros.value.sedes.length + filtros.value.servicios.length + 
+         filtros.value.riesgos.length + filtros.value.estados.length +
+         filtros.value.responsables.length + (filtros.value.tiene_invima ? 1 : 0)
+})
+
 onMounted(() => {
   fetchEquipos()
 })
@@ -929,7 +1107,10 @@ onMounted(() => {
             ✕
           </button>
         </div>
-        <button class="filter-button">☰ Filtrar y Ordenar</button>
+        <button class="filter-button" @click="toggleFilterPanel">
+          ☰ Filtrar y Ordenar
+          <span v-if="filtrosActivos > 0" class="filter-badge">{{ filtrosActivos }}</span>
+        </button>
       </div>
 
       <!-- Skeleton Loader -->
@@ -2064,6 +2245,179 @@ onMounted(() => {
       </div>
     </div>
   </div>
+
+    <!-- FILTER PANEL -->
+    <div class="filtro-overlay" :class="{ active: showFilterPanel }" @click="showFilterPanel = false"></div>
+    <div class="filtro-panel" :class="{ active: showFilterPanel }">
+      <div class="filtro-header">
+        <h3>FILTRAR Y ORDENAR</h3>
+        <button class="borrar-todo" @click="borrarTodosFiltros">Borrar todo</button>
+      </div>
+
+      <div class="filtro-body">
+        <!-- Ordenar por -->
+        <div class="filtro-section">
+          <button class="filtro-section-title" @click="e => e.target.classList.toggle('collapsed')">
+            Ordenar por
+            <span class="arrow">▼</span>
+          </button>
+          <div class="filtro-content">
+            <label class="filtro-item">
+              <input type="radio" v-model="ordenamiento" value="codigo-asc">
+              <span>Código (A-Z)</span>
+            </label>
+            <label class="filtro-item">
+              <input type="radio" v-model="ordenamiento" value="codigo-desc">
+              <span>Código (Z-A)</span>
+            </label>
+            <label class="filtro-item">
+              <input type="radio" v-model="ordenamiento" value="nombre-asc">
+              <span>Nombre (A-Z)</span>
+            </label>
+            <label class="filtro-item">
+              <input type="radio" v-model="ordenamiento" value="nombre-desc">
+              <span>Nombre (Z-A)</span>
+            </label>
+            <label class="filtro-item">
+              <input type="radio" v-model="ordenamiento" value="riesgo-mayor">
+              <span>Riesgo (Mayor a Menor)</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Sede -->
+        <div class="filtro-section" v-if="sedesUnicas.length > 0">
+          <button class="filtro-section-title" @click="e => e.target.classList.toggle('collapsed')">
+            Sede
+            <span class="arrow">▼</span>
+          </button>
+          <div class="filtro-content">
+            <label class="filtro-item" v-for="sede in sedesUnicas" :key="sede.id">
+              <input 
+                type="checkbox" 
+                :checked="filtros.sedes.some(s => s.id === sede.id)"
+                @change="toggleSedeFilter(sede)"
+              >
+              <span>{{ sede.nombre }}</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Servicio -->
+        <div class="filtro-section" v-if="serviciosUnicos.length > 0">
+          <button class="filtro-section-title" @click="e => e.target.classList.toggle('collapsed')">
+            Servicio
+            <span class="arrow">▼</span>
+          </button>
+          <div class="filtro-content">
+            <label class="filtro-item" v-for="servicio in serviciosUnicos" :key="servicio.id">
+              <input 
+                type="checkbox" 
+                :checked="filtros.servicios.some(s => s.id === servicio.id)"
+                @change="toggleServicioFilter(servicio)"
+              >
+              <span>{{ servicio.nombre }}</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Clasificación de Riesgo -->
+        <div class="filtro-section" v-if="riesgosUnicos.length > 0">
+          <button class="filtro-section-title" @click="e => e.target.classList.toggle('collapsed')">
+            Clasificación de Riesgo
+            <span class="arrow">▼</span>
+          </button>
+          <div class="filtro-content">
+            <label class="filtro-item" v-for="riesgo in riesgosUnicos" :key="riesgo">
+              <input 
+                type="checkbox" 
+                :checked="filtros.riesgos.includes(riesgo)"
+                @change="toggleRiesgoFilter(riesgo)"
+              >
+              <span>Clase {{ riesgo }}</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Estado -->
+        <div class="filtro-section">
+          <button class="filtro-section-title" @click="e => e.target.classList.toggle('collapsed')">
+            Estado
+            <span class="arrow">▼</span>
+          </button>
+          <div class="filtro-content">
+            <label class="filtro-item">
+              <input 
+                type="checkbox" 
+                :checked="filtros.estados.includes('Activo')"
+                @change="toggleEstadoFilter('Activo')"
+              >
+              <span>Activo</span>
+            </label>
+            <label class="filtro-item">
+              <input 
+                type="checkbox" 
+                :checked="filtros.estados.includes('En Mantenimiento')"
+                @change="toggleEstadoFilter('En Mantenimiento')"
+              >
+              <span>En Mantenimiento</span>
+            </label>
+            <label class="filtro-item">
+              <input 
+                type="checkbox" 
+                :checked="filtros.estados.includes('Baja')"
+                @change="toggleEstadoFilter('Baja')"
+              >
+              <span>Baja</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Responsable -->
+        <div class="filtro-section" v-if="responsablesUnicos.length > 0">
+          <button class="filtro-section-title" @click="e => e.target.classList.toggle('collapsed')">
+            Responsable
+            <span class="arrow">▼</span>
+          </button>
+          <div class="filtro-content">
+            <label class="filtro-item" v-for="responsable in responsablesUnicos" :key="responsable">
+              <input 
+                type="checkbox" 
+                :checked="filtros.responsables.includes(responsable)"
+                @change="toggleResponsableFilter(responsable)"
+              >
+              <span>{{ responsable }}</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Registro INVIMA -->
+        <div class="filtro-section">
+          <button class="filtro-section-title" @click="e => e.target.classList.toggle('collapsed')">
+            Registro INVIMA
+            <span class="arrow">▼</span>
+          </button>
+          <div class="filtro-content">
+            <label class="filtro-item">
+              <input type="radio" v-model="filtros.tiene_invima" :value="null">
+              <span>Todos</span>
+            </label>
+            <label class="filtro-item">
+              <input type="radio" v-model="filtros.tiene_invima" value="si">
+              <span>Con Registro</span>
+            </label>
+            <label class="filtro-item">
+              <input type="radio" v-model="filtros.tiene_invima" value="no">
+              <span>Sin Registro</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="filtro-footer">
+        <p>{{ filteredEquipos.length }} equipos encontrados</p>
+      </div>
+    </div>
 </template>
 
 <style scoped>
@@ -2567,5 +2921,185 @@ tbody tr.row-active { background: rgba(0,102,51,0.12); border-left: 4px solid #0
 
 .tabla-mantenimientos tbody tr:hover {
   background: rgba(0, 102, 51, 0.08);
+}
+
+/* FILTER PANEL STYLES */
+.filter-badge {
+  background: #006633;
+  color: white;
+  border-radius: 50%;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.filter-button:hover .filter-badge {
+  background: white;
+  color: #006633;
+}
+
+.filtro-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 998;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+}
+
+.filtro-overlay.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+.filtro-panel {
+  position: fixed;
+  top: 0;
+  right: -400px;
+  width: 400px;
+  height: 100vh;
+  background: white;
+  box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
+  z-index: 999;
+  transition: right 0.3s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+.filtro-panel.active {
+  right: 0;
+}
+
+.filtro-header {
+  padding: 25px;
+  border-bottom: 2px solid #e0e0e0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: linear-gradient(90deg, rgba(0, 102, 51, 0.05) 0%, transparent 100%);
+}
+
+.filtro-header h3 {
+  font-size: 18px;
+  color: #006633;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.borrar-todo {
+  background: none;
+  border: none;
+  color: #f44336;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 14px;
+  text-decoration: underline;
+  padding: 5px 10px;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.borrar-todo:hover {
+  background: rgba(244, 67, 54, 0.1);
+}
+
+.filtro-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+}
+
+.filtro-section {
+  margin-bottom: 20px;
+  border-bottom: 1px solid #e0e0e0;
+  padding-bottom: 15px;
+}
+
+.filtro-section:last-child {
+  border-bottom: none;
+}
+
+.filtro-section-title {
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  font-size: 15px;
+  font-weight: 700;
+  color: #212121;
+  padding: 12px 0;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.filtro-section-title .arrow {
+  transition: transform 0.3s;
+  color: #006633;
+  font-size: 12px;
+}
+
+.filtro-section-title.collapsed .arrow {
+  transform: rotate(-90deg);
+}
+
+.filtro-section-title.collapsed + .filtro-content {
+  display: none;
+}
+
+.filtro-content {
+  padding-top: 10px;
+}
+
+.filtro-item {
+  display: flex;
+  align-items: center;
+  padding: 10px 0;
+  cursor: pointer;
+  transition: background 0.2s;
+  border-radius: 4px;
+  padding-left: 10px;
+}
+
+.filtro-item:hover {
+  background: rgba(0, 102, 51, 0.05);
+}
+
+.filtro-item input[type="checkbox"],
+.filtro-item input[type="radio"] {
+  margin-right: 12px;
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: #006633;
+}
+
+.filtro-item span {
+  font-size: 14px;
+  color: #424242;
+}
+
+.filtro-footer {
+  padding: 20px 25px;
+  border-top: 2px solid #e0e0e0;
+  background: #f5f5f5;
+}
+
+.filtro-footer p {
+  font-size: 14px;
+  color: #616161;
+  font-weight: 600;
+  text-align: center;
 }
 </style>

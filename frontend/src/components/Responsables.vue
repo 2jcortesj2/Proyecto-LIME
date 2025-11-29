@@ -22,6 +22,17 @@ const formErrors = ref({})
 const successMessage = ref('')
 const selectedResponsable = ref(null)
 
+// Filter Panel State
+const showFilterPanel = ref(false)
+
+// Filter State
+const filtros = ref({
+  roles: [],
+  estados: []
+})
+
+const ordenamiento = ref('nombre-asc')
+
 // Create Form State
 const createForm = ref({
   nombre_completo: '',
@@ -55,14 +66,56 @@ const fetchResponsables = async () => {
   }
 }
 
+// Obtener roles únicos
+const rolesUnicos = computed(() => {
+  const roles = responsables.value.map(r => r.rol).filter(Boolean)
+  return [...new Set(roles)].sort()
+})
+
 const filteredResponsables = computed(() => {
-  if (!searchQuery.value) return responsables.value
-  const query = searchQuery.value.toLowerCase()
-  return responsables.value.filter(resp => 
-    (resp.nombre_completo && resp.nombre_completo.toLowerCase().includes(query)) ||
-    (resp.rol && resp.rol.toLowerCase().includes(query)) ||
-    (resp.email && resp.email.toLowerCase().includes(query))
-  )
+  let result = responsables.value
+
+  // Filtro por búsqueda
+  if (searchQuery.value) {
+    const query = searchQuery.value.toLowerCase()
+    result = result.filter(resp => 
+      (resp.nombre_completo && resp.nombre_completo.toLowerCase().includes(query)) ||
+      (resp.rol && resp.rol.toLowerCase().includes(query)) ||
+      (resp.email && resp.email.toLowerCase().includes(query))
+    )
+  }
+
+  // Filtro por roles
+  if (filtros.value.roles.length > 0) {
+    result = result.filter(resp => filtros.value.roles.includes(resp.rol))
+  }
+
+  // Filtro por estados
+  if (filtros.value.estados.length > 0) {
+    result = result.filter(resp => {
+      if (filtros.value.estados.includes('activo') && resp.activo) return true
+      if (filtros.value.estados.includes('inactivo') && !resp.activo) return true
+      return false
+    })
+  }
+
+  // Ordenamiento
+  switch (ordenamiento.value) {
+    case 'nombre-asc':
+      result.sort((a, b) => a.nombre_completo.localeCompare(b.nombre_completo))
+      break
+    case 'nombre-desc':
+      result.sort((a, b) => b.nombre_completo.localeCompare(a.nombre_completo))
+      break
+    case 'rol-asc':
+      result.sort((a, b) => (a.rol || '').localeCompare(b.rol || ''))
+      break
+    case 'rol-desc':
+      result.sort((a, b) => (b.rol || '').localeCompare(a.rol || ''))
+      break
+  }
+
+  return result
 })
 
 // Pagination computed properties
@@ -80,6 +133,42 @@ function changePage(page) {
     currentPage.value = page
   }
 }
+
+// Filter methods
+function toggleFilterPanel() {
+  showFilterPanel.value = !showFilterPanel.value
+}
+
+function toggleRolFilter(rol) {
+  const index = filtros.value.roles.indexOf(rol)
+  if (index > -1) {
+    filtros.value.roles.splice(index, 1)
+  } else {
+    filtros.value.roles.push(rol)
+  }
+  currentPage.value = 1
+}
+
+function toggleEstadoFilter(estado) {
+  const index = filtros.value.estados.indexOf(estado)
+  if (index > -1) {
+    filtros.value.estados.splice(index, 1)
+  } else {
+    filtros.value.estados.push(estado)
+  }
+  currentPage.value = 1
+}
+
+function borrarTodosFiltros() {
+  filtros.value.roles = []
+  filtros.value.estados = []
+  ordenamiento.value = 'nombre-asc'
+  currentPage.value = 1
+}
+
+const filtrosActivos = computed(() => {
+  return filtros.value.roles.length + filtros.value.estados.length
+})
 
 // ===== VALIDATION FUNCTIONS =====
 const validateCreateForm = () => {
@@ -107,7 +196,6 @@ const validateEditForm = () => {
   if (!editForm.value.nombre_completo?.trim()) {
     errors.nombre_completo = 'El nombre es requerido'
   }
-  // ROL YA NO ES OBLIGATORIO EN EDITAR
   if (!editForm.value.email?.trim()) {
     errors.email = 'El email es requerido'
   } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editForm.value.email)) {
@@ -156,10 +244,8 @@ const submitCreateForm = async () => {
     
     successMessage.value = '✅ Responsable creado exitosamente'
     
-    // Refresh list
     await fetchResponsables()
     
-    // Close modal after short delay
     setTimeout(() => {
       closeCreateModal()
       resetCreateForm()
@@ -212,10 +298,8 @@ const submitEditForm = async () => {
     
     successMessage.value = '✅ Responsable actualizado exitosamente'
     
-    // Refresh list
     await fetchResponsables()
     
-    // Close modal after short delay
     setTimeout(() => {
       closeEditModal()
       successMessage.value = ''
@@ -244,7 +328,6 @@ const confirmDelete = async () => {
       throw new Error('Error al eliminar el responsable')
     }
     
-    // Refresh list
     await fetchResponsables()
     closeDeleteModal()
     
@@ -320,7 +403,10 @@ onMounted(() => {
             ✕
           </button>
         </div>
-        <button class="filter-button">☰ Filtrar y Ordenar</button>
+        <button class="filter-button" @click="toggleFilterPanel">
+          ☰ Filtrar y Ordenar
+          <span v-if="filtrosActivos > 0" class="filter-badge">{{ filtrosActivos }}</span>
+        </button>
       </div>
 
     <!-- Skeleton Loader -->
@@ -416,6 +502,91 @@ onMounted(() => {
         <button class="page-btn" :disabled="currentPage === totalPages" @click="changePage(currentPage + 1)">Siguiente</button>
       </div>
     </div>
+    </div>
+
+    <!-- FILTER PANEL -->
+    <div class="filtro-overlay" :class="{ active: showFilterPanel }" @click="showFilterPanel = false"></div>
+    <div class="filtro-panel" :class="{ active: showFilterPanel }">
+      <div class="filtro-header">
+        <h3>FILTRAR Y ORDENAR</h3>
+        <button class="borrar-todo" @click="borrarTodosFiltros">Borrar todo</button>
+      </div>
+
+      <div class="filtro-body">
+        <!-- Ordenar por -->
+        <div class="filtro-section">
+          <button class="filtro-section-title" @click="e => e.target.classList.toggle('collapsed')">
+            Ordenar por
+            <span class="arrow">▼</span>
+          </button>
+          <div class="filtro-content">
+            <label class="filtro-item">
+              <input type="radio" v-model="ordenamiento" value="nombre-asc">
+              <span>Nombre (A-Z)</span>
+            </label>
+            <label class="filtro-item">
+              <input type="radio" v-model="ordenamiento" value="nombre-desc">
+              <span>Nombre (Z-A)</span>
+            </label>
+            <label class="filtro-item">
+              <input type="radio" v-model="ordenamiento" value="rol-asc">
+              <span>Rol (A-Z)</span>
+            </label>
+            <label class="filtro-item">
+              <input type="radio" v-model="ordenamiento" value="rol-desc">
+              <span>Rol (Z-A)</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Rol -->
+        <div class="filtro-section" v-if="rolesUnicos.length > 0">
+          <button class="filtro-section-title" @click="e => e.target.classList.toggle('collapsed')">
+            Rol
+            <span class="arrow">▼</span>
+          </button>
+          <div class="filtro-content">
+            <label class="filtro-item" v-for="rol in rolesUnicos" :key="rol">
+              <input 
+                type="checkbox" 
+                :checked="filtros.roles.includes(rol)"
+                @change="toggleRolFilter(rol)"
+              >
+              <span>{{ rol }}</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Estado -->
+        <div class="filtro-section">
+          <button class="filtro-section-title" @click="e => e.target.classList.toggle('collapsed')">
+            Estado
+            <span class="arrow">▼</span>
+          </button>
+          <div class="filtro-content">
+            <label class="filtro-item">
+              <input 
+                type="checkbox" 
+                :checked="filtros.estados.includes('activo')"
+                @change="toggleEstadoFilter('activo')"
+              >
+              <span>Activo</span>
+            </label>
+            <label class="filtro-item">
+              <input 
+                type="checkbox" 
+                :checked="filtros.estados.includes('inactivo')"
+                @change="toggleEstadoFilter('inactivo')"
+              >
+              <span>Inactivo</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="filtro-footer">
+        <p>{{ filteredResponsables.length }} responsables encontrados</p>
+      </div>
     </div>
 
     <!-- CREATE MODAL -->
@@ -607,7 +778,7 @@ onMounted(() => {
 .search-input {
   width: 100%;
   padding: 14px 18px;
-  padding-right: 40px; /* Make room for clear button */
+  padding-right: 40px;
   border: 2px solid #e0e0e0;
   border-radius: 8px;
   font-size: 14px;
@@ -666,6 +837,7 @@ onMounted(() => {
   gap: 8px; 
   transition: all 0.3s ease;
   white-space: nowrap;
+  position: relative;
 }
 
 .filter-button:hover { 
@@ -673,6 +845,24 @@ onMounted(() => {
   color: white; 
   transform: translateY(-1px);
   box-shadow: 0 4px 8px rgba(0, 102, 51, 0.2);
+}
+
+.filter-badge {
+  background: #006633;
+  color: white;
+  border-radius: 50%;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.filter-button:hover .filter-badge {
+  background: white;
+  color: #006633;
 }
 
 /* Button Styles */
@@ -899,6 +1089,168 @@ tbody tr:hover {
   outline: none;
   border-color: #006633;
   background: white;
+}
+
+/* FILTER PANEL STYLES */
+.filtro-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 998;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+}
+
+.filtro-overlay.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+.filtro-panel {
+  position: fixed;
+  top: 0;
+  right: -400px;
+  width: 400px;
+  height: 100vh;
+  background: white;
+  box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
+  z-index: 999;
+  transition: right 0.3s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+.filtro-panel.active {
+  right: 0;
+}
+
+.filtro-header {
+  padding: 25px;
+  border-bottom: 2px solid #e0e0e0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: linear-gradient(90deg, rgba(0, 102, 51, 0.05) 0%, transparent 100%);
+}
+
+.filtro-header h3 {
+  font-size: 18px;
+  color: #006633;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.borrar-todo {
+  background: none;
+  border: none;
+  color: #f44336;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 14px;
+  text-decoration: underline;
+  padding: 5px 10px;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.borrar-todo:hover {
+  background: rgba(244, 67, 54, 0.1);
+}
+
+.filtro-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+}
+
+.filtro-section {
+  margin-bottom: 20px;
+  border-bottom: 1px solid #e0e0e0;
+  padding-bottom: 15px;
+}
+
+.filtro-section:last-child {
+  border-bottom: none;
+}
+
+.filtro-section-title {
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  font-size: 15px;
+  font-weight: 700;
+  color: #212121;
+  padding: 12px 0;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.filtro-section-title .arrow {
+  transition: transform 0.3s;
+  color: #006633;
+  font-size: 12px;
+}
+
+.filtro-section-title.collapsed .arrow {
+  transform: rotate(-90deg);
+}
+
+.filtro-section-title.collapsed + .filtro-content {
+  display: none;
+}
+
+.filtro-content {
+  padding-top: 10px;
+}
+
+.filtro-item {
+  display: flex;
+  align-items: center;
+  padding: 10px 0;
+  cursor: pointer;
+  transition: background 0.2s;
+  border-radius: 4px;
+  padding-left: 10px;
+}
+
+.filtro-item:hover {
+  background: rgba(0, 102, 51, 0.05);
+}
+
+.filtro-item input[type="checkbox"],
+.filtro-item input[type="radio"] {
+  margin-right: 12px;
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: #006633;
+}
+
+.filtro-item span {
+  font-size: 14px;
+  color: #424242;
+}
+
+.filtro-footer {
+  padding: 20px 25px;
+  border-top: 2px solid #e0e0e0;
+  background: #f5f5f5;
+}
+
+.filtro-footer p {
+  font-size: 14px;
+  color: #616161;
+  font-weight: 600;
+  text-align: center;
 }
 
 /* Modal Styles */
