@@ -512,6 +512,38 @@ class Command(BaseCommand):
                     )
         
         self.stdout.write(f'  Generated {mantenimientos_created} maintenance records')
+        
+        # Ensure at least 2 equipments have pending maintenance this month (Nov 2025)
+        self.ensure_pending_maintenance_this_month(equipos_list)
+
+    def ensure_pending_maintenance_this_month(self, equipos_list):
+        """Force at least 2 equipments to have maintenance due in Nov 2025"""
+        candidates = [e for e in equipos_list if e['info_metro'].requiere_mantenimiento]
+        if len(candidates) < 2:
+            return
+            
+        selected = random.sample(candidates, 2)
+        target_month = datetime(2025, 11, 1)
+        
+        self.stdout.write('\nForcing pending maintenance for 2 equipments:')
+        for item in selected:
+            equipo = item['equipo']
+            info = item['info_metro']
+            
+            # Set next maintenance to a random day in Nov 2025
+            day = random.randint(1, 28)
+            next_date = target_month.replace(day=day).date()
+            
+            info.proximo_mantenimiento = next_date
+            
+            # Calculate last maintenance based on frequency to make it consistent
+            freq = self.parse_frequency(info.frecuencia_mantenimiento)
+            if freq > 0:
+                last_date = next_date - timedelta(days=30*freq)
+                info.ultimo_mantenimiento = last_date
+            
+            info.save()
+            self.stdout.write(f'  - {equipo.nombre_equipo} ({equipo.codigo_interno}): Next Maint = {next_date}')
 
     def generate_history_entries(self, equipo, fecha_inicio, months_interval, tipo_mant, descripcion_base):
         """Generate periodic history entries"""

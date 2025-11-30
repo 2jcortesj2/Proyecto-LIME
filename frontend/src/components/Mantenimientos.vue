@@ -6,6 +6,7 @@ import { mantenimientosAPI } from '../services/api'
 const mantenimientos = ref([])
 const loading = ref(true)
 const error = ref(null)
+const totalItems = ref(0)
 
 // Pagination state
 const currentPage = ref(1)
@@ -21,11 +22,26 @@ const mesesNombres = [
 ]
 
 // Fetch mantenimientos from backend
-async function fetchMantenimientos() {
+async function fetchMantenimientos(page = 1, pageSize = 10) {
   try {
     loading.value = true
-    const response = await mantenimientosAPI.getAll()
-    mantenimientos.value = response.data
+    // Construir query params
+    const params = {
+      page: page,
+      page_size: pageSize
+    }
+    
+    const response = await mantenimientosAPI.getAll(params) // Asegúrate que getAll acepte params
+    
+    // Manejar respuesta paginada
+    if (response.data.results) {
+      mantenimientos.value = response.data.results
+      totalItems.value = response.data.count
+    } else {
+      // Fallback por si la API no devuelve paginación (aunque debería)
+      mantenimientos.value = response.data
+      totalItems.value = response.data.length
+    }
   } catch (err) {
     console.error('Error fetching mantenimientos:', err)
     error.value = 'Error al cargar mantenimientos'
@@ -35,23 +51,25 @@ async function fetchMantenimientos() {
 }
 
 onMounted(() => {
-  fetchMantenimientos()
+  fetchMantenimientos(currentPage.value, itemsPerPage.value)
 })
 
 // Pagination Logic
-const totalPages = computed(() => Math.ceil(mantenimientos.value.length / itemsPerPage.value))
-
-const paginatedMantenimientos = computed(() => {
-  const start = (currentPage.value - 1) * itemsPerPage.value
-  const end = start + itemsPerPage.value
-  return mantenimientos.value.slice(start, end)
-})
+const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage.value))
 
 function changePage(page) {
   if (page >= 1 && page <= totalPages.value) {
     currentPage.value = page
+    fetchMantenimientos(page, itemsPerPage.value)
   }
 }
+
+// Watch for itemsPerPage changes
+import { watch } from 'vue'
+watch(itemsPerPage, (newValue) => {
+  currentPage.value = 1
+  fetchMantenimientos(1, newValue)
+})
 
 // Accordion Logic
 function toggleRow(id) {
@@ -150,7 +168,7 @@ function abrirNuevoMantenimiento() {
           </tr>
         </thead>
         <tbody>
-          <template v-for="mant in paginatedMantenimientos" :key="mant.id">
+          <template v-for="mant in mantenimientos" :key="mant.id">
             <tr 
               :class="{ 'row-active': expandedRows.has(mant.id) }" 
               @click="toggleRow(mant.id)"

@@ -1,7 +1,9 @@
 <script setup>
 import { ref, computed, onMounted, defineProps } from 'vue'
-import { equiposAPI } from '../services/api'
+import { equiposAPI, mantenimientosAPI } from '../services/api'
 import { filterEquiposBySearch } from '../utils/searchUtils'
+import ModalReprogramarMantenimiento from './modals/mantenimientos/ModalReprogramarMantenimiento.vue'
+import ModalCompletarMantenimiento from './modals/mantenimientos/ModalCompletarMantenimiento.vue'
 
 const props = defineProps({
   viewMode: {
@@ -192,14 +194,45 @@ function getProximoMantenimientoDisplay(equipo) {
   return formatFecha(fecha)
 }
 
+// Modal State
+const showReprogramarModal = ref(false)
+const showCompletarModal = ref(false)
+const selectedEquipo = ref(null)
+
 function reprogramarMantenimiento(equipo) {
-  // TODO: Implementar modal de reprogramación
-  alert(`Reprogramar mantenimiento para: ${equipo.nombre_equipo}`)
+  selectedEquipo.value = equipo
+  showReprogramarModal.value = true
 }
 
 function completarMantenimiento(equipo) {
-  // TODO: Implementar modal de completar mantenimiento
-  alert(`Completar mantenimiento para: ${equipo.nombre_equipo}`)
+  selectedEquipo.value = equipo
+  showCompletarModal.value = true
+}
+
+async function handleReprogramarSubmit({ equipoId, nuevaFecha }) {
+  try {
+    await equiposAPI.reprogramar(equipoId, nuevaFecha)
+    showReprogramarModal.value = false
+    selectedEquipo.value = null
+    await fetchEquipos()
+    alert('Mantenimiento reprogramado exitosamente')
+  } catch (err) {
+    console.error('Error al reprogramar:', err)
+    alert('Error al reprogramar el mantenimiento')
+  }
+}
+
+async function handleCompletarSubmit(data) {
+  try {
+    await mantenimientosAPI.create(data)
+    showCompletarModal.value = false
+    selectedEquipo.value = null
+    await fetchEquipos()
+    alert('Mantenimiento registrado exitosamente')
+  } catch (err) {
+    console.error('Error al completar mantenimiento:', err)
+    alert('Error al registrar el mantenimiento')
+  }
 }
 </script>
 
@@ -322,7 +355,7 @@ function completarMantenimiento(equipo) {
               <td><span class="riesgo-badge" :class="'riesgo-' + (eq.clasificacion_riesgo || 'na')">{{ eq.clasificacion_riesgo || 'N/A' }}</span></td>
               <td>
                 <div style="font-weight: 600;">{{ eq.sede?.nombre || 'N/A' }}</div>
-                <div style="font-size: 12px; color: #616161;">{{ eq.servicio?.nombre || 'N/A' }}</div>
+                <div style="font-size: 12px; color: #616161;">{{ eq.ubicacion?.nombre || 'N/A' }}</div>
               </td>
               <td>{{ formatFecha(eq.informacion_metrologica?.ultimo_mantenimiento) }}</td>
               <td><strong style="color: #f44336;">{{ getProximoMantenimientoDisplay(eq) }}</strong></td>
@@ -361,6 +394,15 @@ function completarMantenimiento(equipo) {
         </div>
       </div>
 
+      <!-- Empty state for Realizar Revisión (only in vencidos mode) -->
+      <div class="content-card empty-state" v-else-if="viewMode === 'vencidos' && equiposVencidos.length === 0">
+        <div class="empty-state-content">
+          <div class="empty-icon">✅</div>
+          <h3>¡Excelente! No hay equipos que requieran revisión inmediata</h3>
+          <p>Todos los equipos están al día con su mantenimiento programado.</p>
+        </div>
+      </div>
+
       <!-- Equipos Próximos a Vencer -->
       <div class="content-card" v-if="(viewMode === 'all' || viewMode === 'proximos') && totalProximosBeforeFilter > 0">
         <div class="section-header proximo">
@@ -388,7 +430,7 @@ function completarMantenimiento(equipo) {
           </div>
         </div>
         
-        <table>
+        <table v-if="equiposProximosVencer.length > 0">
           <thead>
             <tr>
               <th>Código</th>
@@ -412,7 +454,7 @@ function completarMantenimiento(equipo) {
               <td><span class="riesgo-badge" :class="'riesgo-' + (eq.clasificacion_riesgo || 'na')">{{ eq.clasificacion_riesgo || 'N/A' }}</span></td>
               <td>
                 <div style="font-weight: 600;">{{ eq.sede?.nombre || 'N/A' }}</div>
-                <div style="font-size: 12px; color: #616161;">{{ eq.servicio?.nombre || 'N/A' }}</div>
+                <div style="font-size: 12px; color: #616161;">{{ eq.ubicacion?.nombre || 'N/A' }}</div>
               </td>
               <td>{{ formatFecha(eq.informacion_metrologica?.ultimo_mantenimiento) }}</td>
               <td><strong style="color: #ff9800;">{{ getProximoMantenimientoDisplay(eq) }}</strong></td>
@@ -427,13 +469,13 @@ function completarMantenimiento(equipo) {
           </tbody>
         </table>
         
-        <!-- No Results Message -->
-        <div v-if="equiposProximosVencer.length === 0" class="no-results">
+        <!-- No Results Message (when search returns no results) -->
+        <div v-else class="no-results">
           🔍 No se encontraron equipos que coincidan con tu búsqueda
         </div>
 
         <!-- Pagination Footer Proximos -->
-        <div class="pagination-footer">
+        <div class="pagination-footer" v-if="equiposProximosVencer.length > 0">
           <div class="items-per-page">
             <span>Mostrar</span>
             <select v-model="itemsPerPage" class="page-select">
@@ -450,6 +492,16 @@ function completarMantenimiento(equipo) {
             </span>
             <button class="page-btn" :disabled="pageProximos === totalPagesProximos" @click="changePageProximos(pageProximos + 1)">Siguiente</button>
           </div>
+        </div>
+      </div>
+
+      <!-- Empty state for Próximos de Revisión (only in proximos mode) -->
+      <div class="content-card empty-state" v-else-if="viewMode === 'proximos' && totalProximosBeforeFilter === 0">
+        <div class="empty-state-content">
+          <div class="empty-icon">✅</div>
+          <h3>No hay equipos próximos a revisión</h3>
+          <p>No hay equipos que requieran mantenimiento en los próximos {{ monthsFilter }} meses.</p>
+          <p class="empty-hint">Intenta aumentar el rango de meses usando el filtro arriba.</p>
         </div>
       </div>
 
@@ -483,7 +535,7 @@ function completarMantenimiento(equipo) {
               <td><span class="riesgo-badge" :class="'riesgo-' + (eq.clasificacion_riesgo || 'na')">{{ eq.clasificacion_riesgo || 'N/A' }}</span></td>
               <td>
                 <div style="font-weight: 600;">{{ eq.sede?.nombre || 'N/A' }}</div>
-                <div style="font-size: 12px; color: #616161;">{{ eq.servicio?.nombre || 'N/A' }}</div>
+                <div style="font-size: 12px; color: #616161;">{{ eq.ubicacion?.nombre || 'N/A' }}</div>
               </td>
               <td>{{ formatFecha(eq.informacion_metrologica?.ultimo_mantenimiento) }}</td>
               <td>{{ getProximoMantenimientoDisplay(eq) }}</td>
@@ -518,6 +570,21 @@ function completarMantenimiento(equipo) {
         <p style="color: #616161;">No hay equipos con mantenimiento programado</p>
       </div>
     </div>
+
+    <!-- Modals -->
+    <ModalReprogramarMantenimiento
+      :show="showReprogramarModal"
+      :equipo="selectedEquipo"
+      @close="showReprogramarModal = false"
+      @submit="handleReprogramarSubmit"
+    />
+
+    <ModalCompletarMantenimiento
+      :show="showCompletarModal"
+      :equipo="selectedEquipo"
+      @close="showCompletarModal = false"
+      @submit="handleCompletarSubmit"
+    />
   </div>
 </template>
 

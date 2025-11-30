@@ -50,6 +50,11 @@ export const equiposAPI = {
     getMaintenanceStats() {
         return apiClient.get('/equipos/maintenance-stats/')
     },
+
+    // Reprogramar mantenimiento
+    reprogramar(id, fecha) {
+        return apiClient.post(`/equipos/${id}/reprogramar/`, { nueva_fecha: fecha })
+    },
 }
 
 // ============================================

@@ -4,6 +4,7 @@ from ubicaciones.models import Ubicacion
 
 class SedeUbicacionSerializer(serializers.ModelSerializer):
     num_equipos = serializers.SerializerMethodField()
+    responsable = serializers.CharField(source='responsable.nombre_completo', read_only=True)
     
     class Meta:
         model = Ubicacion
