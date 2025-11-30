@@ -105,7 +105,7 @@ function changeYear(delta) {
 
 function isDisabled(monthIndex) {
   if (currentYear.value > minYear) return false
-  // Only disable past months (allow current month and future months)
+  // Disable only past months (allow current month and future months)
   return monthIndex < today.getMonth()
 }
 

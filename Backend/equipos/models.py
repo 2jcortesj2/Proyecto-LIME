@@ -44,10 +44,10 @@ class Equipo(models.Model):
     )
 
     CLASIFICACION_RIESGO_CHOICES = [
-        ("I", "Clase I"),
-        ("IIa", "Clase IIa"),
-        ("IIb", "Clase IIb"),
-        ("III", "Clase III"),
+        ("I", "I"),
+        ("IIa", "IIa"),
+        ("IIb", "IIb"),
+        ("III", "III"),
     ]
     clasificacion_riesgo = models.CharField(
         max_length=10, choices=CLASIFICACION_RIESGO_CHOICES,

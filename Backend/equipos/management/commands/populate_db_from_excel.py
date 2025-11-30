@@ -319,6 +319,8 @@ class Command(BaseCommand):
 
                     # Clasificacion Riesgo
                     clasif_riesgo = self.get_value(row, cols['clasificacion_riesgo'])
+                    if clasif_riesgo:
+                        clasif_riesgo = clasif_riesgo.replace('Clase ', '').strip()
                     
                     # Create Equipo
                     equipo = Equipo.objects.create(

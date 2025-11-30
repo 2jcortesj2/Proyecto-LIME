@@ -7,8 +7,8 @@ Sistema integral para la gestión de equipos biomédicos de la Universidad de An
 LIME (Laboratorio de Ingeniería Médica y Equipos) es una aplicación web diseñada para gestionar el inventario completo de equipos biomédicos, incluyendo:
 
 - 📦 Inventario de equipos
-- 🔧 Historial de mantenimientos
-- 📍 Gestión de sedes y servicios
+- 🔧 Historial de mantenimientos y calibraciones
+- 📍 Gestión de sedes y ubicaciones
 - 👥 Gestión de responsables
 - 🚚 Historial de traslados
 - 📊 Reportes y estadísticas
@@ -34,15 +34,21 @@ Proyecto-LIME/
 │   ├── LIME/         # Configuración principal
 │   ├── equipos/      # App de equipos
 │   ├── sedes/        # App de sedes
-│   ├── servicios/    # App de servicios
+│   ├── ubicaciones/  # App de ubicaciones
 │   ├── responsables/ # App de responsables
+│   ├── historial_mantenimientos/
+│   ├── historial_traslados/
 │   └── ...
 ├── frontend/         # Aplicación Vue.js
 │   ├── src/
 │   │   ├── components/
-│   │   ├── assets/
+│   │   ├── services/
+│   │   ├── utils/
 │   │   └── ...
 │   └── ...
+├── DIAGRAMA_UML.md
+├── DOCUMENTACION_BACKEND.md
+├── DOCUMENTACION_FRONTEND.md
 └── README.md
 ```
 
@@ -98,6 +104,7 @@ npm run dev
 
 ## 📚 Documentación
 
+- [Diagrama UML del Sistema](DIAGRAMA_UML.md)
 - [Documentación del Backend](DOCUMENTACION_BACKEND.md)
 - [Documentación del Frontend](DOCUMENTACION_FRONTEND.md)
 

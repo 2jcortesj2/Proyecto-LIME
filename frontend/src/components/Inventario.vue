@@ -22,7 +22,7 @@ const showFilterPanel = ref(false)
 // Filter State
 const filtros = ref({
   sedes: [],
-  servicios: [],
+  ubicaciones: [],
   riesgos: [],
   estados: [],
   responsables: [],
@@ -123,11 +123,11 @@ const sedesUnicas = computed(() => {
   return sedes.sort((a, b) => (a?.nombre || '').localeCompare(b?.nombre || ''))
 })
 
-const serviciosUnicos = computed(() => {
-  const servicios = equipos.value
-    .map(e => e.servicio)
-    .filter((servicio, index, self) => servicio && self.findIndex(s => s?.id === servicio?.id) === index)
-  return servicios.sort((a, b) => (a?.nombre || '').localeCompare(b?.nombre || ''))
+const ubicacionesUnicas = computed(() => {
+  const ubicaciones = equipos.value
+    .map(e => e.ubicacion_fisica)
+    .filter((ubicacion, index, self) => ubicacion && self.findIndex(u => u?.id === ubicacion?.id) === index)
+  return ubicaciones.sort((a, b) => (a?.nombre || '').localeCompare(b?.nombre || ''))
 })
 
 const riesgosUnicos = computed(() => {
@@ -164,10 +164,10 @@ const filteredEquipos = computed(() => {
     )
   }
 
-  // Filtro por servicios
-  if (filtros.value.servicios.length > 0) {
+  // Filtro por ubicaciones
+  if (filtros.value.ubicaciones.length > 0) {
     result = result.filter(eq => 
-      eq.servicio && filtros.value.servicios.some(s => s.id === eq.servicio.id)
+      eq.ubicacion_fisica && filtros.value.ubicaciones.some(u => u.id === eq.ubicacion_fisica.id)
     )
   }
 
@@ -300,15 +300,15 @@ const selectedEquipoForAction = ref(null)
 
 // Catalogs for dropdowns
 const sedes = ref([])
-const servicios = ref([])
+const ubicaciones = ref([])
 const responsables = ref([])
-const serviciosFiltrados = computed(() => {
-  if (!createForm.value.sede) return servicios.value
-  return servicios.value.filter(s => s.sede === createForm.value.sede)
+const ubicacionesFiltradas = computed(() => {
+  if (!createForm.value.sede) return ubicaciones.value
+  return ubicaciones.value.filter(u => u.sede === createForm.value.sede)
 })
-const serviciosFiltradosEdit = computed(() => {
-  if (!editForm.value.sede) return servicios.value
-  return servicios.value.filter(s => s.sede === editForm.value.sede)
+const ubicacionesFiltradasEdit = computed(() => {
+  if (!editForm.value.sede) return ubicaciones.value
+  return ubicaciones.value.filter(u => u.sede === editForm.value.sede)
 })
 
 // Form state and loading
@@ -327,7 +327,7 @@ const createForm = ref({
   responsable: null,
   ubicacion_fisica: '',
   sede: null,
-  servicio: null,
+  ubicacion: null,
   
   // B. Información del Equipo
   marca: '',
@@ -357,7 +357,7 @@ const createForm = ref({
   registro_importacion: false,
   manual_operacion: false,
   idioma_manual: '',
-  manual_servicio: false,
+  manual_ubicacion: false,
   guia_rapida: false,
   instructivo_manejo: false,
   protocolo_mto_preventivo: false,
@@ -388,7 +388,7 @@ const createForm = ref({
 const editForm = ref({
   id: null,
   // A. Información General
-  proceso: 'LIME',
+  proceso: '',
   nombre_equipo: '',
   codigo_interno: '',
   codigo_ips: '',
@@ -396,7 +396,7 @@ const editForm = ref({
   responsable: null,
   ubicacion_fisica: '',
   sede: null,
-  servicio: null,
+  ubicacion: null,
   
   // B. Información del Equipo
   marca: '',
@@ -426,7 +426,7 @@ const editForm = ref({
   registro_importacion: false,
   manual_operacion: false,
   idioma_manual: '',
-  manual_servicio: false,
+  manual_ubicacion: false,
   guia_rapida: false,
   instructivo_manejo: false,
   protocolo_mto_preventivo: false,
@@ -464,11 +464,11 @@ const fetchSedes = async () => {
   }
 }
 
-const fetchServicios = async () => {
+const fetchUbicaciones = async () => {
   try {
-    const response = await fetch('http://127.0.0.1:8000/api/servicios/')
-    if (!response.ok) throw new Error('Error al cargar servicios')
-    servicios.value = await response.json()
+    const response = await fetch('http://127.0.0.1:8000/api/ubicaciones/')
+    if (!response.ok) throw new Error('Error al cargar ubicaciones')
+    ubicaciones.value = await response.json()
   } catch (err) {
     console.error('Error fetching ubicaciones:', err)
   }
@@ -504,8 +504,8 @@ const validateCreateForm = () => {
   if (!createForm.value.sede) {
     errors.sede = 'La sede es requerida'
   }
-  if (!createForm.value.servicio) {
-    errors.servicio = 'El servicio es requerido'
+  if (!createForm.value.ubicacion) {
+    errors.ubicacion = 'La ubicación es requerida'
   }
   
   // Tab 2 - Datos del Equipo
@@ -580,7 +580,7 @@ const resetCreateForm = () => {
     responsable: null,
     ubicacion_fisica: '',
     sede: null,
-    servicio: null,
+    ubicacion: null,
     marca: '',
     modelo: '',
     serie: '',
@@ -604,7 +604,7 @@ const resetCreateForm = () => {
     registro_importacion: false,
     manual_operacion: false,
     idioma_manual: '',
-    manual_servicio: false,
+    manual_ubicacion: false,
     guia_rapida: false,
     instructivo_manejo: false,
     protocolo_mto_preventivo: false,
@@ -637,7 +637,7 @@ const submitCreateForm = async () => {
     if (errorFields.length > 0) {
       const firstError = errorFields[0]
       // Map fields to tabs
-      const tab1Fields = ['nombre_equipo', 'codigo_interno', 'responsable', 'ubicacion_fisica', 'sede', 'servicio']
+      const tab1Fields = ['nombre_equipo', 'codigo_interno', 'responsable', 'ubicacion_fisica', 'sede', 'ubicacion']
       const tab2Fields = ['marca', 'modelo', 'serie']
       const tab3Fields = ['fecha_adquisicion', 'propietario', 'nit_proveedor', 'nombre_proveedor', 'forma_adquisicion', 'tipo_documento', 'numero_documento']
       
@@ -663,7 +663,7 @@ const submitCreateForm = async () => {
       responsable: createForm.value.responsable,
       ubicacion_fisica: createForm.value.ubicacion_fisica,
       sede: createForm.value.sede,
-      servicio: createForm.value.servicio,
+      ubicacion: createForm.value.ubicacion,
       marca: createForm.value.marca,
       modelo: createForm.value.modelo,
       serie: createForm.value.serie,
@@ -773,7 +773,7 @@ const loadEquipoDataIntoEditForm = (equipo) => {
     responsable: equipo.responsable || null,
     ubicacion_fisica: equipo.ubicacion_fisica || '',
     sede: equipo.sede?.id || null,
-    servicio: equipo.servicio?.id || null,
+    ubicacion: equipo.ubicacion?.id || null,
     marca: equipo.marca || '',
     modelo: equipo.modelo || '',
     serie: equipo.serie || '',
@@ -797,7 +797,7 @@ const loadEquipoDataIntoEditForm = (equipo) => {
     registro_importacion: equipo.documentacion?.registro_importacion || false,
     manual_operacion: equipo.documentacion?.manual_operacion || false,
     idioma_manual: equipo.documentacion?.idioma_manual || '',
-    manual_servicio: equipo.documentacion?.manual_servicio || false,
+    manual_ubicacion: equipo.documentacion?.manual_ubicacion || false,
     guia_rapida: equipo.documentacion?.guia_rapida || false,
     instructivo_manejo: equipo.documentacion?.instructivo_manejo || false,
     protocolo_mto_preventivo: equipo.documentacion?.protocolo_mto_preventivo || false,
@@ -840,7 +840,7 @@ const submitEditForm = async () => {
       responsable: editForm.value.responsable,
       ubicacion_fisica: editForm.value.ubicacion_fisica,
       sede: editForm.value.sede,
-      servicio: editForm.value.servicio,
+      ubicacion: editForm.value.ubicacion,
       marca: editForm.value.marca,
       modelo: editForm.value.modelo,
       serie: editForm.value.serie,
@@ -1017,12 +1017,12 @@ function toggleSedeFilter(sede) {
   currentPage.value = 1
 }
 
-function toggleServicioFilter(servicio) {
-  const index = filtros.value.servicios.findIndex(s => s.id === servicio.id)
+function toggleUbicacionFilter(ubicacion) {
+  const index = filtros.value.ubicaciones.findIndex(s => s.id === ubicacion.id)
   if (index > -1) {
-    filtros.value.servicios.splice(index, 1)
+    filtros.value.ubicaciones.splice(index, 1)
   } else {
-    filtros.value.servicios.push(servicio)
+    filtros.value.ubicaciones.push(ubicacion)
   }
   currentPage.value = 1
 }
@@ -1059,7 +1059,7 @@ function toggleResponsableFilter(responsable) {
 
 function borrarTodosFiltros() {
   filtros.value.sedes = []
-  filtros.value.servicios = []
+  filtros.value.ubicaciones = []
   filtros.value.riesgos = []
   filtros.value.estados = []
   filtros.value.responsables = []
@@ -1069,7 +1069,7 @@ function borrarTodosFiltros() {
 }
 
 const filtrosActivos = computed(() => {
-  return filtros.value.sedes.length + filtros.value.servicios.length + 
+  return filtros.value.sedes.length + filtros.value.ubicaciones.length + 
          filtros.value.riesgos.length + filtros.value.estados.length +
          filtros.value.responsables.length + (filtros.value.tiene_invima ? 1 : 0)
 })
@@ -1177,7 +1177,7 @@ onMounted(() => {
               </td>
               <td>
                 <div style="font-weight: 600; font-size: 14px;">{{ equipo.sede?.nombre || 'N/A' }}</div>
-                <div style="font-size: 12px; color: #616161;">{{ equipo.servicio?.nombre || 'N/A' }}</div>
+                <div style="font-size: 12px; color: #616161;">{{ equipo.ubicacion?.nombre || 'N/A' }}</div>
               </td>
               <td>{{ equipo.responsable_nombre || 'N/A' }}</td>
               <td style="text-align: center;">
@@ -1250,7 +1250,7 @@ onMounted(() => {
                           <div class="detalle-item"><span class="detalle-label">Responsable:</span><span class="detalle-value">{{ selectedEquipo.responsable_nombre || 'N/A' }}</span></div>
                           <div class="detalle-item"><span class="detalle-label">Ubicación:</span><span class="detalle-value">{{ selectedEquipo.ubicacion_fisica }}</span></div>
                           <div class="detalle-item"><span class="detalle-label">Sede:</span><span class="detalle-value">{{ selectedEquipo.sede_info?.nombre }}</span></div>
-                          <div class="detalle-item"><span class="detalle-label">Proceso:</span><span class="detalle-value">{{ selectedEquipo.servicio_info?.nombre }}</span></div>
+                          <div class="detalle-item"><span class="detalle-label">Proceso:</span><span class="detalle-value">{{ selectedEquipo.ubicacion_info?.nombre }}</span></div>
                         </div>
                         <div class="detalle-section">
                           <h4 class="detalle-section-title">B. Información del Equipo</h4>
@@ -1369,8 +1369,8 @@ onMounted(() => {
                               <tbody>
                                 <tr v-for="traslado in trasladosCache.get(equipo.id)" :key="traslado.id">
                                   <td>{{ traslado.fecha_display }}</td>
-                                  <td>{{ traslado.sede_origen_nombre }} / {{ traslado.servicio_origen_nombre }}</td>
-                                  <td>{{ traslado.sede_destino_nombre }} / {{ traslado.servicio_destino_nombre }}</td>
+                                  <td>{{ traslado.sede_origen_nombre }} / {{ traslado.ubicacion_origen_nombre }}</td>
+                                  <td>{{ traslado.sede_destino_nombre }} / {{ traslado.ubicacion_destino_nombre }}</td>
                                   <td>{{ traslado.justificacion }}</td>
                                   <td>{{ traslado.usuario_registro }}</td>
                                 </tr>
@@ -1445,8 +1445,6 @@ onMounted(() => {
           <button class="page-btn" :disabled="currentPage === totalPages" @click="changePage(currentPage + 1)">Siguiente</button>
         </div>
       </div>
-    </div>
-
     <!-- MODAL: CREAR NUEVO EQUIPO -->
     <div class="modal" :class="{ active: showCreateModal }">
       <div class="modal-content">
@@ -1480,7 +1478,7 @@ onMounted(() => {
               <div class="form-group">
                 <label class="form-label required">Proceso</label>
                 <select class="form-select">
-                  <option value="">Seleccione un servicio</option>
+                  <option value="">Seleccione una ubicación</option>
                   <option value="1">LIME Central</option>
                   <option value="2">Fotodermatología</option>
                   <option value="3">Resonador</option>
@@ -1845,11 +1843,11 @@ onMounted(() => {
               </div>
               <div class="form-group">
                 <label class="form-label required">Proceso</label>
-                <select class="form-select" v-model="editForm.servicio">
-                  <option value="" disabled>Seleccione un servicio</option>
-                  <option v-for="servicio in serviciosFiltradosEdit" :key="servicio.id" :value="servicio.id">{{ servicio.nombre }}</option>
+                <select class="form-select" v-model="editForm.ubicacion">
+                  <option value="" disabled>Seleccione una ubicación</option>
+                  <option v-for="ubicacion in ubicacionesFiltradasEdit" :key="ubicacion.id" :value="ubicacion.id">{{ ubicacion.nombre }}</option>
                 </select>
-                <span v-if="formErrors.servicio" class="error-message">{{ formErrors.servicio }}</span>
+                <span v-if="formErrors.ubicacion" class="error-message">{{ formErrors.ubicacion }}</span>
               </div>
               <div class="form-group">
                 <label class="form-label required">Nombre del Equipo</label>
@@ -2303,18 +2301,18 @@ onMounted(() => {
           </div>
         </div>
 
-        <!-- Servicio -->
-        <div class="filtro-section" v-if="serviciosUnicos.length > 0">
+        <!-- Ubicación -->
+        <div class="filtro-section" v-if="ubicacionesUnicas.length > 0">
           <button class="filtro-section-title" @click="e => e.target.classList.toggle('collapsed')">
-            Servicio
+            Ubicación
             <span class="arrow">▼</span>
           </button>
           <div class="filtro-content">
-            <label class="filtro-item" v-for="servicio in serviciosUnicos" :key="servicio.id">
+            <label class="filtro-item" v-for="ubicacion in ubicacionesUnicas" :key="ubicacion.id">
               <input 
                 type="checkbox" 
-                :checked="filtros.servicios.some(s => s.id === servicio.id)"
-                @change="toggleServicioFilter(servicio)"
+                :checked="filtros.ubicaciones.some(u => u.id === ubicacion.id)"
+                @change="toggleUbicacionFilter(ubicacion)"
               >
               <span>{{ servicio.nombre }}</span>
             </label>
@@ -2418,6 +2416,8 @@ onMounted(() => {
         <p>{{ filteredEquipos.length }} equipos encontrados</p>
       </div>
     </div>
+    </div>
+
 </template>
 
 <style scoped>

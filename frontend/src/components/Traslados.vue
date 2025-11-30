@@ -18,9 +18,9 @@ const showFilterPanel = ref(false)
 const filtros = ref({
   sedes_origen: [],
   sedes_destino: [],
-  servicios_origen: [],
-  servicios_destino: [],
-  usuarios: [],
+  ubicaciones_origen: [],
+  ubicaciones_destino: [],
+  responsables: [],
   fecha_desde: '',
   fecha_hasta: ''
 })
@@ -36,11 +36,11 @@ const editForm = ref({
   equipo: null,
   fecha_traslado: '',
   sede_origen: null,
-  servicio_origen: null,
+  ubicacion_origen: null,
   sede_destino: null,
-  servicio_destino: null,
+  ubicacion_destino: null,
   justificacion: '',
-  usuario_registro: ''
+  responsable_registro: ''
 })
 
 // Catalogs
@@ -96,25 +96,25 @@ const sedesDestinoUnicas = computed(() => {
   return sedesDestino.sort((a, b) => a.nombre.localeCompare(b.nombre))
 })
 
-const serviciosOrigenUnicos = computed(() => {
-  const serviciosOrigen = traslados.value
-    .map(t => ({ id: t.servicio_origen, nombre: t.servicio_origen_nombre }))
-    .filter((servicio, index, self) => servicio.id && servicio.nombre && 
-      self.findIndex(s => s.id === servicio.id) === index)
-  return serviciosOrigen.sort((a, b) => a.nombre.localeCompare(b.nombre))
+const ubicacionesOrigenUnicas = computed(() => {
+  const ubicacionesOrigen = traslados.value
+    .map(t => ({ id: t.ubicacion_origen, nombre: t.ubicacion_origen_nombre }))
+    .filter((ubicacion, index, self) => ubicacion.id && ubicacion.nombre && 
+      self.findIndex(u => u.id === ubicacion.id) === index)
+  return ubicacionesOrigen.sort((a, b) => a.nombre.localeCompare(b.nombre))
 })
 
-const serviciosDestinoUnicos = computed(() => {
-  const serviciosDestino = traslados.value
-    .map(t => ({ id: t.servicio_destino, nombre: t.servicio_destino_nombre }))
-    .filter((servicio, index, self) => servicio.id && servicio.nombre && 
-      self.findIndex(s => s.id === servicio.id) === index)
-  return serviciosDestino.sort((a, b) => a.nombre.localeCompare(b.nombre))
+const ubicacionesDestinoUnicas = computed(() => {
+  const ubicacionesDestino = traslados.value
+    .map(t => ({ id: t.ubicacion_destino, nombre: t.ubicacion_destino_nombre }))
+    .filter((ubicacion, index, self) => ubicacion.id && ubicacion.nombre && 
+      self.findIndex(u => u.id === ubicacion.id) === index)
+  return ubicacionesDestino.sort((a, b) => a.nombre.localeCompare(b.nombre))
 })
 
-const usuariosUnicos = computed(() => {
-  const usuarios = [...new Set(traslados.value.map(t => t.usuario_registro))].filter(Boolean)
-  return usuarios.sort()
+const responsablesUnicos = computed(() => {
+  const responsables = [...new Set(traslados.value.map(t => t.responsable_registro))].filter(Boolean)
+  return responsables.sort()
 })
 
 const filteredTraslados = computed(() => {
@@ -141,19 +141,19 @@ const filteredTraslados = computed(() => {
     result = result.filter(t => filtros.value.sedes_destino.some(s => s.id === t.sede_destino))
   }
 
-  // Filtro por servicios origen
-  if (filtros.value.servicios_origen.length > 0) {
-    result = result.filter(t => filtros.value.servicios_origen.some(s => s.id === t.servicio_origen))
+  // Filtro por ubicaciones origen
+  if (filtros.value.ubicaciones_origen.length > 0) {
+    result = result.filter(t => filtros.value.ubicaciones_origen.some(u => u.id === t.ubicacion_origen))
   }
 
-  // Filtro por servicios destino
-  if (filtros.value.servicios_destino.length > 0) {
-    result = result.filter(t => filtros.value.servicios_destino.some(s => s.id === t.servicio_destino))
+  // Filtro por ubicaciones destino
+  if (filtros.value.ubicaciones_destino.length > 0) {
+    result = result.filter(t => filtros.value.ubicaciones_destino.some(u => u.id === t.ubicacion_destino))
   }
 
-  // Filtro por usuarios
-  if (filtros.value.usuarios.length > 0) {
-    result = result.filter(t => filtros.value.usuarios.includes(t.usuario_registro))
+  // Filtro por responsables
+  if (filtros.value.responsables.length > 0) {
+    result = result.filter(t => filtros.value.responsables.includes(t.responsable_registro))
   }
 
   // Filtro por rango de fechas
@@ -225,32 +225,32 @@ function toggleSedeDestinoFilter(sede) {
   currentPage.value = 1
 }
 
-function toggleServicioOrigenFilter(servicio) {
-  const index = filtros.value.servicios_origen.findIndex(s => s.id === servicio.id)
+function toggleUbicacionOrigenFilter(ubicacion) {
+  const index = filtros.value.ubicaciones_origen.findIndex(u => u.id === ubicacion.id)
   if (index > -1) {
-    filtros.value.servicios_origen.splice(index, 1)
+    filtros.value.ubicaciones_origen.splice(index, 1)
   } else {
-    filtros.value.servicios_origen.push(servicio)
+    filtros.value.ubicaciones_origen.push(ubicacion)
   }
   currentPage.value = 1
 }
 
-function toggleServicioDestinoFilter(servicio) {
-  const index = filtros.value.servicios_destino.findIndex(s => s.id === servicio.id)
+function toggleUbicacionDestinoFilter(ubicacion) {
+  const index = filtros.value.ubicaciones_destino.findIndex(u => u.id === ubicacion.id)
   if (index > -1) {
-    filtros.value.servicios_destino.splice(index, 1)
+    filtros.value.ubicaciones_destino.splice(index, 1)
   } else {
-    filtros.value.servicios_destino.push(servicio)
+    filtros.value.ubicaciones_destino.push(ubicacion)
   }
   currentPage.value = 1
 }
 
-function toggleUsuarioFilter(usuario) {
-  const index = filtros.value.usuarios.indexOf(usuario)
+function toggleResponsableFilter(responsable) {
+  const index = filtros.value.responsables.indexOf(responsable)
   if (index > -1) {
-    filtros.value.usuarios.splice(index, 1)
+    filtros.value.responsables.splice(index, 1)
   } else {
-    filtros.value.usuarios.push(usuario)
+    filtros.value.responsables.push(responsable)
   }
   currentPage.value = 1
 }
@@ -258,9 +258,9 @@ function toggleUsuarioFilter(usuario) {
 function borrarTodosFiltros() {
   filtros.value.sedes_origen = []
   filtros.value.sedes_destino = []
-  filtros.value.servicios_origen = []
-  filtros.value.servicios_destino = []
-  filtros.value.usuarios = []
+  filtros.value.ubicaciones_origen = []
+  filtros.value.ubicaciones_destino = []
+  filtros.value.responsables = []
   filtros.value.fecha_desde = ''
   filtros.value.fecha_hasta = ''
   ordenamiento.value = 'fecha-desc'
@@ -269,8 +269,8 @@ function borrarTodosFiltros() {
 
 const filtrosActivos = computed(() => {
   let count = filtros.value.sedes_origen.length + filtros.value.sedes_destino.length + 
-              filtros.value.servicios_origen.length + filtros.value.servicios_destino.length +
-              filtros.value.usuarios.length
+              filtros.value.ubicaciones_origen.length + filtros.value.ubicaciones_destino.length +
+              filtros.value.responsables.length
   if (filtros.value.fecha_desde) count++
   if (filtros.value.fecha_hasta) count++
   return count
@@ -289,11 +289,11 @@ const createForm = ref({
   equipo: null,
   fecha_traslado: new Date().toISOString().split('T')[0],
   sede_origen: null,
-  servicio_origen: null,
+  ubicacion_origen: null,
   sede_destino: null,
-  servicio_destino: null,
+  ubicacion_destino: null,
   justificacion: '',
-  usuario_registro: ''
+  responsable_registro: ''
 })
 
 // Search state
@@ -339,7 +339,7 @@ const selectEquipo = (equipo) => {
   
   // Auto-fill origin if available (optional enhancement)
   if (equipo.sede) createForm.value.sede_origen = equipo.sede
-  if (equipo.servicio) createForm.value.servicio_origen = equipo.servicio
+  if (equipo.ubicacion) createForm.value.ubicacion_origen = equipo.ubicacion
 }
 
 const openCreateModal = () => {
@@ -347,11 +347,11 @@ const openCreateModal = () => {
     equipo: null,
     fecha_traslado: new Date().toISOString().split('T')[0],
     sede_origen: null,
-    servicio_origen: null,
+    ubicacion_origen: null,
     sede_destino: null,
-    servicio_destino: null,
+    ubicacion_destino: null,
     justificacion: '',
-    usuario_registro: ''
+    responsable_registro: ''
   }
   equipoSearchTerm.value = ''
   equiposFound.value = []
@@ -382,11 +382,11 @@ const closeEditModal = () => {
     equipo: null,
     fecha_traslado: '',
     sede_origen: null,
-    servicio_origen: null,
+    ubicacion_origen: null,
     sede_destino: null,
-    servicio_destino: null,
+    ubicacion_destino: null,
     justificacion: '',
-    usuario_registro: ''
+    responsable_registro: ''
   }
 }
 
@@ -501,19 +501,19 @@ onMounted(() => {
             </td>
             <td>
               <div style="font-weight: 600; font-size: 14px; color: #212121;">{{ traslado.sede_origen_nombre || 'N/A' }}</div>
-              <div style="font-size: 12px; color: #616161;">{{ traslado.servicio_origen_nombre || 'N/A' }}</div>
+              <div style="font-size: 12px; color: #616161;">{{ traslado.ubicacion_origen_nombre || 'N/A' }}</div>
             </td>
             <td style="text-align: center; color: #006633; font-size: 20px;">
               ➝
             </td>
             <td>
               <div style="font-weight: 600; font-size: 14px; color: #212121;">{{ traslado.sede_destino_nombre || 'N/A' }}</div>
-              <div style="font-size: 12px; color: #616161;">{{ traslado.servicio_destino_nombre || 'N/A' }}</div>
+              <div style="font-size: 12px; color: #616161;">{{ traslado.ubicacion_destino_nombre || 'N/A' }}</div>
             </td>
             <td>{{ traslado.justificacion }}</td>
             <td>{{ formatFecha(traslado.fecha_traslado) }}</td>
             <td style="text-align: center;">
-              <div style="font-weight: 600; color: #006633;">{{ traslado.usuario_registro || 'N/A' }}</div>
+              <div style="font-weight: 600; color: #006633;">{{ traslado.responsable_registro || 'N/A' }}</div>
             </td>
             <td>
               <div style="display: flex; gap: 5px; justify-content: center;">
@@ -591,7 +591,7 @@ onMounted(() => {
               </div>
               <div class="form-group">
                 <label class="form-label required">Responsable</label>
-                <input type="text" v-model="createForm.usuario_registro" class="form-input" placeholder="Nombre del responsable">
+                <input type="text" v-model="createForm.responsable_registro" class="form-input" placeholder="Nombre del responsable">
               </div>
             </div>
 
@@ -607,7 +607,7 @@ onMounted(() => {
               </div>
               <div class="form-group">
                 <label class="form-label required">Ubicación Origen</label>
-                <select v-model="createForm.servicio_origen" class="form-select">
+                <select v-model="createForm.ubicacion_origen" class="form-select">
                   <option :value="null" disabled>Seleccione ubicación...</option>
                   <option v-for="ubicacion in ubicaciones" :key="ubicacion.id" :value="ubicacion.id">{{ ubicacion.nombre }}</option>
                 </select>
@@ -626,7 +626,7 @@ onMounted(() => {
               </div>
               <div class="form-group">
                 <label class="form-label required">Ubicación Destino</label>
-                <select v-model="createForm.servicio_destino" class="form-select">
+                <select v-model="createForm.ubicacion_destino" class="form-select">
                   <option :value="null" disabled>Seleccione ubicación...</option>
                   <option v-for="ubicacion in ubicaciones" :key="ubicacion.id" :value="ubicacion.id">{{ ubicacion.nombre }}</option>
                 </select>
@@ -667,7 +667,7 @@ onMounted(() => {
               </div>
               <div class="form-group">
                 <label class="form-label">Responsable</label>
-                <input type="text" v-model="editForm.usuario_registro" class="form-input">
+                <input type="text" v-model="editForm.responsable_registro" class="form-input">
               </div>
             </div>
 
@@ -682,7 +682,7 @@ onMounted(() => {
               </div>
               <div class="form-group">
                 <label class="form-label">Ubicación Origen</label>
-                <select v-model="editForm.servicio_origen" class="form-select">
+                <select v-model="editForm.ubicacion_origen" class="form-select">
                   <option v-for="ubicacion in ubicaciones" :key="ubicacion.id" :value="ubicacion.id">{{ ubicacion.nombre }}</option>
                 </select>
               </div>
@@ -699,7 +699,7 @@ onMounted(() => {
               </div>
               <div class="form-group">
                 <label class="form-label">Ubicación Destino</label>
-                <select v-model="editForm.servicio_destino" class="form-select">
+                <select v-model="editForm.ubicacion_destino" class="form-select">
                   <option v-for="ubicacion in ubicaciones" :key="ubicacion.id" :value="ubicacion.id">{{ ubicacion.nombre }}</option>
                 </select>
               </div>
@@ -816,56 +816,56 @@ onMounted(() => {
           </div>
         </div>
 
-        <!-- Servicio Origen -->
-        <div class="filtro-section" v-if="serviciosOrigenUnicos.length > 0">
+        <!-- Ubicación Origen -->
+        <div class="filtro-section" v-if="ubicacionesOrigenUnicas.length > 0">
           <button class="filtro-section-title" @click="e => e.target.classList.toggle('collapsed')">
-            Servicio Origen
+            Ubicación Origen
             <span class="arrow">▼</span>
           </button>
           <div class="filtro-content">
-            <label class="filtro-item" v-for="servicio in serviciosOrigenUnicos" :key="servicio.id">
+            <label class="filtro-item" v-for="ubicacion in ubicacionesOrigenUnicas" :key="ubicacion.id">
               <input 
                 type="checkbox" 
-                :checked="filtros.servicios_origen.some(s => s.id === servicio.id)"
-                @change="toggleServicioOrigenFilter(servicio)"
+                :checked="filtros.ubicaciones_origen.some(u => u.id === ubicacion.id)"
+                @change="toggleUbicacionOrigenFilter(ubicacion)"
               >
-              <span>{{ servicio.nombre }}</span>
+              <span>{{ ubicacion.nombre }}</span>
             </label>
           </div>
         </div>
 
-        <!-- Servicio Destino -->
-        <div class="filtro-section" v-if="serviciosDestinoUnicos.length > 0">
+        <!-- Ubicación Destino -->
+        <div class="filtro-section" v-if="ubicacionesDestinoUnicas.length > 0">
           <button class="filtro-section-title" @click="e => e.target.classList.toggle('collapsed')">
-            Servicio Destino
+            Ubicación Destino
             <span class="arrow">▼</span>
           </button>
           <div class="filtro-content">
-            <label class="filtro-item" v-for="servicio in serviciosDestinoUnicos" :key="servicio.id">
+            <label class="filtro-item" v-for="ubicacion in ubicacionesDestinoUnicas" :key="ubicacion.id">
               <input 
                 type="checkbox" 
-                :checked="filtros.servicios_destino.some(s => s.id === servicio.id)"
-                @change="toggleServicioDestinoFilter(servicio)"
+                :checked="filtros.ubicaciones_destino.some(u => u.id === ubicacion.id)"
+                @change="toggleUbicacionDestinoFilter(ubicacion)"
               >
-              <span>{{ servicio.nombre }}</span>
+              <span>{{ ubicacion.nombre }}</span>
             </label>
           </div>
         </div>
 
-        <!-- Usuario que Registró -->
-        <div class="filtro-section" v-if="usuariosUnicos.length > 0">
+        <!-- Responsable que Registró -->
+        <div class="filtro-section" v-if="responsablesUnicos.length > 0">
           <button class="filtro-section-title" @click="e => e.target.classList.toggle('collapsed')">
-            Registrado Por
+            Responsable que Registró
             <span class="arrow">▼</span>
           </button>
           <div class="filtro-content">
-            <label class="filtro-item" v-for="usuario in usuariosUnicos" :key="usuario">
+            <label class="filtro-item" v-for="responsable in responsablesUnicos" :key="responsable">
               <input 
                 type="checkbox" 
-                :checked="filtros.usuarios.includes(usuario)"
-                @change="toggleUsuarioFilter(usuario)"
+                :checked="filtros.responsables.includes(responsable)"
+                @change="toggleResponsableFilter(responsable)"
               >
-              <span>{{ usuario }}</span>
+              <span>{{ responsable }}</span>
             </label>
           </div>
         </div>
@@ -1131,6 +1131,8 @@ tr:hover {
 }
 
 /* FILTER PANEL STYLES */
+
+
 .search-filter-container { 
   display: flex; 
   gap: 20px; 
