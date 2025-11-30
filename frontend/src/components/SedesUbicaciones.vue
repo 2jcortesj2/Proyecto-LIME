@@ -16,7 +16,7 @@ async function fetchSedes() {
     // All accordions closed by default
   } catch (err) {
     console.error('Error fetching sedes:', err)
-    error.value = 'Error al cargar la información de sedes y servicios.'
+    error.value = 'Error al cargar la información de sedes y ubicaciones.'
   } finally {
     loading.value = false
   }
@@ -35,14 +35,14 @@ function toggleShowAllServices(sedeId) {
   showAllServices.value.set(sedeId, !current)
 }
 
-function getVisibleServicios(sede) {
+function getVisibleUbicaciones(sede) {
   const showAll = showAllServices.value.get(sede.id) || false
-  if (!sede.servicios) return []
-  return showAll ? sede.servicios : sede.servicios.slice(0, 5)
+  if (!sede.ubicaciones) return []
+  return showAll ? sede.ubicaciones : sede.ubicaciones.slice(0, 5)
 }
 
-function hasMoreServicios(sede) {
-  return sede.servicios && sede.servicios.length > 5
+function hasMoreUbicaciones(sede) {
+  return sede.ubicaciones && sede.ubicaciones.length > 5
 }
 
 onMounted(() => {
@@ -54,7 +54,7 @@ onMounted(() => {
   <div class="sedes-container">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
       <div>
-        <h2 class="page-title" style="margin: 0;">Sedes y Servicios</h2>
+        <h2 class="page-title" style="margin: 0;">Sedes y Ubicaciones</h2>
         <div style="color: #616161; font-size: 14px; margin-top: 5px;">Inicio / Configuración / Sedes</div>
       </div>
       <button class="btn btn-primary" @click="() => {}">➕ Nueva Sede</button>
@@ -62,7 +62,7 @@ onMounted(() => {
 
     <div v-if="loading" class="loading-state">
       <div class="spinner"></div>
-      <p>Cargando sedes y servicios...</p>
+      <p>Cargando sedes y ubicaciones...</p>
     </div>
 
     <div v-else-if="error" class="error-state">
@@ -85,8 +85,8 @@ onMounted(() => {
             <div class="header-right">
               <div class="header-stats">
                 <div class="mini-stat stat-green">
-                  <span class="mini-stat-value">{{ sede.total_servicios }}</span>
-                  <span class="mini-stat-label">Servicios</span>
+                  <span class="mini-stat-value">{{ sede.total_ubicaciones }}</span>
+                  <span class="mini-stat-label">Ubicaciones</span>
                 </div>
                 <div class="mini-stat stat-blue">
                   <span class="mini-stat-value">{{ sede.total_equipos }}</span>
@@ -95,7 +95,7 @@ onMounted(() => {
               </div>
               <div class="sede-actions">
                 <button class="btn-secondary" @click.stop>✏️ Editar Sede</button>
-                <button class="btn-tertiary" @click.stop>➕ Nuevo Servicio</button>
+                <button class="btn-tertiary" @click.stop>➕ Nueva Ubicación</button>
               </div>
             </div>
           </div>
@@ -108,16 +108,16 @@ onMounted(() => {
 
           <!-- Services Section -->
           <div class="services-section">
-            <h3 class="services-title">Servicios de la Sede</h3>
+            <h3 class="services-title">Ubicaciones de la Sede</h3>
             
             <div class="services-list">
-              <div v-for="servicio in getVisibleServicios(sede)" :key="servicio.id" class="servicio-row">
+              <div v-for="ubicacion in getVisibleUbicaciones(sede)" :key="ubicacion.id" class="servicio-row">
                 <div class="servicio-info">
-                  <h4 class="servicio-name">{{ servicio.nombre }}</h4>
+                  <h4 class="servicio-name">{{ ubicacion.nombre }}</h4>
                   <div class="servicio-meta">
-                    <span class="servicio-equipos">🔧 {{ servicio.num_equipos }} equipos</span>
+                    <span class="servicio-equipos">🔧 {{ ubicacion.num_equipos }} equipos</span>
                     <span class="separator">•</span>
-                    <span class="servicio-responsable">👤 Responsable: {{ servicio.responsable }}</span>
+                    <span class="servicio-responsable">👤 Responsable: {{ ubicacion.responsable || 'Sin responsable asignado' }}</span>
                   </div>
                 </div>
                 <div class="servicio-actions">
@@ -125,14 +125,14 @@ onMounted(() => {
                 </div>
               </div>
               
-              <div v-if="hasMoreServicios(sede)" class="ver-mas-container">
+              <div v-if="hasMoreUbicaciones(sede)" class="ver-mas-container">
                 <button class="btn-ver-mas" @click.stop="toggleShowAllServices(sede.id)">
-                  {{ showAllServices.get(sede.id) ? '▲ Ver menos' : '▼ Ver más (' + (sede.servicios.length - 5) + ' más)' }}
+                  {{ showAllServices.get(sede.id) ? '▲ Ver menos' : '▼ Ver más (' + (sede.ubicaciones.length - 5) + ' más)' }}
                 </button>
               </div>
               
-              <div v-if="!sede.servicios || sede.servicios.length === 0" class="no-services">
-                No hay servicios registrados en esta sede.
+              <div v-if="!sede.ubicaciones || sede.ubicaciones.length === 0" class="no-services">
+                No hay ubicaciones registradas en esta sede.
               </div>
             </div>
           </div>

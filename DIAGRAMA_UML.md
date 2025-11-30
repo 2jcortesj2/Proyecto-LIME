@@ -10,41 +10,39 @@ classDiagram
         +string ciudad
         +string direccion
         +string telefono
-        +string estado
-        +total_servicios()
+        +bool estado
+        +total_ubicaciones()
         +total_equipos()
     }
     
-    class Servicio {
+    class Ubicacion {
         +int id
         +string nombre
         +FK sede
-        +string responsable
-        +string estado
+        +bool estado
         +total_equipos()
     }
     
     class Responsable {
         +int id
         +string nombre_completo
-        +string cedula
         +string email
         +string telefono
         +string rol
-        +string estado
+        +total_equipos_asignados()
+        +total_traslados_registrados()
     }
     
     class Equipo {
         +int id
         +string proceso
         +FK sede
-        +FK servicio
+        +FK ubicacion
         +FK responsable
         +string nombre_equipo
         +string codigo_interno
         +string codigo_ips
         +string codigo_ecri
-        +string ubicacion_fisica
         +string marca
         +string modelo
         +string serie
@@ -52,20 +50,20 @@ classDiagram
         +string clasificacion_ips
         +string clasificacion_riesgo
         +string registro_invima
+        +int tiempo_vida_util
         +string estado
     }
     
     class RegistroAdquisicion {
         +int id
         +OneToOne equipo
-        +string tiempo_vida_util
         +date fecha_adquisicion
         +string propietario
-        +string fecha_fabricacion
+        +date fecha_fabricacion
         +string nit_proveedor
         +string nombre_proveedor
         +bool en_garantia
-        +date fecha_finalizacion_garantia
+        +date fecha_fin_garantia
         +string forma_adquisicion
         +string tipo_documento
         +string numero_documento
@@ -78,10 +76,8 @@ classDiagram
         +bool hoja_vida
         +bool registro_importacion
         +bool manual_operacion
-        +string idioma_manual
         +bool manual_servicio
         +bool guia_rapida
-        +bool instructivo_manejo
         +bool protocolo_mto_preventivo
         +string frecuencia_metrologica
     }
@@ -89,15 +85,23 @@ classDiagram
     class InformacionMetrologica {
         +int id
         +OneToOne equipo
-        +bool requiere_mantenimiento
-        +int frecuencia_mantenimiento
-        +date ultimo_mantenimiento
-        +bool requiere_calibracion
         +string magnitud
         +string rango_equipo
         +string rango_trabajo
-        +string resolucion
         +string error_maximo
+        +string resolucion
+        +bool requiere_mantenimiento
+        +string frecuencia_mantenimiento
+        +date ultimo_mantenimiento
+        +date proximo_mantenimiento
+        +bool requiere_calibracion
+        +string frecuencia_calibracion
+        +date ultima_calibracion
+        +date proxima_calibracion
+        +bool requiere_calificacion
+        +string frecuencia_calificacion
+        +date ultima_calificacion
+        +date proxima_calificacion
         +fecha_proximo_mantenimiento_calculada()
         +estado_mantenimiento()
     }
@@ -107,11 +111,11 @@ classDiagram
         +OneToOne equipo
         +string voltaje
         +string corriente
-        +string potencia
-        +string presion
+        +string humedad_relativa
+        +string temperatura
         +string dimensiones
         +string peso
-        +string otros
+        +text otros
     }
     
     class HistorialMantenimiento {
@@ -120,30 +124,34 @@ classDiagram
         +string tipo_mantenimiento
         +int mes_mantenimiento
         +int anio_mantenimiento
-        +string realizado_por
         +text descripcion
-        +text observaciones
+        +string realizado_por
         +decimal costo
-        +fecha_mantenimiento()
+        +string usuario_registro
+        +text observaciones
+        +datetime created_at
+        +fecha_display()
     }
     
     class HistorialTraslado {
         +int id
         +FK equipo
-        +date fecha_traslado
+        +datetime fecha_traslado
         +FK sede_origen
-        +FK servicio_origen
+        +FK ubicacion_origen
         +FK sede_destino
-        +FK servicio_destino
+        +FK ubicacion_destino
         +text justificacion
-        +string usuario_registro
+        +FK responsable_registro
+        +datetime created_at
     }
     
     %% Relaciones
-    Sede "1" --> "0..*" Servicio : contiene
+    Sede "1" --> "0..*" Ubicacion : contiene
     Sede "1" --> "0..*" Equipo : tiene
-    Servicio "1" --> "0..*" Equipo : tiene
+    Ubicacion "1" --> "0..*" Equipo : tiene
     Responsable "1" --> "0..*" Equipo : responsable_de
+    Responsable "1" --> "0..*" HistorialTraslado : registra
     
     Equipo "1" --> "0..1" RegistroAdquisicion : tiene
     Equipo "1" --> "0..1" DocumentacionEquipo : tiene
@@ -154,8 +162,8 @@ classDiagram
     
     Sede "1" --> "0..*" HistorialTraslado : origen
     Sede "1" --> "0..*" HistorialTraslado : destino
-    Servicio "1" --> "0..*" HistorialTraslado : origen
-    Servicio "1" --> "0..*" HistorialTraslado : destino
+    Ubicacion "1" --> "0..*" HistorialTraslado : origen
+    Ubicacion "1" --> "0..*" HistorialTraslado : destino
 ```
 
 ## Diagrama de Arquitectura del Sistema
@@ -168,7 +176,8 @@ flowchart TB
         Pendientes[EquiposPendientes.vue]
         Mantenimientos[Mantenimientos.vue]
         Traslados[Traslados.vue]
-        SedesServ[SedesServicios.vue]
+        SedesUbic[SedesUbicaciones.vue]
+        Responsables[Responsables.vue]
         Sidebar[Sidebar.vue]
         
         API[services/api.js]
@@ -179,7 +188,7 @@ flowchart TB
         subgraph Apps["Django Apps"]
             AppEquipos[equipos]
             AppSedes[sedes]
-            AppServicios[servicios]
+            AppUbicaciones[ubicaciones]
             AppResp[responsables]
             AppMant[historial_mantenimientos]
             AppTrasl[historial_traslados]
@@ -205,7 +214,8 @@ flowchart TB
     Pendientes --> API
     Mantenimientos --> API
     Traslados --> API
-    SedesServ --> API
+    SedesUbic --> API
+    Responsables --> API
     
     Dashboard --> Utils
     Inventario --> Utils
@@ -273,9 +283,9 @@ sequenceDiagram
     
     Usuario->>Frontend: Clic en "Nuevo Equipo"
     Frontend->>Frontend: Abrir Modal de Creación
-    Frontend->>API: Cargar Sedes/Servicios/Responsables
-    API->>Backend: GET /api/sedes/, /api/servicios/, /api/responsables/
-    Backend->>DB: SELECT * FROM sedes, servicios, responsables
+    Frontend->>API: Cargar Sedes/Ubicaciones/Responsables
+    API->>Backend: GET /api/sedes/, /api/ubicaciones/, /api/responsables/
+    Backend->>DB: SELECT * FROM sedes, ubicaciones, responsables
     DB-->>Backend: Datos
     Backend-->>API: JSON Response
     API-->>Frontend: Datos para dropdowns
@@ -315,15 +325,18 @@ graph TB
         Pendientes[EquiposPendientes.vue]
         Mantenimientos[Mantenimientos.vue]
         Traslados[Traslados.vue]
-        SedesServ[SedesServicios.vue]
+        SedesUbic[SedesUbicaciones.vue]
+        Responsables[Responsables.vue]
     end
     
     subgraph Services["Servicios"]
         API[api.js]
         EquiposAPI[equiposAPI]
         SedesAPI[sedesAPI]
-        ServiciosAPI[serviciosAPI]
+        UbicacionesAPI[ubicacionesAPI]
         RespAPI[responsablesAPI]
+        TrasladosAPI[trasladosAPI]
+        MantenimientosAPI[mantenimientosAPI]
     end
     
     subgraph Utils["Utilidades"]
@@ -338,24 +351,31 @@ graph TB
     App --> Pendientes
     App --> Mantenimientos
     App --> Traslados
-    App --> SedesServ
+    App --> SedesUbic
+    App --> Responsables
     
     Dashboard --> EquiposAPI
     Inventario --> EquiposAPI
     Inventario --> SedesAPI
-    Inventario --> ServiciosAPI
+    Inventario --> UbicacionesAPI
     Inventario --> RespAPI
     Pendientes --> EquiposAPI
-    Mantenimientos --> EquiposAPI
-    SedesServ --> SedesAPI
+    Mantenimientos --> MantenimientosAPI
+    Traslados --> TrasladosAPI
+    Traslados --> UbicacionesAPI
+    SedesUbic --> SedesAPI
+    SedesUbic --> UbicacionesAPI
+    Responsables --> RespAPI
     
     Inventario --> SearchUtils
     Pendientes --> SearchUtils
     
     API --> EquiposAPI
     API --> SedesAPI
-    API --> ServiciosAPI
+    API --> UbicacionesAPI
     API --> RespAPI
+    API --> TrasladosAPI
+    API --> MantenimientosAPI
     
     SearchUtils --> NormalizeText
     SearchUtils --> FilterEquipos
@@ -374,18 +394,30 @@ graph TB
 - **Functions**: camelCase (normalizeText, filterEquiposBySearch)
 
 ### Relaciones Clave
-1. **Sede → Servicio → Equipo**: Jerarquía organizacional
+1. **Sede → Ubicacion → Equipo**: Jerarquía organizacional (Servicio fue reemplazado por Ubicacion)
 2. **Equipo → 4 modelos 1:1**: Información extendida
 3. **Equipo → N historiales**: Trazabilidad temporal
 4. **InformacionMetrologica**: Lógica crítica de estados
+5. **Responsable → Equipo**: Asignación de responsables a equipos
+6. **Responsable → HistorialTraslado**: Registro de quién realizó el traslado
 
 ### Estados del Sistema
-- **Equipos**: Activo, Inactivo
+- **Equipos**: Activo, Inactivo, Baja, En Mantenimiento
 - **Mantenimiento**: Vencido, Próximo, Normal, No Requiere, No Programado
-- **Tipo Mantenimiento**: Preventivo, Correctivo, Calibración, Verificación
+- **Tipo Mantenimiento**: Preventivo, Correctivo, Calibración, Calificación, Verificación
 
 ### Flujos Principales
 1. **Dashboard → EquiposPendientes**: Ver equipos que requieren atención
 2. **Inventario → Modal Detalle**: Ver información completa
 3. **Inventario → Modal Edición**: Modificar equipo
-4. **SedesServicios → Acordeón**: Gestionar estructura organizacional
+4. **SedesUbicaciones → Acordeón**: Gestionar estructura organizacional (ahora con Ubicaciones)
+5. **Traslados**: Registrar movimientos de equipos entre ubicaciones
+6. **Responsables**: Gestionar personal responsable de equipos
+
+### Cambios Recientes en el Esquema
+- **Eliminado**: Tabla `Servicio` y campo `ubicacion_fisica` en Equipo
+- **Agregado**: Tabla `Ubicacion` con FK a Sede
+- **Agregado**: Campo `proceso` en Equipo (CharField)
+- **Modificado**: Campo `ubicacion` en Equipo (ahora FK a Ubicacion)
+- **Modificado**: Campo `usuario_registro` en HistorialTraslado (ahora `responsable_registro` como FK a Responsable)
+- **Modificado**: Campos `servicio_origen` y `servicio_destino` en HistorialTraslado (ahora `ubicacion_origen` y `ubicacion_destino`)

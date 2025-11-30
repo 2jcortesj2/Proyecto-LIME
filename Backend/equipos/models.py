@@ -1,15 +1,16 @@
 from django.db import models
 from multiselectfield import MultiSelectField
 from sedes.models import Sede
-from servicios.models import Servicio
+from ubicaciones.models import Ubicacion
 
 class Equipo(models.Model):
 
     # ---------------------------
     # INFORMACIÓN GENERAL
     # ---------------------------
+    proceso = models.CharField(max_length=200, null=True, blank=True)
     sede = models.ForeignKey(Sede, on_delete=models.SET_NULL, null=True, blank=True, related_name='equipos')
-    servicio = models.ForeignKey(Servicio, on_delete=models.SET_NULL, null=True, blank=True, related_name='equipos')
+    ubicacion = models.ForeignKey(Ubicacion, on_delete=models.SET_NULL, null=True, blank=True, related_name='equipos')
     nombre_equipo = models.CharField(max_length=200, null=True, blank=True)
 
     codigo_interno = models.CharField(max_length=100, null=True, blank=True)
@@ -17,7 +18,6 @@ class Equipo(models.Model):
     codigo_ecri = models.CharField(max_length=50, null=True, blank=True)
 
     responsable = models.ForeignKey('responsables.Responsable', on_delete=models.SET_NULL, null=True, blank=True, related_name='equipos_asignados')
-    ubicacion_fisica = models.CharField(max_length=200, null=True, blank=True)
 
     marca = models.CharField(max_length=100, null=True, blank=True)
     modelo = models.CharField(max_length=100, null=True, blank=True)
@@ -132,6 +132,11 @@ class InformacionMetrologica(models.Model):
     frecuencia_calibracion = models.CharField(max_length=50, null=True, blank=True)
     ultima_calibracion = models.DateField(null=True, blank=True)
     proxima_calibracion = models.DateField(null=True, blank=True)
+
+    requiere_calificacion = models.BooleanField(default=False)
+    frecuencia_calificacion = models.CharField(max_length=50, null=True, blank=True)
+    ultima_calificacion = models.DateField(null=True, blank=True)
+    proxima_calificacion = models.DateField(null=True, blank=True)
 
     def __str__(self):
         return f"Info Metrológica - {self.equipo}"

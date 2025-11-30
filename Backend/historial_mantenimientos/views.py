@@ -1,6 +1,7 @@
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.pagination import PageNumberPagination
 from .models import HistorialMantenimiento
 from .serializers import HistorialMantenimientoSerializer
 from equipos.models import Equipo
@@ -11,25 +12,44 @@ from django.db.models import Q
 @api_view(['GET', 'POST'])
 def mantenimiento_list(request):
     """
-    GET: Lista todos los mantenimientos
+    GET: Lista todos los mantenimientos (paginado)
     POST: Registra un nuevo mantenimiento
     """
     if request.method == 'GET':
         equipo_id = request.GET.get('equipo_id', None)
         tipo = request.GET.get('tipo', None)
+        search = request.GET.get('search', None)
         
+        # Optimización de consulta
         mantenimientos = HistorialMantenimiento.objects.select_related(
-            'equipo__sede', 'equipo__servicio', 'equipo__responsable',
-            'equipo__registro_adquisicion', 'equipo__informacion_metrologica'
+            'equipo__sede', 
+            'equipo__responsable',
+            'equipo__registro_adquisicion', 
+            'equipo__informacion_metrologica',
+            'equipo__ubicacion'  # Agregado para evitar N+1
         ).all()
         
         if equipo_id:
             mantenimientos = mantenimientos.filter(equipo_id=equipo_id)
         if tipo:
             mantenimientos = mantenimientos.filter(tipo_mantenimiento=tipo)
+        if search:
+            mantenimientos = mantenimientos.filter(
+                Q(equipo__nombre_equipo__icontains=search) |
+                Q(equipo__codigo_interno__icontains=search) |
+                Q(realizado_por__icontains=search) |
+                Q(descripcion__icontains=search)
+            )
         
-        serializer = HistorialMantenimientoSerializer(mantenimientos, many=True)
-        return Response(serializer.data)
+        # Paginación
+        paginator = PageNumberPagination()
+        paginator.page_size = 10
+        paginator.page_size_query_param = 'page_size'
+        paginator.max_page_size = 100
+        
+        result_page = paginator.paginate_queryset(mantenimientos, request)
+        serializer = HistorialMantenimientoSerializer(result_page, many=True)
+        return paginator.get_paginated_response(serializer.data)
     
     elif request.method == 'POST':
         serializer = HistorialMantenimientoSerializer(data=request.data)
@@ -87,7 +107,7 @@ def mantenimiento_detail(request, pk):
 def mantenimiento_por_equipo(request, equipo_id):
     """Obtiene el historial de mantenimientos de un equipo específico"""
     mantenimientos = HistorialMantenimiento.objects.select_related(
-        'equipo__sede', 'equipo__servicio', 'equipo__responsable',
+        'equipo__sede', 'equipo__responsable',
         'equipo__registro_adquisicion', 'equipo__informacion_metrologica'
     ).filter(equipo_id=equipo_id)
     serializer = HistorialMantenimientoSerializer(mantenimientos, many=True)
@@ -101,7 +121,7 @@ def mantenimientos_recientes(request):
     
     # Filtrar por año y mes
     mantenimientos = HistorialMantenimiento.objects.select_related(
-        'equipo__sede', 'equipo__servicio', 'equipo__responsable',
+        'equipo__sede', 'equipo__responsable',
         'equipo__registro_adquisicion', 'equipo__informacion_metrologica'
     ).filter(
         Q(anio_mantenimiento__gt=hace_3_meses.year) |

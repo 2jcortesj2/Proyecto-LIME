@@ -11,7 +11,7 @@ def sede_list(request):
     POST: Crea una nueva sede
     """
     if request.method == 'GET':
-        sedes = Sede.objects.prefetch_related('servicios', 'equipos').all()
+        sedes = Sede.objects.prefetch_related('ubicaciones', 'equipos').all()
         serializer = SedeSerializer(sedes, many=True)
         return Response(serializer.data)
     
@@ -54,6 +54,6 @@ def sede_detail(request, pk):
 @api_view(['GET'])
 def sede_active(request):
     """Obtiene solo las sedes activas"""
-    sedes = Sede.objects.prefetch_related('servicios', 'equipos').filter(estado=True)
+    sedes = Sede.objects.prefetch_related('ubicaciones', 'equipos').filter(estado=True)
     serializer = SedeSerializer(sedes, many=True)
     return Response(serializer.data)

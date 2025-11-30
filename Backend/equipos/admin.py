@@ -112,8 +112,9 @@ class EquipoAdmin(admin.ModelAdmin):
         'nombre_equipo',
         'marca',
         'modelo',
+        'proceso',
         'sede',
-        'servicio',
+        'ubicacion',
         'responsable',
         'estado_colored',
         'clasificacion_riesgo',
@@ -122,7 +123,7 @@ class EquipoAdmin(admin.ModelAdmin):
     list_filter = [
         'estado',
         'sede',
-        'servicio',
+        'ubicacion',
         'clasificacion_misional',
         'clasificacion_ips',
         'clasificacion_riesgo',
@@ -147,10 +148,11 @@ class EquipoAdmin(admin.ModelAdmin):
     fieldsets = (
         ('Información General', {
             'fields': (
-                ('estado', 'sede', 'servicio'),
+                ('estado', 'proceso'),
+                ('sede', 'ubicacion'),
                 ('nombre_equipo', 'codigo_interno'),
                 ('codigo_ips', 'codigo_ecri'),
-                ('responsable', 'ubicacion_fisica'),
+                'responsable',
             )
         }),
         ('Información del Equipo', {

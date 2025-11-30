@@ -1,194 +1,317 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Backend UML Diagram</title>
-    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <title>Diagrama UML - Sistema LIME</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
     <script>
-        mermaid.initialize({ startOnLoad: true });
+        mermaid.initialize({ 
+            startOnLoad: true,
+            theme: 'default',
+            themeVariables: {
+                primaryColor: '#e3f2fd',
+                primaryTextColor: '#000',
+                primaryBorderColor: '#1976d2',
+                lineColor: '#1976d2',
+                secondaryColor: '#fff3e0',
+                tertiaryColor: '#e8f5e9'
+            }
+        });
     </script>
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
-            font-family: sans-serif;
-            margin: 20px;
-            background-color: #f4f4f4;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
         }
 
         .container {
             background-color: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
             overflow-x: auto;
+            max-width: 1400px;
+            margin: 0 auto;
         }
 
-        h1 {
+        .info-box {
+            background: #f5f5f5;
+            border-left: 4px solid #1976d2;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+
+        .info-box h3 {
+            color: #1976d2;
+            margin-bottom: 10px;
+        }
+
+        .info-box ul {
+            margin-left: 20px;
+        }
+
+        .info-box li {
+            margin: 5px 0;
+            color: #555;
+        }
+
+        .changes-box {
+            background: #fff3e0;
+            border-left: 4px solid #ff9800;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+
+        .changes-box h3 {
+            color: #ff9800;
+            margin-bottom: 10px;
+        }
+
+        .diagram-container {
+            margin-top: 20px;
+        }
+
+        .footer {
             text-align: center;
-            color: #333;
-        }
-    </style>
-<!DOCTYPE html>
-<html lang="en">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Backend UML Diagram</title>
-    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
-    <script>
-        mermaid.initialize({ startOnLoad: true });
-    </script>
-    <style>
-        body {
-            font-family: sans-serif;
-            margin: 20px;
-            background-color: #f4f4f4;
+            color: white;
+            margin-top: 30px;
+            font-size: 0.9rem;
+            opacity: 0.8;
         }
 
-        .container {
-            background-color: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            overflow-x: auto;
-        }
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.8rem;
+            }
 
-        h1 {
-            text-align: center;
-            color: #333;
+            .container {
+                padding: 15px;
+            }
         }
     </style>
 </head>
 
 <body>
-    <h1>Backend Class Diagram</h1>
+    <div class="header">
+        <h1>📊 Sistema LIME - Diagrama UML</h1>
+        <p>Diagrama de Clases del Backend - Actualizado 2025</p>
+    </div>
+
     <div class="container">
-        <div class="mermaid">
-            classDiagram
-            class Sede {
-            +String nombre
-            +String direccion
-            +String ciudad
-            +String telefono
-            +Boolean estado
-            }
-
-            class Servicio {
-            +String nombre
-            +String descripcion
-            +String responsable
-            +Boolean estado
-            }
-            Servicio --> Sede : sede
-
-            class Responsable {
-            +String nombre_completo
-            +String email
-            +String telefono
-            +String rol
-            }
-
-            class Equipo {
-            +String nombre_equipo
-            +String codigo_interno
-            +String codigo_ips
-            +String codigo_ecri
-            +String ubicacion_fisica
-            +String marca
-            +String modelo
-            +String serie
-            +String clasificacion_misional
-            +String clasificacion_ips
-            +String clasificacion_riesgo
-            +String registro_invima
-            +Integer tiempo_vida_util
-            +String estado
-            }
-            Equipo --> Sede : sede
-            Equipo --> Servicio : servicio
-            Equipo --> Responsable : responsable
-
-            class RegistroAdquisicion {
-            +Date fecha_adquisicion
-            +Date fecha_fabricacion
-            +String propietario
-            +String nit_proveedor
-            +String nombre_proveedor
-            +Boolean en_garantia
-            +Date fecha_fin_garantia
-            +String forma_adquisicion
-            +String tipo_documento
-            +String numero_documento
-            +Decimal valor_compra
-            }
-            RegistroAdquisicion --> Equipo : equipo
-
-            class DocumentacionEquipo {
-            +Boolean hoja_vida
-            +Boolean registro_importacion
-            +Boolean manual_operacion
-            +Boolean manual_servicio
-            +Boolean guia_rapida
-            +Boolean protocolo_mto_preventivo
-            +String frecuencia_metrologica
-            }
-            DocumentacionEquipo --> Equipo : equipo
-
-            class InformacionMetrologica {
-            +String magnitud
-            +String rango_equipo
-            +String rango_trabajo
-            +String error_maximo
-            +String resolucion
-            +Boolean requiere_mantenimiento
-            +String frecuencia_mantenimiento
-            +Date ultimo_mantenimiento
-            +Date proximo_mantenimiento
-            +Boolean requiere_calibracion
-            +String frecuencia_calibracion
-            +Date ultima_calibracion
-            +Date proxima_calibracion
-            }
-            InformacionMetrologica --> Equipo : equipo
-
-            class CondicionesFuncionamiento {
-            +String voltaje
-            +String corriente
-            +String humedad_relativa
-            +String temperatura
-            +String dimensiones
-            +String peso
-            +String otros
-            }
-            CondicionesFuncionamiento --> Equipo : equipo
-
-            class HistorialMantenimiento {
-            +String tipo_mantenimiento
-            +Integer mes_mantenimiento
-            +Integer anio_mantenimiento
-            +String descripcion
-            +String realizado_por
-            +Decimal costo
-            +String usuario_registro
-            +String observaciones
-            +DateTime created_at
-            }
-            HistorialMantenimiento --> Equipo : equipo
-
-            class HistorialTraslado {
-            +DateTime fecha_traslado
-            +String justificacion
-            +String usuario_registro
-            +DateTime created_at
-            }
-            HistorialTraslado --> Equipo : equipo
-            HistorialTraslado --> Sede : sede_origen
-            HistorialTraslado --> Sede : sede_destino
-            HistorialTraslado --> Servicio : servicio_origen
-            HistorialTraslado --> Servicio : servicio_destino
+        <div class="changes-box">
+            <h3>🔄 Cambios Recientes en el Esquema</h3>
+            <ul>
+                <li><strong>Eliminado:</strong> Tabla <code>Servicio</code> y campo <code>ubicacion_fisica</code> en Equipo</li>
+                <li><strong>Agregado:</strong> Tabla <code>Ubicacion</code> con FK a Sede</li>
+                <li><strong>Agregado:</strong> Campo <code>proceso</code> en Equipo (CharField)</li>
+                <li><strong>Modificado:</strong> Campo <code>ubicacion</code> en Equipo (ahora FK a Ubicacion)</li>
+                <li><strong>Modificado:</strong> Campo <code>usuario_registro</code> en HistorialTraslado (ahora <code>responsable_registro</code> como FK a Responsable)</li>
+                <li><strong>Modificado:</strong> Campos <code>servicio_origen/destino</code> en HistorialTraslado (ahora <code>ubicacion_origen/destino</code>)</li>
+            </ul>
         </div>
+
+        <div class="info-box">
+            <h3>ℹ️ Información del Diagrama</h3>
+            <ul>
+                <li><strong>Jerarquía Organizacional:</strong> Sede → Ubicacion → Equipo</li>
+                <li><strong>Modelos Principales:</strong> 11 tablas en total</li>
+                <li><strong>Relaciones 1:1:</strong> Equipo con RegistroAdquisicion, DocumentacionEquipo, InformacionMetrologica, CondicionesFuncionamiento</li>
+                <li><strong>Relaciones 1:N:</strong> Sede-Ubicacion, Ubicacion-Equipo, Equipo-Historiales, Responsable-Equipo, Responsable-HistorialTraslado</li>
+            </ul>
+        </div>
+
+        <div class="diagram-container">
+            <div class="mermaid">
+classDiagram
+    class Sede {
+        +int id
+        +string nombre
+        +string ciudad
+        +string direccion
+        +string telefono
+        +bool estado
+        +total_ubicaciones()
+        +total_equipos()
+    }
+    
+    class Ubicacion {
+        +int id
+        +string nombre
+        +FK sede
+        +bool estado
+        +total_equipos()
+    }
+    
+    class Responsable {
+        +int id
+        +string nombre_completo
+        +string email
+        +string telefono
+        +string rol
+        +total_equipos_asignados()
+        +total_traslados_registrados()
+    }
+    
+    class Equipo {
+        +int id
+        +string proceso
+        +FK sede
+        +FK ubicacion
+        +FK responsable
+        +string nombre_equipo
+        +string codigo_interno
+        +string codigo_ips
+        +string codigo_ecri
+        +string marca
+        +string modelo
+        +string serie
+        +MultiSelectField clasificacion_misional
+        +string clasificacion_ips
+        +string clasificacion_riesgo
+        +string registro_invima
+        +int tiempo_vida_util
+        +string estado
+    }
+    
+    class RegistroAdquisicion {
+        +int id
+        +OneToOne equipo
+        +date fecha_adquisicion
+        +string propietario
+        +date fecha_fabricacion
+        +string nit_proveedor
+        +string nombre_proveedor
+        +bool en_garantia
+        +date fecha_fin_garantia
+        +string forma_adquisicion
+        +string tipo_documento
+        +string numero_documento
+        +decimal valor_compra
+    }
+    
+    class DocumentacionEquipo {
+        +int id
+        +OneToOne equipo
+        +bool hoja_vida
+        +bool registro_importacion
+        +bool manual_operacion
+        +bool manual_servicio
+        +bool guia_rapida
+        +bool protocolo_mto_preventivo
+        +string frecuencia_metrologica
+    }
+    
+    class InformacionMetrologica {
+        +int id
+        +OneToOne equipo
+        +bool requiere_mantenimiento
+        +string frecuencia_mantenimiento
+        +date ultimo_mantenimiento
+        +date proximo_mantenimiento
+        +bool requiere_calibracion
+        +string frecuencia_calibracion
+        +date ultima_calibracion
+        +date proxima_calibracion
+        +string magnitud
+        +string rango_equipo
+        +string rango_trabajo
+        +string resolucion
+        +string error_maximo
+        +fecha_proximo_mantenimiento_calculada()
+        +estado_mantenimiento()
+    }
+    
+    class CondicionesFuncionamiento {
+        +int id
+        +OneToOne equipo
+        +string voltaje
+        +string corriente
+        +string humedad_relativa
+        +string temperatura
+        +string dimensiones
+        +string peso
+        +text otros
+    }
+    
+    class HistorialMantenimiento {
+        +int id
+        +FK equipo
+        +string tipo_mantenimiento
+        +int mes_mantenimiento
+        +int anio_mantenimiento
+        +string realizado_por
+        +text descripcion
+        +text observaciones
+        +decimal costo
+        +fecha_mantenimiento()
+    }
+    
+    class HistorialTraslado {
+        +int id
+        +FK equipo
+        +datetime fecha_traslado
+        +FK sede_origen
+        +FK ubicacion_origen
+        +FK sede_destino
+        +FK ubicacion_destino
+        +text justificacion
+        +FK responsable_registro
+        +datetime created_at
+    }
+    
+    %% Relaciones
+    Sede "1" --> "0..*" Ubicacion : contiene
+    Sede "1" --> "0..*" Equipo : tiene
+    Ubicacion "1" --> "0..*" Equipo : tiene
+    Responsable "1" --> "0..*" Equipo : responsable_de
+    Responsable "1" --> "0..*" HistorialTraslado : registra
+    
+    Equipo "1" --> "0..1" RegistroAdquisicion : tiene
+    Equipo "1" --> "0..1" DocumentacionEquipo : tiene
+    Equipo "1" --> "0..1" InformacionMetrologica : tiene
+    Equipo "1" --> "0..1" CondicionesFuncionamiento : tiene
+    Equipo "1" --> "0..*" HistorialMantenimiento : tiene
+    Equipo "1" --> "0..*" HistorialTraslado : tiene
+    
+    Sede "1" --> "0..*" HistorialTraslado : origen
+    Sede "1" --> "0..*" HistorialTraslado : destino
+    Ubicacion "1" --> "0..*" HistorialTraslado : origen
+    Ubicacion "1" --> "0..*" HistorialTraslado : destino
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>Sistema LIME - Gestión de Equipos Biomédicos | Última actualización: Noviembre 2025</p>
     </div>
 </body>
 

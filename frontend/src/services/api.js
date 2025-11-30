@@ -50,6 +50,11 @@ export const equiposAPI = {
     getMaintenanceStats() {
         return apiClient.get('/equipos/maintenance-stats/')
     },
+
+    // Reprogramar mantenimiento
+    reprogramar(id, fecha) {
+        return apiClient.post(`/equipos/${id}/reprogramar/`, { nueva_fecha: fecha })
+    },
 }
 
 // ============================================
@@ -109,16 +114,16 @@ export const sedesAPI = {
 }
 
 // ============================================
-// SERVICIOS
+// UBICACIONES
 // ============================================
 
-export const serviciosAPI = {
+export const ubicacionesAPI = {
     getAll() {
-        return apiClient.get('/servicios/')
+        return apiClient.get('/ubicaciones/')
     },
 
     getById(id) {
-        return apiClient.get(`/servicios/${id}/`)
+        return apiClient.get(`/ubicaciones/${id}/`)
     },
 }
 

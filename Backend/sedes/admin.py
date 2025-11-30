@@ -1,6 +1,7 @@
 from django.contrib import admin
 from django.utils.html import format_html
 from .models import Sede
+from ubicaciones.models import Ubicacion
 
 
 @admin.register(Sede)
@@ -11,7 +12,7 @@ class SedeAdmin(admin.ModelAdmin):
         'ciudad',
         'direccion',
         'telefono',
-        'total_servicios',
+        'total_ubicaciones',
         'total_equipos',
         'estado_colored',
     ]
@@ -38,14 +39,14 @@ class SedeAdmin(admin.ModelAdmin):
     
     actions = ['activar_sedes', 'inactivar_sedes']
     
-    def total_servicios(self, obj):
-        """Muestra el total de servicios asociados"""
-        count = obj.servicios.count() if hasattr(obj, 'servicios') else 0
+    def total_ubicaciones(self, obj):
+        """Muestra el total de ubicaciones asociadas"""
+        count = obj.ubicaciones.count() if hasattr(obj, 'ubicaciones') else 0
         return format_html(
             '<span style="color: #006633; font-weight: bold;">{}</span>',
             count
         )
-    total_servicios.short_description = 'Servicios'
+    total_ubicaciones.short_description = 'Ubicaciones'
     
     def total_equipos(self, obj):
         """Muestra el total de equipos asociados"""

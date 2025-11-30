@@ -1,12 +1,13 @@
 from rest_framework import serializers
 from .models import Sede
-from servicios.models import Servicio
+from ubicaciones.models import Ubicacion
 
-class SedeServicioSerializer(serializers.ModelSerializer):
+class SedeUbicacionSerializer(serializers.ModelSerializer):
     num_equipos = serializers.SerializerMethodField()
+    responsable = serializers.CharField(source='responsable.nombre_completo', read_only=True)
     
     class Meta:
-        model = Servicio
+        model = Ubicacion
         fields = ['id', 'nombre', 'responsable', 'num_equipos']
         
     def get_num_equipos(self, obj):
@@ -19,16 +20,16 @@ class SedeSimpleSerializer(serializers.ModelSerializer):
         fields = ['id', 'nombre', 'ciudad']
 
 class SedeSerializer(serializers.ModelSerializer):
-    servicios = SedeServicioSerializer(many=True, read_only=True)
-    total_servicios = serializers.SerializerMethodField()
+    ubicaciones = SedeUbicacionSerializer(many=True, read_only=True)
+    total_ubicaciones = serializers.SerializerMethodField()
     total_equipos = serializers.SerializerMethodField()
     
     class Meta:
         model = Sede
-        fields = ['id', 'nombre', 'direccion', 'ciudad', 'telefono', 'estado', 'servicios', 'total_servicios', 'total_equipos']
+        fields = ['id', 'nombre', 'direccion', 'ciudad', 'telefono', 'estado', 'ubicaciones', 'total_ubicaciones', 'total_equipos']
         
-    def get_total_servicios(self, obj):
-        return obj.servicios.count()
+    def get_total_ubicaciones(self, obj):
+        return obj.ubicaciones.count()
         
     def get_total_equipos(self, obj):
         return obj.equipos.count()

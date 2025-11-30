@@ -108,10 +108,10 @@ onMounted(() => {
       
       <div 
         class="menu-item" 
-        :class="{ active: currentPage === 'Sedes y Servicios' }"
-        @click="changePage('Sedes y Servicios')"
+        :class="{ active: currentPage === 'Sedes y Ubicaciones' }"
+        @click="changePage('Sedes y Ubicaciones')"
       >
-        🏢 Sedes y Servicios
+        🏢 Sedes y Ubicaciones
       </div>
       <div 
         class="menu-item" 

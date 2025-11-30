@@ -17,12 +17,12 @@ def traslado_list(request):
         if equipo_id:
             traslados = HistorialTraslado.objects.select_related(
                 'equipo', 'sede_origen', 'sede_destino',
-                'servicio_origen', 'servicio_destino'
+                'ubicacion_origen', 'ubicacion_destino'
             ).filter(equipo_id=equipo_id)
         else:
             traslados = HistorialTraslado.objects.select_related(
                 'equipo', 'sede_origen', 'sede_destino',
-                'servicio_origen', 'servicio_destino'
+                'ubicacion_origen', 'ubicacion_destino'
             ).all()
             
         # Filtros de fecha (mes y año)
@@ -46,7 +46,7 @@ def traslado_list(request):
             # Actualizar la ubicación del equipo
             equipo = traslado.equipo
             equipo.sede = traslado.sede_destino
-            equipo.servicio = traslado.servicio_destino
+            equipo.ubicacion = traslado.ubicacion_destino
             equipo.save()
             
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -57,7 +57,7 @@ def traslado_por_equipo(request, equipo_id):
     """Obtiene el historial de traslados de un equipo específico"""
     traslados = HistorialTraslado.objects.select_related(
         'equipo', 'sede_origen', 'sede_destino',
-        'servicio_origen', 'servicio_destino'
+        'ubicacion_origen', 'ubicacion_destino'
     ).filter(equipo_id=equipo_id)
     serializer = HistorialTrasladoSerializer(traslados, many=True)
     return Response(serializer.data)

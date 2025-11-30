@@ -7,6 +7,7 @@ const mantenimientos = ref([])
 const loading = ref(true)
 const error = ref(null)
 const searchQuery = ref('')
+const totalItems = ref(0)
 
 // Pagination state
 const currentPage = ref(1)
@@ -35,11 +36,26 @@ const mesesNombres = [
 ]
 
 // Fetch mantenimientos from backend
-async function fetchMantenimientos() {
+async function fetchMantenimientos(page = 1, pageSize = 10) {
   try {
     loading.value = true
-    const response = await mantenimientosAPI.getAll()
-    mantenimientos.value = response.data
+    // Construir query params
+    const params = {
+      page: page,
+      page_size: pageSize
+    }
+    
+    const response = await mantenimientosAPI.getAll(params) // Asegúrate que getAll acepte params
+    
+    // Manejar respuesta paginada
+    if (response.data.results) {
+      mantenimientos.value = response.data.results
+      totalItems.value = response.data.count
+    } else {
+      // Fallback por si la API no devuelve paginación (aunque debería)
+      mantenimientos.value = response.data
+      totalItems.value = response.data.length
+    }
   } catch (err) {
     console.error('Error fetching mantenimientos:', err)
     error.value = 'Error al cargar mantenimientos'
@@ -49,7 +65,90 @@ async function fetchMantenimientos() {
 }
 
 onMounted(() => {
-  fetchMantenimientos()
+  fetchMantenimientos(currentPage.value, itemsPerPage.value)
+})
+
+// Get unique values for filters
+const tiposUnicos = computed(() => {
+  const tipos = [...new Set(mantenimientos.value.map(m => m.tipo_mantenimiento))].filter(Boolean)
+  return tipos.sort()
+})
+
+const proveedoresUnicos = computed(() => {
+  const proveedores = [...new Set(mantenimientos.value.map(m => m.realizado_por))].filter(Boolean)
+  return proveedores.sort()
+})
+
+const aniosUnicos = computed(() => {
+  const anios = [...new Set(mantenimientos.value.map(m => m.anio_mantenimiento))].filter(Boolean)
+  return anios.sort((a, b) => b - a) // Más reciente primero
+})
+
+// Filtered mantenimientos
+const filteredMantenimientos = computed(() => {
+  let result = mantenimientos.value
+
+  // Filtro por búsqueda
+  if (searchQuery.value) {
+    const query = searchQuery.value.toLowerCase()
+    result = result.filter(mant => 
+      (mant.equipo?.codigo_interno && mant.equipo.codigo_interno.toLowerCase().includes(query)) ||
+      (mant.equipo?.nombre_equipo && mant.equipo.nombre_equipo.toLowerCase().includes(query)) ||
+      (mant.tipo_mantenimiento && mant.tipo_mantenimiento.toLowerCase().includes(query)) ||
+      (mant.realizado_por && mant.realizado_por.toLowerCase().includes(query))
+    )
+  }
+
+  // Filtro por tipos
+  if (filtros.value.tipos.length > 0) {
+    result = result.filter(mant => filtros.value.tipos.includes(mant.tipo_mantenimiento))
+  }
+
+  // Filtro por proveedores
+  if (filtros.value.proveedores.length > 0) {
+    result = result.filter(mant => filtros.value.proveedores.includes(mant.realizado_por))
+  }
+
+  // Filtro por años
+  if (filtros.value.anios.length > 0) {
+    result = result.filter(mant => filtros.value.anios.includes(mant.anio_mantenimiento))
+  }
+
+  // Filtro por meses
+  if (filtros.value.meses.length > 0) {
+    result = result.filter(mant => filtros.value.meses.includes(mant.mes_mantenimiento))
+  }
+
+  // Ordenamiento
+  switch (ordenamiento.value) {
+    case 'reciente':
+      result.sort((a, b) => {
+        if (b.anio_mantenimiento !== a.anio_mantenimiento) {
+          return b.anio_mantenimiento - a.anio_mantenimiento
+        }
+        return b.mes_mantenimiento - a.mes_mantenimiento
+      })
+      break
+    case 'antiguo':
+      result.sort((a, b) => {
+        if (a.anio_mantenimiento !== b.anio_mantenimiento) {
+          return a.anio_mantenimiento - b.anio_mantenimiento
+        }
+        return a.mes_mantenimiento - b.mes_mantenimiento
+      })
+      break
+    case 'costo-mayor':
+      result.sort((a, b) => (b.costo || 0) - (a.costo || 0))
+      break
+    case 'costo-menor':
+      result.sort((a, b) => (a.costo || 0) - (b.costo || 0))
+      break
+    case 'equipo-asc':
+      result.sort((a, b) => (a.equipo?.nombre_equipo || '').localeCompare(b.equipo?.nombre_equipo || ''))
+      break
+  }
+
+  return result
 })
 
 // Get unique values for filters
@@ -147,8 +246,16 @@ const paginatedMantenimientos = computed(() => {
 function changePage(page) {
   if (page >= 1 && page <= totalPages.value) {
     currentPage.value = page
+    fetchMantenimientos(page, itemsPerPage.value)
   }
 }
+
+// Watch for itemsPerPage changes
+import { watch } from 'vue'
+watch(itemsPerPage, (newValue) => {
+  currentPage.value = 1
+  fetchMantenimientos(1, newValue)
+})
 
 // Filter methods
 function toggleFilterPanel() {
@@ -313,7 +420,7 @@ function abrirNuevoMantenimiento() {
           </tr>
         </thead>
         <tbody>
-          <template v-for="mant in paginatedMantenimientos" :key="mant.id">
+          <template v-for="mant in mantenimientos" :key="mant.id">
             <tr 
               :class="{ 'row-active': expandedRows.has(mant.id) }" 
               @click="toggleRow(mant.id)"

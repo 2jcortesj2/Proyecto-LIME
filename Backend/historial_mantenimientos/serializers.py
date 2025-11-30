@@ -1,11 +1,12 @@
 from rest_framework import serializers
 from .models import HistorialMantenimiento
+from equipos.models import Equipo
 from equipos.serializers import EquipoListSerializer
 
 class HistorialMantenimientoSerializer(serializers.ModelSerializer):
     equipo = EquipoListSerializer(read_only=True)
     equipo_id = serializers.PrimaryKeyRelatedField(
-        queryset=HistorialMantenimiento.objects.all(),
+        queryset=Equipo.objects.all(),
         source='equipo',
         write_only=True
     )

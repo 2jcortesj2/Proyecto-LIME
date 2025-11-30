@@ -46,7 +46,7 @@ const editForm = ref({
 // Catalogs
 const equipos = ref([])
 const sedes = ref([])
-const servicios = ref([])
+const ubicaciones = ref([])
 
 const fetchTraslados = async () => {
   loading.value = true
@@ -64,15 +64,15 @@ const fetchTraslados = async () => {
 
 const fetchCatalogs = async () => {
   try {
-    const [equiposRes, sedesRes, serviciosRes] = await Promise.all([
+    const [equiposRes, sedesRes, ubicacionesRes] = await Promise.all([
       fetch('http://127.0.0.1:8000/api/equipos/'),
       fetch('http://127.0.0.1:8000/api/sedes/'),
-      fetch('http://127.0.0.1:8000/api/servicios/')
+      fetch('http://127.0.0.1:8000/api/ubicaciones/')
     ])
     
     if (equiposRes.ok) equipos.value = await equiposRes.json()
     if (sedesRes.ok) sedes.value = await sedesRes.json()
-    if (serviciosRes.ok) servicios.value = await serviciosRes.json()
+    if (ubicacionesRes.ok) ubicaciones.value = await ubicacionesRes.json()
   } catch (err) {
     console.error('Error cargando catálogos:', err)
   }
@@ -606,10 +606,10 @@ onMounted(() => {
                 </select>
               </div>
               <div class="form-group">
-                <label class="form-label required">Servicio Origen</label>
+                <label class="form-label required">Ubicación Origen</label>
                 <select v-model="createForm.servicio_origen" class="form-select">
-                  <option :value="null" disabled>Seleccione servicio...</option>
-                  <option v-for="servicio in servicios" :key="servicio.id" :value="servicio.id">{{ servicio.nombre }}</option>
+                  <option :value="null" disabled>Seleccione ubicación...</option>
+                  <option v-for="ubicacion in ubicaciones" :key="ubicacion.id" :value="ubicacion.id">{{ ubicacion.nombre }}</option>
                 </select>
               </div>
             </div>
@@ -625,10 +625,10 @@ onMounted(() => {
                 </select>
               </div>
               <div class="form-group">
-                <label class="form-label required">Servicio Destino</label>
+                <label class="form-label required">Ubicación Destino</label>
                 <select v-model="createForm.servicio_destino" class="form-select">
-                  <option :value="null" disabled>Seleccione servicio...</option>
-                  <option v-for="servicio in servicios" :key="servicio.id" :value="servicio.id">{{ servicio.nombre }}</option>
+                  <option :value="null" disabled>Seleccione ubicación...</option>
+                  <option v-for="ubicacion in ubicaciones" :key="ubicacion.id" :value="ubicacion.id">{{ ubicacion.nombre }}</option>
                 </select>
               </div>
             </div>
@@ -681,9 +681,9 @@ onMounted(() => {
                 </select>
               </div>
               <div class="form-group">
-                <label class="form-label">Servicio Origen</label>
+                <label class="form-label">Ubicación Origen</label>
                 <select v-model="editForm.servicio_origen" class="form-select">
-                  <option v-for="servicio in servicios" :key="servicio.id" :value="servicio.id">{{ servicio.nombre }}</option>
+                  <option v-for="ubicacion in ubicaciones" :key="ubicacion.id" :value="ubicacion.id">{{ ubicacion.nombre }}</option>
                 </select>
               </div>
             </div>
@@ -698,9 +698,9 @@ onMounted(() => {
                 </select>
               </div>
               <div class="form-group">
-                <label class="form-label">Servicio Destino</label>
+                <label class="form-label">Ubicación Destino</label>
                 <select v-model="editForm.servicio_destino" class="form-select">
-                  <option v-for="servicio in servicios" :key="servicio.id" :value="servicio.id">{{ servicio.nombre }}</option>
+                  <option v-for="ubicacion in ubicaciones" :key="ubicacion.id" :value="ubicacion.id">{{ ubicacion.nombre }}</option>
                 </select>
               </div>
             </div>

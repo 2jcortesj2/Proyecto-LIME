@@ -43,10 +43,10 @@ El proyecto se organiza en múltiples aplicaciones (apps) para modularizar la fu
 - **Endpoints**: `/api/sedes/` (CRUD completo)
 - **Admin**: Contadores de servicios y equipos, acciones en lote, búsqueda avanzada
 
-#### 3. **`servicios`**
-- **Propósito**: Gestión de servicios/áreas dentro de sedes.
-- **Modelo**: `Servicio` (nombre, sede, responsable, estado)
-- **Endpoints**: `/api/servicios/` (CRUD completo)
+#### 3. **`ubicaciones`**
+- **Propósito**: Gestión de ubicaciones dentro de sedes.
+- **Modelo**: `Ubicacion` (nombre, sede, estado)
+- **Endpoints**: `/api/ubicaciones/` (CRUD completo)
 - **Admin**: Contador de equipos, autocomplete de sede, acciones en lote
 
 #### 4. **`responsables`**
@@ -67,13 +67,13 @@ El proyecto se organiza en múltiples aplicaciones (apps) para modularizar la fu
 - **Endpoints**: `/api/historial-traslados/` (CRUD completo)
 - **Admin**: Vista visual de traslados, protección contra eliminación, date hierarchy
 
-#### 7. **`reportes`**
-- **Propósito**: Generación de reportes (PDF, Excel).
-- **Estado**: En desarrollo
-
-#### 8. **`configuracion`**
+#### 7. **`configuracion`**
 - **Propósito**: Configuraciones generales del sistema.
 - **Estado**: Configuración básica
+
+#### 8. **`reportes`**
+- **Propósito**: Generación de reportes (PDF, Excel).
+- **Estado**: En desarrollo
 
 ## Lógica de Mantenimiento
 
@@ -238,7 +238,7 @@ GET    /api/equipos/maintenance-stats/  # Estadísticas
 GET    /api/equipos/proximos-mantenimiento/  # Próximos
 
 GET    /api/sedes/                      # CRUD sedes
-GET    /api/servicios/                  # CRUD servicios
+GET    /api/ubicaciones/                # CRUD ubicaciones
 GET    /api/responsables/               # CRUD responsables
 GET    /api/historial-mantenimientos/  # CRUD mantenimientos
 GET    /api/historial-traslados/       # CRUD traslados
@@ -249,7 +249,7 @@ GET    /api/historial-traslados/       # CRUD traslados
 ### Relaciones Principales
 
 ```
-Sede → Servicio → Equipo
+Sede → Ubicacion → Equipo
 Responsable → Equipo
 Equipo → InformacionMetrologica (1:1)
 Equipo → RegistroAdquisicion (1:1)
