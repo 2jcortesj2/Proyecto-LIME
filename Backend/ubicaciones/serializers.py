@@ -7,7 +7,7 @@ class UbicacionSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Ubicacion
-        fields = ['id', 'nombre', 'sede', 'sede_nombre', 'estado']
+        fields = ['id', 'nombre', 'sede', 'sede_nombre', 'responsable', 'estado']
         
 class UbicacionDetailSerializer(serializers.ModelSerializer):
     sede = serializers.SerializerMethodField()

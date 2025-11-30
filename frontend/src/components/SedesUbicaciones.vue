@@ -117,7 +117,7 @@ onMounted(() => {
                   <div class="servicio-meta">
                     <span class="servicio-equipos">🔧 {{ ubicacion.num_equipos }} equipos</span>
                     <span class="separator">•</span>
-                    <span class="servicio-responsable">👤 Responsable: {{ ubicacion.responsable }}</span>
+                    <span class="servicio-responsable">👤 Responsable: {{ ubicacion.responsable || 'Sin responsable asignado' }}</span>
                   </div>
                 </div>
                 <div class="servicio-actions">
