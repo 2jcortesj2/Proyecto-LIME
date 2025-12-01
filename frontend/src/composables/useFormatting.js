@@ -82,12 +82,33 @@ export function useFormatting() {
         }).format(valor)
     }
 
+    /**
+     * Formatea la ubicación: Si contiene "Torre" o "Bloque", muestra desde esa palabra en adelante.
+     * Si no, muestra el texto original.
+     * @param {string} ubicacion - Nombre de la ubicación
+     * @returns {string} Ubicación formateada
+     */
+    function formatUbicacion(ubicacion) {
+        if (!ubicacion) return 'N/A'
+
+        // Buscar el índice de "Torre" o "Bloque" (case insensitive)
+        const match = ubicacion.match(/(Torre|Bloque)/i)
+
+        if (match) {
+            // Retornar desde donde empieza la coincidencia
+            return ubicacion.substring(match.index).trim()
+        }
+
+        return ubicacion
+    }
+
     return {
         formatFecha,
         getRiesgoBadgeClass,
         getEstadoBadgeClass,
         formatEstado,
         getMantenimientoBadgeClass,
-        formatMoneda
+        formatMoneda,
+        formatUbicacion
     }
 }

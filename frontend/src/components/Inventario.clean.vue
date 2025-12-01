@@ -17,7 +17,7 @@ import ModalEditarEquipo from './modals/inventario/ModalEditarEquipo.vue'
 import ModalEliminar from './modals/inventario/ModalEliminar.vue'
 
 // ===== COMPOSABLES =====
-const { formatFecha, getRiesgoBadgeClass, getEstadoBadgeClass, formatEstado } = useFormatting()
+const { formatFecha, getRiesgoBadgeClass, getEstadoBadgeClass, formatEstado, formatUbicacion } = useFormatting()
 const { sedes, ubicaciones, responsables } = useCatalogos()
 
 // ===== ESTADO PRINCIPAL =====
@@ -299,7 +299,7 @@ onMounted(() => {
               </td>
               <td>
                 <div style="font-weight: 600; font-size: 14px;">{{ equipo.sede?.nombre || 'N/A' }}</div>
-                <div style="font-size: 12px; color: #616161;">{{ equipo.ubicacion?.nombre || 'N/A' }}</div>
+                <div style="font-size: 12px; color: #616161;">{{ formatUbicacion(equipo.ubicacion?.nombre) }}</div>
               </td>
               <td>{{ equipo.responsable_nombre || 'N/A' }}</td>
               <td style="text-align: center;">
@@ -586,7 +586,7 @@ onMounted(() => {
     <!-- Modal Editar Equipo -->
     <ModalEditarEquipo 
       :show="editModal.isOpen.value"
-      :equipo-data="editModal.data.value"
+      :equipo="editModal.data.value"
       :sedes="sedes"
       :ubicaciones="ubicaciones"
       :responsables="responsables"
