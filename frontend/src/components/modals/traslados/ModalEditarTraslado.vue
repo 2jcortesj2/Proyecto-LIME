@@ -72,7 +72,7 @@
                 :disabled="!form.sede_origen"
               >
                 <option value="">Seleccione ubicación...</option>
-                <option v-for="ub in ubicacionesOrigenFiltradas" :key="ub.id" :value="ub.id">{{ ub.nombre }}</option>
+                <option v-for="ub in ubicacionesOrigenFiltradas" :key="ub.id" :value="ub.id">{{ formatUbicacion(ub.nombre) }}</option>
               </select>
               <span v-if="errors.ubicacion_origen" class="error-message">{{ errors.ubicacion_origen }}</span>
             </div>
@@ -102,7 +102,7 @@
                 :disabled="!form.sede_destino"
               >
                 <option value="">Seleccione ubicación...</option>
-                <option v-for="ub in ubicacionesDestinoFiltradas" :key="ub.id" :value="ub.id">{{ ub.nombre }}</option>
+                <option v-for="ub in ubicacionesDestinoFiltradas" :key="ub.id" :value="ub.id">{{ formatUbicacion(ub.nombre) }}</option>
               </select>
               <span v-if="errors.ubicacion_destino" class="error-message">{{ errors.ubicacion_destino }}</span>
             </div>
@@ -134,6 +134,9 @@
 
 <script setup>
 import { ref, computed, watch } from 'vue'
+import { useFormatting } from '@/composables'
+
+const { formatUbicacion } = useFormatting()
 
 const props = defineProps({
   show: Boolean,
