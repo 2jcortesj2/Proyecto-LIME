@@ -203,18 +203,6 @@ tbody tr[data-equipo] {
     position: relative;
 }
 
-tbody tr[data-equipo]:hover td:first-child {
-    font-weight: 600;
-}
-
-tbody tr.row-active {
-    background: rgba(0, 102, 51, 0.12);
-    border-left: 4px solid #006633;
-}
-
-/* ===== BADGES GLOBALES ===== */
-
-/* Badge INVIMA */
 .invima-badge {
     font-size: 11px;
     padding: 3px 8px;
