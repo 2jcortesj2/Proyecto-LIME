@@ -1,11 +1,14 @@
 /**
  * Índice de servicios - Exporta todos los servicios desde un solo lugar
+/**
+ * Índice de servicios - Exporta todos los servicios desde un solo lugar
  * Uso: import { equiposService, trasladosService } from '@/services'
  */
 
 export { equiposService } from './equipos.service'
 export { trasladosService } from './traslados.service'
 export { catalogsService } from './catalogs.service'
+export { mantenimientosService } from './mantenimientos.service'
 
 // También exporta el cliente API base por si se necesita
 export { default as apiClient } from './api'

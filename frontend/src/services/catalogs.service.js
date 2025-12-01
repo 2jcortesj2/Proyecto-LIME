@@ -20,7 +20,9 @@ export const catalogsService = {
      */
     async getUbicaciones() {
         const response = await ubicacionesAPI.getAll()
-        return response.data
+        // La API devuelve objeto paginado: {count, next, previous, results}
+        // Extraemos solo el array de resultados
+        return response.data.results || response.data
     },
 
     /**
@@ -29,7 +31,9 @@ export const catalogsService = {
      */
     async getResponsables() {
         const response = await responsablesAPI.getAll()
-        return response.data
+        // La API devuelve objeto paginado: {count, next, previous, results}
+        // Extraemos solo el array de resultados
+        return response.data.results || response.data
     },
 
     /**

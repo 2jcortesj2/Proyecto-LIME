@@ -36,11 +36,13 @@ class RegistroAdquisicionSerializer(serializers.ModelSerializer):
     class Meta:
         model = RegistroAdquisicion
         fields = '__all__'
+        extra_kwargs = {'equipo': {'read_only': True}}
 
 class DocumentacionEquipoSerializer(serializers.ModelSerializer):
     class Meta:
         model = DocumentacionEquipo
         fields = '__all__'
+        extra_kwargs = {'equipo': {'read_only': True}}
 
 class InformacionMetrologicaSerializer(serializers.ModelSerializer):
     estado_mantenimiento = serializers.ReadOnlyField()
@@ -49,11 +51,13 @@ class InformacionMetrologicaSerializer(serializers.ModelSerializer):
     class Meta:
         model = InformacionMetrologica
         fields = '__all__'
+        extra_kwargs = {'equipo': {'read_only': True}}
 
 class CondicionesFuncionamientoSerializer(serializers.ModelSerializer):
     class Meta:
         model = CondicionesFuncionamiento
         fields = '__all__'
+        extra_kwargs = {'equipo': {'read_only': True}}
 
 class EquipoSerializer(serializers.ModelSerializer):
     sede_info = SedeSimpleSerializer(source='sede', read_only=True)
@@ -61,10 +65,11 @@ class EquipoSerializer(serializers.ModelSerializer):
     responsable_nombre = serializers.CharField(source='responsable.nombre_completo', read_only=True)
     responsable_email = serializers.CharField(source='responsable.email', read_only=True)
     
-    registro_adquisicion = RegistroAdquisicionSerializer(read_only=True)
-    documentacion = DocumentacionEquipoSerializer(read_only=True)
-    informacion_metrologica = InformacionMetrologicaSerializer(read_only=True)
-    condiciones_funcionamiento = CondicionesFuncionamientoSerializer(read_only=True)
+    # Nested serializers are now writable and optional
+    registro_adquisicion = RegistroAdquisicionSerializer(required=False)
+    documentacion = DocumentacionEquipoSerializer(required=False)
+    informacion_metrologica = InformacionMetrologicaSerializer(required=False)
+    condiciones_funcionamiento = CondicionesFuncionamientoSerializer(required=False)
     
     traslados = HistorialTrasladoSerializer(many=True, read_only=True)
     mantenimientos = HistorialMantenimientoSerializer(many=True, read_only=True)
@@ -72,6 +77,59 @@ class EquipoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Equipo
         fields = '__all__'
+
+    def create(self, validated_data):
+        # Extract nested data
+        adquisicion_data = validated_data.pop('registro_adquisicion', None)
+        documentacion_data = validated_data.pop('documentacion', None)
+        metrologica_data = validated_data.pop('informacion_metrologica', None)
+        condiciones_data = validated_data.pop('condiciones_funcionamiento', None)
+
+        # Create Equipo instance
+        equipo = Equipo.objects.create(**validated_data)
+
+        # Create related objects if data is present
+        if adquisicion_data:
+            RegistroAdquisicion.objects.create(equipo=equipo, **adquisicion_data)
+        if documentacion_data:
+            DocumentacionEquipo.objects.create(equipo=equipo, **documentacion_data)
+        if metrologica_data:
+            InformacionMetrologica.objects.create(equipo=equipo, **metrologica_data)
+        if condiciones_data:
+            CondicionesFuncionamiento.objects.create(equipo=equipo, **condiciones_data)
+
+        return equipo
+
+    def update(self, instance, validated_data):
+        # Extract nested data
+        adquisicion_data = validated_data.pop('registro_adquisicion', None)
+        documentacion_data = validated_data.pop('documentacion', None)
+        metrologica_data = validated_data.pop('informacion_metrologica', None)
+        condiciones_data = validated_data.pop('condiciones_funcionamiento', None)
+
+        # Update Equipo instance
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+
+        # Helper function to update or create related objects
+        def update_or_create_related(model, related_name, data):
+            if data is not None:
+                related_instance = getattr(instance, related_name, None)
+                if related_instance:
+                    for attr, value in data.items():
+                        setattr(related_instance, attr, value)
+                    related_instance.save()
+                else:
+                    model.objects.create(equipo=instance, **data)
+
+        # Update related objects
+        update_or_create_related(RegistroAdquisicion, 'registro_adquisicion', adquisicion_data)
+        update_or_create_related(DocumentacionEquipo, 'documentacion', documentacion_data)
+        update_or_create_related(InformacionMetrologica, 'informacion_metrologica', metrologica_data)
+        update_or_create_related(CondicionesFuncionamiento, 'condiciones_funcionamiento', condiciones_data)
+
+        return instance
 
 class EquipoListSerializer(serializers.ModelSerializer):
     """Serializer simplificado para listados"""

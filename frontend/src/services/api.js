@@ -136,6 +136,13 @@ export const mantenimientosAPI = {
     delete(id) {
         return apiClient.delete(`/mantenimientos/${id}/`)
     },
+
+    // Obtener mantenimientos por equipo
+    getByEquipo(equipoId) {
+        return apiClient.get('/mantenimientos/', {
+            params: { equipo_id: equipoId }
+        })
+    },
 }
 
 // ============================================
