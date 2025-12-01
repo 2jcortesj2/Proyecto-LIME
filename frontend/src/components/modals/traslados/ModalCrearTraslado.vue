@@ -63,9 +63,8 @@
               <label class="form-label required">Responsable</label>
               <input 
                 type="text"
-                v-model="responsableSearch"
-                @input="filterResponsables"
-                @focus="showResponsableDropdown = true"
+                v-model="responsableDropdown.searchTerm.value"
+                @focus="responsableDropdown.openDropdown()"
                 class="form-input"
                 :class="{ 'input-error': errors.responsable_registro }"
                 placeholder="Escribe o selecciona..."
@@ -73,11 +72,11 @@
               <span v-if="errors.responsable_registro" class="error-message">{{ errors.responsable_registro }}</span>
               
               <!-- Dropdown de responsables -->
-              <div v-if="showResponsableDropdown" class="custom-dropdown">
-                <div v-if="filteredResponsables.length === 0" class="dropdown-item info">No hay responsables</div>
+              <div v-if="responsableDropdown.isOpen.value" class="custom-dropdown">
+                <div v-if="responsableDropdown.filteredItems.value.length === 0" class="dropdown-item info">No hay responsables</div>
                 <div v-else class="dropdown-list">
                   <div 
-                    v-for="resp in filteredResponsables" 
+                    v-for="resp in responsableDropdown.filteredItems.value" 
                     :key="resp.id" 
                     @click="selectResponsable(resp)"
                     class="dropdown-item clickable"
@@ -110,9 +109,8 @@
               <label class="form-label required">Ubicación Origen</label>
               <input 
                 type="text"
-                v-model="ubicacionOrigenSearch"
-                @input="filterUbicacionesOrigen"
-                @focus="showUbicacionOrigenDropdown = true"
+                v-model="ubicacionOrigenDropdown.searchTerm.value"
+                @focus="ubicacionOrigenDropdown.openDropdown()"
                 :disabled="!form.sede_origen"
                 class="form-input"
                 :class="{ 'input-error': errors.ubicacion_origen }"
@@ -121,11 +119,11 @@
               <span v-if="errors.ubicacion_origen" class="error-message">{{ errors.ubicacion_origen }}</span>
               
               <!-- Dropdown de ubicaciones origen -->
-              <div v-if="showUbicacionOrigenDropdown && form.sede_origen" class="custom-dropdown">
-                <div v-if="filteredUbicacionesOrigen.length === 0" class="dropdown-item info">No hay ubicaciones para esta sede</div>
+              <div v-if="ubicacionOrigenDropdown.isOpen.value && form.sede_origen" class="custom-dropdown">
+                <div v-if="ubicacionOrigenDropdown.filteredItems.value.length === 0" class="dropdown-item info">No hay ubicaciones para esta sede</div>
                 <div v-else class="dropdown-list">
                   <div 
-                    v-for="ub in filteredUbicacionesOrigen" 
+                    v-for="ub in ubicacionOrigenDropdown.filteredItems.value" 
                     :key="ub.id" 
                     @click="selectUbicacionOrigen(ub)"
                     class="dropdown-item clickable"
@@ -158,9 +156,8 @@
               <label class="form-label required">Ubicación Destino</label>
               <input 
                 type="text"
-                v-model="ubicacionDestinoSearch"
-                @input="filterUbicacionesDestino"
-                @focus="showUbicacionDestinoDropdown = true"
+                v-model="ubicacionDestinoDropdown.searchTerm.value"
+                @focus="ubicacionDestinoDropdown.openDropdown()"
                 :disabled="!form.sede_destino"
                 class="form-input"
                 :class="{ 'input-error': errors.ubicacion_destino }"
@@ -169,11 +166,11 @@
               <span v-if="errors.ubicacion_destino" class="error-message">{{ errors.ubicacion_destino }}</span>
               
               <!-- Dropdown de ubicaciones destino -->
-              <div v-if="showUbicacionDestinoDropdown && form.sede_destino" class="custom-dropdown">
-                <div v-if="filteredUbicacionesDestino.length === 0" class="dropdown-item info">No hay ubicaciones para esta sede</div>
+              <div v-if="ubicacionDestinoDropdown.isOpen.value && form.sede_destino" class="custom-dropdown">
+                <div v-if="ubicacionDestinoDropdown.filteredItems.value.length === 0" class="dropdown-item info">No hay ubicaciones para esta sede</div>
                 <div v-else class="dropdown-list">
                   <div 
-                    v-for="ub in filteredUbicacionesDestino" 
+                    v-for="ub in ubicacionDestinoDropdown.filteredItems.value" 
                     :key="ub.id" 
                     @click="selectUbicacionDestino(ub)"
                     class="dropdown-item clickable"
@@ -210,9 +207,9 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted, toRef } from 'vue'
 import { equiposService } from '@/services'
-import { useFormatting } from '@/composables'
+import { useFormatting, useDropdown } from '@/composables'
 
 const { formatUbicacion } = useFormatting()
 
@@ -237,27 +234,59 @@ const form = ref({
   responsable_registro: ''
 })
 
-// Búsqueda de equipos
+// Búsqueda de equipos (se mantiene manual por la lógica específica de API)
 const equipoSearchTerm = ref('')
 const equiposFound = ref([])
 const showEquipoDropdown = ref(false)
 const isSearching = ref(false)
 let searchTimeout = null
 
+// Ubicaciones base filtradas por sede
+const ubicacionesOrigenBase = computed(() => {
+  if (!form.value.sede_origen) return []
+  return props.ubicaciones.filter(ub => {
+    const sedeId = ub.sede_id || (ub.sede?.id) || ub.sede
+    return sedeId === form.value.sede_origen
+  })
+})
+
+const ubicacionesDestinoBase = computed(() => {
+  if (!form.value.sede_destino) return []
+  return props.ubicaciones.filter(ub => {
+    const sedeId = ub.sede_id || (ub.sede?.id) || ub.sede
+    return sedeId === form.value.sede_destino
+  })
+})
+
+// --- USANDO COMPOSABLE USE DROPDOWN ---
+
 // Responsables
-const responsableSearch = ref('')
-const filteredResponsables = ref([])
-const showResponsableDropdown = ref(false)
+const responsablesRef = toRef(props, 'responsables')
+const responsableDropdown = useDropdown(responsablesRef, ['nombre_completo'])
+
+function selectResponsable(resp) {
+  form.value.responsable_registro = resp.id
+  responsableDropdown.selectItem(resp)
+  if (errors.value.responsable_registro) delete errors.value.responsable_registro
+}
 
 // Ubicaciones Origen
-const ubicacionOrigenSearch = ref('')
-const filteredUbicacionesOrigen = ref([])
-const showUbicacionOrigenDropdown = ref(false)
+const ubicacionOrigenDropdown = useDropdown(ubicacionesOrigenBase, ['nombre'], (item) => formatUbicacion(item.nombre))
+
+function selectUbicacionOrigen(ub) {
+  form.value.ubicacion_origen = ub.id
+  ubicacionOrigenDropdown.selectItem(ub)
+  if (errors.value.ubicacion_origen) delete errors.value.ubicacion_origen
+}
 
 // Ubicaciones Destino
-const ubicacionDestinoSearch = ref('')
-const filteredUbicacionesDestino = ref([])
-const showUbicacionDestinoDropdown = ref(false)
+const ubicacionDestinoDropdown = useDropdown(ubicacionesDestinoBase, ['nombre'], (item) => formatUbicacion(item.nombre))
+
+function selectUbicacionDestino(ub) {
+  form.value.ubicacion_destino = ub.id
+  ubicacionDestinoDropdown.selectItem(ub)
+  if (errors.value.ubicacion_destino) delete errors.value.ubicacion_destino
+}
 
 // Estado de validación
 const errors = ref({})
@@ -266,21 +295,6 @@ const isSubmitting = ref(false)
 
 // Fecha máxima (hoy)
 const today = new Date().toISOString().split('T')[0]
-
-// Ubicaciones base filtradas por sede
-const ubicacionesOrigenBase = computed(() => {
-  if (!form.value.sede_origen) return []
-  console.log('Filtrando ubicaciones origen para sede:', form.value.sede_origen)
-  console.log('Ubicaciones disponibles:', props.ubicaciones)
-  const filtered = props.ubicaciones.filter(ub => ub.sede === form.value.sede_origen)
-  console.log('Ubicaciones filtradas:', filtered)
-  return filtered
-})
-
-const ubicacionesDestinoBase = computed(() => {
-  if (!form.value.sede_destino) return []
-  return props.ubicaciones.filter(ub => ub.sede === form.value.sede_destino)
-})
 
 // Búsqueda de equipos con debounce
 async function searchEquipos() {
@@ -321,70 +335,10 @@ function selectEquipo(equipo) {
     form.value.ubicacion_origen = equipo.ubicacion
     // Buscar el nombre de la ubicación para mostrarlo
     const ub = props.ubicaciones.find(u => u.id === equipo.ubicacion)
-    if (ub) ubicacionOrigenSearch.value = formatUbicacion(ub.nombre)
+    if (ub) ubicacionOrigenDropdown.setInitialValue(ub)
   }
   
   if (errors.value.equipo) delete errors.value.equipo
-}
-
-// Filtrar responsables (busca en cualquier parte del nombre)
-function filterResponsables() {
-  if (!responsableSearch.value) {
-    filteredResponsables.value = props.responsables || []
-    return
-  }
-  
-  const search = responsableSearch.value.toLowerCase()
-  filteredResponsables.value = (props.responsables || []).filter(resp => 
-    resp.nombre_completo.toLowerCase().includes(search)
-  )
-}
-
-function selectResponsable(resp) {
-  form.value.responsable_registro = resp.id
-  responsableSearch.value = resp.nombre_completo
-  showResponsableDropdown.value = false
-  if (errors.value.responsable_registro) delete errors.value.responsable_registro
-}
-
-// Filtrar ubicaciones origen
-function filterUbicacionesOrigen() {
-  if (!ubicacionOrigenSearch.value) {
-    filteredUbicacionesOrigen.value = ubicacionesOrigenBase.value
-    return
-  }
-  
-  const search = ubicacionOrigenSearch.value.toLowerCase()
-  filteredUbicacionesOrigen.value = ubicacionesOrigenBase.value.filter(ub => 
-    ub.nombre.toLowerCase().includes(search)
-  )
-}
-
-function selectUbicacionOrigen(ub) {
-  form.value.ubicacion_origen = ub.id
-  ubicacionOrigenSearch.value = formatUbicacion(ub.nombre)
-  showUbicacionOrigenDropdown.value = false
-  if (errors.value.ubicacion_origen) delete errors.value.ubicacion_origen
-}
-
-// Filtrar ubicaciones destino
-function filterUbicacionesDestino() {
-  if (!ubicacionDestinoSearch.value) {
-    filteredUbicacionesDestino.value = ubicacionesDestinoBase.value
-    return
-  }
-  
-  const search = ubicacionDestinoSearch.value.toLowerCase()
-  filteredUbicacionesDestino.value = ubicacionesDestinoBase.value.filter(ub => 
-    ub.nombre.toLowerCase().includes(search)
-  )
-}
-
-function selectUbicacionDestino(ub) {
-  form.value.ubicacion_destino = ub.id
-  ubicacionDestinoSearch.value = formatUbicacion(ub.nombre)
-  showUbicacionDestinoDropdown.value = false
-  if (errors.value.ubicacion_destino) delete errors.value.ubicacion_destino
 }
 
 // Validación del formulario
@@ -469,9 +423,11 @@ function resetForm() {
   }
   equipoSearchTerm.value = ''
   equiposFound.value = []
-  responsableSearch.value = ''
-  ubicacionOrigenSearch.value = ''
-  ubicacionDestinoSearch.value = ''
+  
+  responsableDropdown.reset()
+  ubicacionOrigenDropdown.reset()
+  ubicacionDestinoDropdown.reset()
+  
   errors.value = {}
   errorMessage.value = ''
 }
@@ -479,23 +435,17 @@ function resetForm() {
 // Limpiar ubicación cuando cambia la sede
 watch(() => form.value.sede_origen, () => {
   form.value.ubicacion_origen = ''
-  ubicacionOrigenSearch.value = ''
-  filteredUbicacionesOrigen.value = ubicacionesOrigenBase.value
+  ubicacionOrigenDropdown.reset()
 })
 
 watch(() => form.value.sede_destino, () => {
   form.value.ubicacion_destino = ''
-  ubicacionDestinoSearch.value = ''
-  filteredUbicacionesDestino.value = ubicacionesDestinoBase.value
+  ubicacionDestinoDropdown.reset()
 })
 
 // Inicializar listas cuando se abre el modal
 watch(() => props.show, (newVal) => {
-  if (newVal) {
-    filteredResponsables.value = props.responsables || []
-    filteredUbicacionesOrigen.value = ubicacionesOrigenBase.value
-    filteredUbicacionesDestino.value = ubicacionesDestinoBase.value
-  } else {
+  if (!newVal) {
     resetForm()
   }
 })
@@ -505,9 +455,9 @@ function handleClickOutside(event) {
   const target = event.target
   if (!target.closest('.form-group')) {
     showEquipoDropdown.value = false
-    showResponsableDropdown.value = false
-    showUbicacionOrigenDropdown.value = false
-    showUbicacionDestinoDropdown.value = false
+    responsableDropdown.closeDropdown()
+    ubicacionOrigenDropdown.closeDropdown()
+    ubicacionDestinoDropdown.closeDropdown()
   }
 }
 
@@ -522,54 +472,4 @@ onUnmounted(() => {
 
 <style scoped>
 @import '../inventario/modal-styles.css';
-
-/* Custom Dropdown Styles */
-.custom-dropdown {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  width: 100%;
-  background: white;
-  border: 1px solid #e0e0e0;
-  border-radius: 0 0 6px 6px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-  z-index: 100;
-  max-height: 200px;
-  overflow-y: auto;
-  margin-top: 2px;
-}
-
-.dropdown-list {
-  padding: 0;
-  margin: 0;
-}
-
-.dropdown-item {
-  padding: 10px 15px;
-  border-bottom: 1px solid #f0f0f0;
-  transition: background 0.2s;
-}
-
-.dropdown-item:last-child {
-  border-bottom: none;
-}
-
-.dropdown-item.clickable {
-  cursor: pointer;
-}
-
-.dropdown-item.clickable:hover {
-  background: #f5f5f5;
-  color: #006633;
-}
-
-.dropdown-item.info {
-  color: #666;
-  font-style: italic;
-  text-align: center;
-}
-
-.input-error {
-  border-color: #f44336 !important;
-}
 </style>

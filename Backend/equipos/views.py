@@ -32,7 +32,7 @@ def equipo_list(request):
             equipos = equipos.filter(estado=estado_equipo)
         if busqueda:
             equipos = equipos.filter(
-                Q(codigo_inventario__icontains=busqueda) |
+                Q(codigo_interno__icontains=busqueda) |
                 Q(nombre_equipo__icontains=busqueda) |
                 Q(marca__icontains=busqueda) |
                 Q(modelo__icontains=busqueda) |
