@@ -1,7 +1,7 @@
 <script setup>
 /**
- * Inventario.vue - VERSIÓN REFACTORIZADA
- * Usa composables, servicios API y modales externos
+ * Inventario.vue
+ * Gestión de inventario de equipos con composables y modales externos
  */
 import { ref, onMounted } from 'vue'
 import { equiposService, trasladosService, mantenimientosService } from '@/services'
@@ -214,7 +214,7 @@ onMounted(() => {
           <input 
             type="text" 
             class="search-input" 
-            placeholder="🔍 PRUEBABuscar por código, nombre, marca, modelo o serie..." 
+            placeholder="🔍 Buscar por código, nombre, marca, modelo o serie..." 
             v-model="filters.searchQuery.value"
           >
           <button 
@@ -242,7 +242,7 @@ onMounted(() => {
               <th style="width: 18%;">Registro Invima</th>
               <th style="width: 6%; text-align: center;">Riesgo</th>
               <th style="width: 10%;">Sede / Ubicación</th>
-              <th style="width: 12%;">Encargado</th>
+              <th style="width: 12%;">Responsable</th>
               <th style="width: 10%;">Estado</th>
               <th style="width: 18%;">Acciones</th>
             </tr>
@@ -274,7 +274,7 @@ onMounted(() => {
             <th style="width: 18%;">Registro Invima</th>
             <th style="width: 6%; text-align: center;">Riesgo</th>
             <th style="width: 10%;">Sede / Ubicación</th>
-            <th style="width: 12%;">Encargado</th>
+            <th style="width: 12%;">Responsable</th>
             <th style="width: 10%; text-align: center;">Estado</th>
             <th style="width: 18%;">Acciones</th>
           </tr>
@@ -308,7 +308,7 @@ onMounted(() => {
                 </span>
               </td>
               <td @click.stop>
-                <div style="display: flex; gap: 6px;">
+                <div class="actions-container">
                   <button 
                     class="btn btn-info btn-sm btn-ver" 
                     :class="{ 'btn-ver-active': expandedEquipoId === equipo.id }"

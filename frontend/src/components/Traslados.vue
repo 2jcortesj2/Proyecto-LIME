@@ -196,15 +196,15 @@ onMounted(() => {
         <table>
           <thead>
             <tr>
-              <th style="width: 10%; text-align: center;">Código</th>
-              <th style="width: 15%; text-align: center;">Equipo</th>
-              <th style="width: 12%; text-align: center;">Origen</th>
-              <th style="width: 3%; text-align: center;"></th>
-              <th style="width: 12%; text-align: center;">Destino</th>
-              <th style="width: 18%; text-align: center;">Justificación</th>
-              <th style="width: 10%; text-align: center;">Fecha</th>
-              <th style="width: 10%; text-align: center;">Responsable</th>
-              <th style="width: 10%; text-align: center;">Acciones</th>
+              <th style="width: 10%;">Código</th>
+              <th style="width: 15%;">Equipo</th>
+              <th style="width: 12%;">Origen</th>
+              <th style="width: 3%;"></th>
+              <th style="width: 12%;">Destino</th>
+              <th style="width: 18%;">Justificación</th>
+              <th style="width: 10%;">Fecha</th>
+              <th style="width: 10%;">Responsable</th>
+              <th style="width: 10%;">Acciones</th>
             </tr>
           </thead>
           <tbody>
@@ -230,15 +230,15 @@ onMounted(() => {
       <table v-else id="trasladosTable">
         <thead>
           <tr>
-            <th style="width: 10%; text-align: center;">Código</th>
-            <th style="width: 15%; text-align: center;">Equipo</th>
-            <th style="width: 12%; text-align: center;">Origen</th>
-            <th style="width: 3%; text-align: center;"></th>
-            <th style="width: 12%; text-align: center;">Destino</th>
-            <th style="width: 18%; text-align: center;">Justificación</th>
-            <th style="width: 10%; text-align: center;">Fecha</th>
-            <th style="width: 10%; text-align: center;">Responsable</th>
-            <th style="width: 10%; text-align: center;">Acciones</th>
+            <th style="width: 10%;">Código</th>
+            <th style="width: 15%;">Equipo</th>
+            <th style="width: 12%;">Origen</th>
+            <th style="width: 3%;"></th>
+            <th style="width: 12%;">Destino</th>
+            <th style="width: 18%;">Justificación</th>
+            <th style="width: 10%;">Fecha</th>
+            <th style="width: 10%;">Responsable</th>
+            <th style="width: 10%;">Acciones</th>
           </tr>
         </thead>
         <tbody>
@@ -259,6 +259,22 @@ onMounted(() => {
               <div style="font-weight: 600; font-size: 14px; color: #212121;">{{ traslado.sede_destino_nombre || 'N/A' }}</div>
               <div style="font-size: 12px; color: #616161;">{{ formatUbicacion(traslado.ubicacion_destino_nombre) }}</div>
             </td>
+            <td>{{ traslado.justificacion }}</td>
+            <td>{{ formatFecha(traslado.fecha_traslado) }}</td>
+            <td style="text-align: center;">
+              <div style="font-weight: 600; color: #006633;">{{ traslado.responsable_nombre || 'N/A' }}</div>
+            </td>
+            <td>
+              <div class="actions-container">
+                <button class="btn btn-secondary btn-sm" title="Editar" @click="editModal.open(traslado)">✏️</button>
+                <button class="btn btn-danger btn-sm" title="Eliminar" @click="deleteModal.open(traslado)">🗑️</button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- Pagination Footer -->
       <div class="pagination-footer">
         <div class="items-per-page">
           <span>Mostrar</span>
