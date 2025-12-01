@@ -17,12 +17,12 @@ def traslado_list(request):
         if equipo_id:
             traslados = HistorialTraslado.objects.select_related(
                 'equipo', 'sede_origen', 'sede_destino',
-                'ubicacion_origen', 'ubicacion_destino'
+                'ubicacion_origen', 'ubicacion_destino', 'responsable_registro'
             ).filter(equipo_id=equipo_id)
         else:
             traslados = HistorialTraslado.objects.select_related(
                 'equipo', 'sede_origen', 'sede_destino',
-                'ubicacion_origen', 'ubicacion_destino'
+                'ubicacion_origen', 'ubicacion_destino', 'responsable_registro'
             ).all()
             
         # Filtros de fecha (mes y año)
@@ -57,7 +57,37 @@ def traslado_por_equipo(request, equipo_id):
     """Obtiene el historial de traslados de un equipo específico"""
     traslados = HistorialTraslado.objects.select_related(
         'equipo', 'sede_origen', 'sede_destino',
-        'ubicacion_origen', 'ubicacion_destino'
+        'ubicacion_origen', 'ubicacion_destino', 'responsable_registro'
     ).filter(equipo_id=equipo_id)
     serializer = HistorialTrasladoSerializer(traslados, many=True)
     return Response(serializer.data)
+
+@api_view(['GET', 'PUT', 'DELETE'])
+def traslado_detail(request, pk):
+    """
+    GET: Obtiene un traslado específico
+    PUT: Actualiza un traslado
+    DELETE: Elimina un traslado
+    """
+    try:
+        traslado = HistorialTraslado.objects.select_related(
+            'equipo', 'sede_origen', 'sede_destino',
+            'ubicacion_origen', 'ubicacion_destino', 'responsable_registro'
+        ).get(pk=pk)
+    except HistorialTraslado.DoesNotExist:
+        return Response({'error': 'Traslado no encontrado'}, status=status.HTTP_404_NOT_FOUND)
+    
+    if request.method == 'GET':
+        serializer = HistorialTrasladoSerializer(traslado)
+        return Response(serializer.data)
+    
+    elif request.method == 'PUT':
+        serializer = HistorialTrasladoSerializer(traslado, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    elif request.method == 'DELETE':
+        traslado.delete()
+        return Response({'message': 'Traslado eliminado correctamente'}, status=status.HTTP_204_NO_CONTENT)
