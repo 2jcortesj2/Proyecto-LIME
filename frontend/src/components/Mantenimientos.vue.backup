@@ -1,17 +1,6 @@
-import { ref, onMounted, computed, watch } from 'vue'
-import { mantenimientosAPI, equiposAPI } from '../services/api'
-import { useMantenimiento } from '../composables/useMantenimiento'
-import { useDateCalculations } from '../composables/useDateCalculations'
-import { useFormatting } from '../composables/useFormatting'
-import { useModal } from '../composables/useModal'
-import { MESES_NOMBRES } from '../constants/mantenimiento'
-import ModalCrearMantenimiento from './modals/mantenimientos/ModalCrearMantenimiento.vue'
-
-// Composables
-const { getTipoLabel, getTipoBadgeClass, prepareMantenimientoData } = useMantenimiento()
-const { formatMesAnio } = useDateCalculations()
-const { formatCosto } = useFormatting()
-const modalCrear = useModal()
+<script setup>
+import { ref, onMounted, computed } from 'vue'
+import { mantenimientosAPI } from '../services/api'
 
 // Data de mantenimientos
 const mantenimientos = ref([])
@@ -41,22 +30,10 @@ const filtros = ref({
 
 const ordenamiento = ref('reciente')
 
-const mesesNombres = MESES_NOMBRES
-
-// Modal Crear State
-const formCrear = ref({
-  equipo_id: null,
-  tipo_mantenimiento: '',
-  fecha_mantenimiento: '',
-  realizado_por: '',
-  costo: null,
-  descripcion: '',
-  observaciones: ''
-})
-
-const equiposFound = ref([])
-const showEquipoDropdown = ref(false)
-const isSearchingEquipos = ref(false)
+const mesesNombres = [
+  'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+  'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+]
 
 // Fetch mantenimientos from backend
 async function fetchMantenimientos(page = 1, pageSize = 10) {
@@ -68,14 +45,14 @@ async function fetchMantenimientos(page = 1, pageSize = 10) {
       page_size: pageSize
     }
     
-    const response = await mantenimientosAPI.getAll(params)
+    const response = await mantenimientosAPI.getAll(params) // Asegúrate que getAll acepte params
     
     // Manejar respuesta paginada
     if (response.data.results) {
       mantenimientos.value = response.data.results
       totalItems.value = response.data.count
     } else {
-      // Fallback por si la API no devuelve paginación
+      // Fallback por si la API no devuelve paginación (aunque debería)
       mantenimientos.value = response.data
       totalItems.value = response.data.length
     }
@@ -191,6 +168,7 @@ function changePage(page) {
 }
 
 // Watch for itemsPerPage changes
+import { watch } from 'vue'
 watch(itemsPerPage, (newValue) => {
   currentPage.value = 1
   fetchMantenimientos(1, newValue)
@@ -264,59 +242,41 @@ function toggleRow(id) {
   }
 }
 
-// Modal Logic
+function formatMes(mes, anio) {
+  return `${mesesNombres[mes - 1]} ${anio}`
+}
+
+function formatCosto(costo) {
+  if (!costo) return 'N/A'
+  return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP' }).format(costo)
+}
+
+function getTipoLabel(tipo) {
+  const labels = {
+    'preventivo': 'Preventivo',
+    'correctivo': 'Correctivo',
+    'calibracion': 'Calibración',
+    'calificacion': 'Calificación',
+    'verificacion': 'Verificación'
+  }
+  return labels[tipo] || tipo
+}
+
+function getTipoBadgeClass(tipo) {
+  const classes = {
+    'preventivo': 'badge-success',
+    'correctivo': 'badge-danger',
+    'calibracion': 'badge-info',
+    'calificacion': 'badge-warning',
+    'verificacion': 'badge-secondary'
+  }
+  return classes[tipo] || 'badge-secondary'
+}
+
 function abrirNuevoMantenimiento() {
-  formCrear.value = {
-    equipo_id: null,
-    tipo_mantenimiento: '',
-    fecha_mantenimiento: new Date().toISOString().split('T')[0],
-    realizado_por: '',
-    costo: null,
-    descripcion: '',
-    observaciones: ''
-  }
-  modalCrear.open()
+  alert('Funcionalidad en desarrollo')
 }
-
-async function searchEquipos(query) {
-  if (!query || query.length < 2) {
-    equiposFound.value = []
-    showEquipoDropdown.value = false
-    return
-  }
-  
-  isSearchingEquipos.value = true
-  showEquipoDropdown.value = true
-  
-  try {
-    const response = await equiposAPI.search(query)
-    equiposFound.value = response.data
-  } catch (error) {
-    console.error('Error buscando equipos:', error)
-    equiposFound.value = []
-  } finally {
-    isSearchingEquipos.value = false
-  }
-}
-
-function selectEquipo(equipo) {
-  formCrear.value.equipo_id = equipo.id
-  showEquipoDropdown.value = false
-  // Opcional: Mostrar selección visual en el input (manejado por el componente modal)
-}
-
-async function submitCrearMantenimiento() {
-  try {
-    const payload = prepareMantenimientoData(formCrear.value)
-    await mantenimientosAPI.create(payload)
-    modalCrear.close()
-    fetchMantenimientos(currentPage.value, itemsPerPage.value)
-    // TODO: Mostrar notificación de éxito
-  } catch (error) {
-    console.error('Error creando mantenimiento:', error)
-    alert('Error al crear el mantenimiento')
-  }
-}
+</script>
 
 <template>
   <div class="mantenimientos-container">
@@ -359,7 +319,7 @@ async function submitCrearMantenimiento() {
           >
         </div>
         <button class="filter-button" @click="toggleFilterPanel">
-          🌪️ Filtrar y Ordenar
+          ☰ Filtrar y Ordenar
           <span v-if="filtrosActivos > 0" class="filter-badge">{{ filtrosActivos }}</span>
         </button>
       </div>
@@ -377,7 +337,7 @@ async function submitCrearMantenimiento() {
           </tr>
         </thead>
         <tbody>
-          <template v-for="mant in paginatedMantenimientos" :key="mant.id">
+          <template v-for="mant in mantenimientos" :key="mant.id">
             <tr 
               :class="{ 'row-active': expandedRows.has(mant.id) }" 
               @click="toggleRow(mant.id)"
@@ -395,7 +355,7 @@ async function submitCrearMantenimiento() {
               </td>
               <td>
                 <span :style="{ fontWeight: expandedRows.has(mant.id) ? 'bold' : 'normal' }">
-                  {{ formatMesAnio(mant.mes_mantenimiento, mant.anio_mantenimiento) }}
+                  {{ formatMes(mant.mes_mantenimiento, mant.anio_mantenimiento) }}
                 </span>
               </td>
               <td>{{ mant.realizado_por }}</td>
@@ -583,20 +543,6 @@ async function submitCrearMantenimiento() {
         <p>{{ filteredMantenimientos.length }} mantenimientos encontrados</p>
       </div>
     </div>
-
-    <!-- Modal Crear Mantenimiento -->
-    <ModalCrearMantenimiento
-      :show="modalCrear.isOpen.value"
-      v-model:formData="formCrear"
-      :equipos-found="equiposFound"
-      :show-equipo-dropdown="showEquipoDropdown"
-      :is-searching="isSearchingEquipos"
-      @close="modalCrear.close"
-      @submit="submitCrearMantenimiento"
-      @search-equipo="searchEquipos"
-      @toggle-dropdown="showEquipoDropdown = !showEquipoDropdown"
-      @select-equipo="selectEquipo"
-    />
   </div>
 </template>
 

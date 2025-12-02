@@ -1,305 +1,142 @@
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { mantenimientosAPI } from '../services/api'
+import { useNotifications } from '../composables/useNotifications'
+import { useMantenimientosFilters } from '../composables/useMantenimientosFilters'
+import { usePagination } from '../composables/usePagination'
+import { useMantenimientosFormatters } from '../composables/useMantenimientosFormatters'
+import { useAccordion } from '../composables/useAccordion'
 
-// Data de mantenimientos
-const mantenimientos = ref([])
+// Modals
+import ModalEditarMantenimiento from './modals/mantenimientos/ModalEditarMantenimiento.vue'
+import ModalEliminarMantenimiento from './modals/mantenimientos/ModalEliminarMantenimiento.vue'
+
+// Estado global
 const loading = ref(true)
 const error = ref(null)
-const searchQuery = ref('')
-const totalItems = ref(0)
+const mantenimientos = ref([])
+const { showError } = useNotifications()
 
-// Pagination state
-const currentPage = ref(1)
-const itemsPerPage = ref(10)
-const itemsPerPageOptions = [5, 10, 20, 50]
+// Composables
+const {
+  searchQuery,
+  filtros,
+  ordenamiento,
+  mesesNombres,
+  tiposUnicos,
+  proveedoresUnicos,
+  aniosUnicos,
+  filteredMantenimientos,
+  filtrosActivos,
+  toggleTipoFilter,
+  toggleProveedorFilter,
+  toggleAnioFilter,
+  toggleMesFilter,
+  borrarTodosFiltros
+} = useMantenimientosFilters(mantenimientos)
 
-// Accordion state
-const expandedRows = ref(new Set())
+const {
+  currentPage,
+  itemsPerPage,
+  itemsPerPageOptions,
+  totalPages,
+  paginatedItems: paginatedMantenimientos,
+  changePage
+} = usePagination(filteredMantenimientos)
 
-// Filter Panel State
+const {
+  formatMes,
+  formatCosto,
+  getTipoLabel,
+  getTipoBadgeClass
+} = useMantenimientosFormatters()
+
+const {
+  expandedRows,
+  toggleRow
+} = useAccordion()
+
+// Estado de Modals
+const showEditModal = ref(false)
+const showDeleteModal = ref(false)
+const selectedMantenimiento = ref(null)
 const showFilterPanel = ref(false)
 
-// Filter State
-const filtros = ref({
-  tipos: [],
-  proveedores: [],
-  anios: [],
-  meses: []
-})
-
-const ordenamiento = ref('reciente')
-
-const mesesNombres = [
-  'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-  'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
-]
-
-// Fetch mantenimientos from backend
-async function fetchMantenimientos(page = 1, pageSize = 10) {
+// Fetch Data
+async function fetchMantenimientos() {
   try {
     loading.value = true
-    // Construir query params
-    const params = {
-      page: page,
-      page_size: pageSize
-    }
+    const response = await mantenimientosAPI.getAll()
     
-    const response = await mantenimientosAPI.getAll(params) // Asegúrate que getAll acepte params
-    
-    // Manejar respuesta paginada
     if (response.data.results) {
       mantenimientos.value = response.data.results
-      totalItems.value = response.data.count
     } else {
-      // Fallback por si la API no devuelve paginación (aunque debería)
       mantenimientos.value = response.data
-      totalItems.value = response.data.length
     }
   } catch (err) {
     console.error('Error fetching mantenimientos:', err)
-    error.value = 'Error al cargar mantenimientos'
+    error.value = 'Error al cargar el historial de mantenimientos'
+    showError('Error al cargar datos')
   } finally {
     loading.value = false
   }
 }
 
+// Handlers para Modals
+function openEditModal(mantenimiento) {
+  selectedMantenimiento.value = mantenimiento
+  showEditModal.value = true
+}
+
+function openDeleteModal(mantenimiento) {
+  selectedMantenimiento.value = mantenimiento
+  showDeleteModal.value = true
+}
+
+function handleUpdated() {
+  fetchMantenimientos()
+}
+
+function handleDeleted() {
+  fetchMantenimientos()
+}
+
+// Watchers
+watch(filteredMantenimientos, () => {
+  currentPage.value = 1
+})
+
 onMounted(() => {
   fetchMantenimientos()
 })
-
-// Get unique values for filters
-const tiposUnicos = computed(() => {
-  const tipos = [...new Set(mantenimientos.value.map(m => m.tipo_mantenimiento))].filter(Boolean)
-  return tipos.sort()
-})
-
-const proveedoresUnicos = computed(() => {
-  const proveedores = [...new Set(mantenimientos.value.map(m => m.realizado_por))].filter(Boolean)
-  return proveedores.sort()
-})
-
-const aniosUnicos = computed(() => {
-  const anios = [...new Set(mantenimientos.value.map(m => m.anio_mantenimiento))].filter(Boolean)
-  return anios.sort((a, b) => b - a) // Más reciente primero
-})
-
-// Filtered mantenimientos
-const filteredMantenimientos = computed(() => {
-  let result = mantenimientos.value
-
-  // Filtro por búsqueda
-  if (searchQuery.value) {
-    const query = searchQuery.value.toLowerCase()
-    result = result.filter(mant => 
-      (mant.equipo?.codigo_interno && mant.equipo.codigo_interno.toLowerCase().includes(query)) ||
-      (mant.equipo?.nombre_equipo && mant.equipo.nombre_equipo.toLowerCase().includes(query)) ||
-      (mant.tipo_mantenimiento && mant.tipo_mantenimiento.toLowerCase().includes(query)) ||
-      (mant.realizado_por && mant.realizado_por.toLowerCase().includes(query))
-    )
-  }
-
-  // Filtro por tipos
-  if (filtros.value.tipos.length > 0) {
-    result = result.filter(mant => filtros.value.tipos.includes(mant.tipo_mantenimiento))
-  }
-
-  // Filtro por proveedores
-  if (filtros.value.proveedores.length > 0) {
-    result = result.filter(mant => filtros.value.proveedores.includes(mant.realizado_por))
-  }
-
-  // Filtro por años
-  if (filtros.value.anios.length > 0) {
-    result = result.filter(mant => filtros.value.anios.includes(mant.anio_mantenimiento))
-  }
-
-  // Filtro por meses
-  if (filtros.value.meses.length > 0) {
-    result = result.filter(mant => filtros.value.meses.includes(mant.mes_mantenimiento))
-  }
-
-  // Ordenamiento
-  switch (ordenamiento.value) {
-    case 'reciente':
-      result.sort((a, b) => {
-        if (b.anio_mantenimiento !== a.anio_mantenimiento) {
-          return b.anio_mantenimiento - a.anio_mantenimiento
-        }
-        return b.mes_mantenimiento - a.mes_mantenimiento
-      })
-      break
-    case 'antiguo':
-      result.sort((a, b) => {
-        if (a.anio_mantenimiento !== b.anio_mantenimiento) {
-          return a.anio_mantenimiento - b.anio_mantenimiento
-        }
-        return a.mes_mantenimiento - b.mes_mantenimiento
-      })
-      break
-    case 'costo-mayor':
-      result.sort((a, b) => (b.costo || 0) - (a.costo || 0))
-      break
-    case 'costo-menor':
-      result.sort((a, b) => (a.costo || 0) - (b.costo || 0))
-      break
-    case 'equipo-asc':
-      result.sort((a, b) => (a.equipo?.nombre_equipo || '').localeCompare(b.equipo?.nombre_equipo || ''))
-      break
-  }
-
-  return result
-})
-
-// Pagination Logic
-const totalPages = computed(() => Math.ceil(filteredMantenimientos.value.length / itemsPerPage.value))
-
-const paginatedMantenimientos = computed(() => {
-  const start = (currentPage.value - 1) * itemsPerPage.value
-  const end = start + itemsPerPage.value
-  return filteredMantenimientos.value.slice(start, end)
-})
-
-function changePage(page) {
-  if (page >= 1 && page <= totalPages.value) {
-    currentPage.value = page
-    fetchMantenimientos(page, itemsPerPage.value)
-  }
-}
-
-// Watch for itemsPerPage changes
-import { watch } from 'vue'
-watch(itemsPerPage, (newValue) => {
-  currentPage.value = 1
-  fetchMantenimientos(1, newValue)
-})
-
-// Filter methods
-function toggleFilterPanel() {
-  showFilterPanel.value = !showFilterPanel.value
-}
-
-function toggleTipoFilter(tipo) {
-  const index = filtros.value.tipos.indexOf(tipo)
-  if (index > -1) {
-    filtros.value.tipos.splice(index, 1)
-  } else {
-    filtros.value.tipos.push(tipo)
-  }
-  currentPage.value = 1
-}
-
-function toggleProveedorFilter(proveedor) {
-  const index = filtros.value.proveedores.indexOf(proveedor)
-  if (index > -1) {
-    filtros.value.proveedores.splice(index, 1)
-  } else {
-    filtros.value.proveedores.push(proveedor)
-  }
-  currentPage.value = 1
-}
-
-function toggleAnioFilter(anio) {
-  const index = filtros.value.anios.indexOf(anio)
-  if (index > -1) {
-    filtros.value.anios.splice(index, 1)
-  } else {
-    filtros.value.anios.push(anio)
-  }
-  currentPage.value = 1
-}
-
-function toggleMesFilter(mes) {
-  const index = filtros.value.meses.indexOf(mes)
-  if (index > -1) {
-    filtros.value.meses.splice(index, 1)
-  } else {
-    filtros.value.meses.push(mes)
-  }
-  currentPage.value = 1
-}
-
-function borrarTodosFiltros() {
-  filtros.value.tipos = []
-  filtros.value.proveedores = []
-  filtros.value.anios = []
-  filtros.value.meses = []
-  ordenamiento.value = 'reciente'
-  currentPage.value = 1
-}
-
-const filtrosActivos = computed(() => {
-  return filtros.value.tipos.length + filtros.value.proveedores.length + 
-         filtros.value.anios.length + filtros.value.meses.length
-})
-
-// Accordion Logic
-function toggleRow(id) {
-  if (expandedRows.value.has(id)) {
-    expandedRows.value.delete(id)
-  } else {
-    expandedRows.value.add(id)
-  }
-}
-
-function formatMes(mes, anio) {
-  return `${mesesNombres[mes - 1]} ${anio}`
-}
-
-function formatCosto(costo) {
-  if (!costo) return 'N/A'
-  return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP' }).format(costo)
-}
-
-function getTipoLabel(tipo) {
-  const labels = {
-    'preventivo': 'Preventivo',
-    'correctivo': 'Correctivo',
-    'calibracion': 'Calibración',
-    'calificacion': 'Calificación',
-    'verificacion': 'Verificación'
-  }
-  return labels[tipo] || tipo
-}
-
-function getTipoBadgeClass(tipo) {
-  const classes = {
-    'preventivo': 'badge-success',
-    'correctivo': 'badge-danger',
-    'calibracion': 'badge-info',
-    'calificacion': 'badge-warning',
-    'verificacion': 'badge-secondary'
-  }
-  return classes[tipo] || 'badge-secondary'
-}
-
-function abrirNuevoMantenimiento() {
-  alert('Funcionalidad en desarrollo')
-}
 </script>
 
 <template>
   <div class="mantenimientos-container">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+    <!-- Header -->
+    <div class="page-header">
       <div>
-        <h2 class="page-title" style="margin: 0;">Historial de Mantenimientos</h2>
-        <div style="color: #616161; font-size: 14px; margin-top: 5px;">Inicio / Mantenimientos / Historial Completo</div>
+        <h2 class="page-title">Historial de Mantenimientos</h2>
+        <div class="breadcrumb">Inicio / Mantenimientos / Historial Completo</div>
       </div>
-      <button class="btn btn-primary" @click="abrirNuevoMantenimiento">➕ Nuevo Mantenimiento</button>
+    </div>
+
+    <!-- Info Box: Instrucciones para nuevo mantenimiento -->
+    <div class="info-box">
+      <div class="info-icon">ℹ️</div>
+      <div class="info-content">
+        <strong>¿Cómo registrar un nuevo mantenimiento?</strong>
+        <p>Para programar o registrar un mantenimiento, vaya a <strong>Inventario de Equipos</strong>, seleccione el equipo deseado y cambie su estado a <em>"En Mantenimiento"</em> asignando la fecha correspondiente.</p>
+      </div>
     </div>
 
     <!-- Loading Skeleton -->
     <div v-if="loading" class="content-card skeleton">
       <div class="search-filter-container">
-        <div class="skeleton-line" style="width: 70%; height: 45px; border-radius: 8px;"></div>
-        <div class="skeleton-line" style="width: 25%; height: 45px; border-radius: 8px;"></div>
+        <div class="skeleton-line" style="width: 70%; height: 45px;"></div>
+        <div class="skeleton-line" style="width: 25%; height: 45px;"></div>
       </div>
-      <div class="skeleton-line" style="width: 100%; height: 60px; margin-bottom: 10px;"></div>
-      <div class="skeleton-line" style="width: 100%; height: 50px; margin-bottom: 10px;"></div>
-      <div class="skeleton-line" style="width: 100%; height: 50px; margin-bottom: 10px;"></div>
-      <div class="skeleton-line" style="width: 100%; height: 50px; margin-bottom: 10px;"></div>
-      <div class="skeleton-line" style="width: 100%; height: 50px; margin-bottom: 10px;"></div>
-      <div class="skeleton-line" style="width: 100%; height: 50px;"></div>
+      <div v-for="i in 5" :key="i" class="skeleton-line" style="width: 100%; height: 60px; margin-bottom: 10px;"></div>
     </div>
 
     <!-- Error State -->
@@ -309,6 +146,7 @@ function abrirNuevoMantenimiento() {
 
     <!-- Content -->
     <div v-else class="content-card">
+      <!-- Search & Filter Bar -->
       <div class="search-filter-container">
         <div class="search-section">
           <input 
@@ -318,73 +156,83 @@ function abrirNuevoMantenimiento() {
             placeholder="🔍 Buscar por código, equipo, tipo o proveedor..."
           >
         </div>
-        <button class="filter-button" @click="toggleFilterPanel">
+        <button class="filter-button" @click="showFilterPanel = !showFilterPanel">
           ☰ Filtrar y Ordenar
           <span v-if="filtrosActivos > 0" class="filter-badge">{{ filtrosActivos }}</span>
         </button>
       </div>
 
-      <table v-if="filteredMantenimientos.length > 0">
+      <!-- Table -->
+      <table v-if="paginatedMantenimientos.length > 0">
         <thead>
           <tr>
-            <th>Código Equipo</th>
-            <th>Equipo</th>
-            <th>Tipo</th>
-            <th>Mes/Año</th>
-            <th>Realizado Por</th>
-            <th>Costo</th>
-            <th>Acciones</th>
+            <th class="col-codigo">Código Equipo</th>
+            <th class="col-equipo">Equipo</th>
+            <th class="col-tipo">Tipo</th>
+            <th class="col-fecha">Mes/Año</th>
+            <th class="col-proveedor">Registrado por</th>
+            <th class="col-costo">Costo</th>
+            <th class="col-acciones">Acciones</th>
           </tr>
         </thead>
         <tbody>
-          <template v-for="mant in mantenimientos" :key="mant.id">
+          <template v-for="mant in paginatedMantenimientos" :key="mant.id">
             <tr 
               :class="{ 'row-active': expandedRows.has(mant.id) }" 
               @click="toggleRow(mant.id)"
-              style="cursor: pointer;"
+              class="clickable-row"
             >
               <td class="col-codigo"><strong>{{ mant.equipo?.codigo_interno || 'N/A' }}</strong></td>
-              <td>
-                <div style="font-weight: 600;">{{ mant.equipo?.nombre_equipo || 'N/A' }}</div>
-                <div style="font-size: 12px; color: #616161;">{{ mant.equipo?.marca }} - {{ mant.equipo?.modelo }}</div>
+              <td class="col-equipo">
+                <div class="equipo-nombre">{{ mant.equipo?.nombre_equipo || 'N/A' }}</div>
+                <div class="equipo-meta">{{ mant.equipo?.marca }} - {{ mant.equipo?.modelo }}</div>
               </td>
-              <td>
+              <td class="col-tipo">
                 <span class="badge" :class="getTipoBadgeClass(mant.tipo_mantenimiento)">
                   {{ getTipoLabel(mant.tipo_mantenimiento) }}
                 </span>
               </td>
-              <td>
-                <span :style="{ fontWeight: expandedRows.has(mant.id) ? 'bold' : 'normal' }">
+              <td class="col-fecha">
+                <span :class="{ 'font-bold': expandedRows.has(mant.id) }">
                   {{ formatMes(mant.mes_mantenimiento, mant.anio_mantenimiento) }}
                 </span>
               </td>
-              <td>{{ mant.realizado_por }}</td>
-              <td>{{ formatCosto(mant.costo) }}</td>
-              <td @click.stop>
-                <div style="display: flex; gap: 10px;">
-                  <button class="btn btn-info btn-sm" @click="toggleRow(mant.id)">👁️</button>
-                  <button class="btn btn-secondary btn-sm">✏️</button>
-                  <button class="btn btn-danger btn-sm">🗑️</button>
+              <td class="col-proveedor">{{ mant.realizado_por }}</td>
+              <td class="col-costo">{{ formatCosto(mant.costo) }}</td>
+              <td class="col-acciones" @click.stop>
+                <div class="action-buttons">
+                  <button class="btn btn-info btn-sm" @click="toggleRow(mant.id)" title="Ver detalles">
+                    👁️
+                  </button>
+                  <button class="btn btn-secondary btn-sm" @click="openEditModal(mant)" title="Editar">
+                    ✏️
+                  </button>
+                  <button class="btn btn-danger btn-sm" @click="openDeleteModal(mant)" title="Eliminar">
+                    🗑️
+                  </button>
                 </div>
               </td>
             </tr>
+            
             <!-- Accordion Content -->
             <tr v-if="expandedRows.has(mant.id)" class="accordion-details-row">
               <td colspan="7" class="detalle-cell">
                 <div class="accordion-details">
                   <div class="detalle-header">
                     <div class="detalle-title">📋 Detalle del Mantenimiento</div>
-                    <button class="btn btn-secondary btn-sm btn-close" @click="toggleRow(mant.id)">✕ Cerrar</button>
+                    <button class="btn btn-secondary btn-sm btn-close-detail" @click="toggleRow(mant.id)">
+                      ✕ Cerrar
+                    </button>
                   </div>
                   
                   <div class="detail-grid-horizontal">
                     <div class="detail-item-horizontal">
                       <span class="detail-label">Responsable Registro:</span>
-                      <span class="detail-value">{{ mant.usuario_registro }}</span>
+                      <span class="detail-value">{{ mant.usuario_registro || 'Sistema' }}</span>
                     </div>
                     <div class="detail-item-horizontal">
                       <span class="detail-label">Descripción:</span>
-                      <span class="detail-value">{{ mant.descripcion }}</span>
+                      <span class="detail-value">{{ mant.descripcion || 'Sin descripción' }}</span>
                     </div>
                   </div>
 
@@ -401,28 +249,41 @@ function abrirNuevoMantenimiento() {
           </template>
         </tbody>
       </table>
-      <p v-else style="text-align: center; color: #616161; padding: 40px;">
-        No se encontraron mantenimientos
-      </p>
+      
+      <!-- Empty State -->
+      <div v-else class="empty-state">
+        <p>No se encontraron mantenimientos</p>
+      </div>
 
       <!-- Pagination Footer -->
       <div class="pagination-footer" v-if="filteredMantenimientos.length > 0">
         <div class="items-per-page">
           <span>Mostrar</span>
-          <select v-model.number="itemsPerPage" @change="currentPage = 1" class="page-select">
+          <select v-model.number="itemsPerPage" class="page-select">
             <option v-for="opt in itemsPerPageOptions" :key="opt" :value="opt">{{ opt }}</option>
           </select>
           <span>registros</span>
         </div>
         
         <div class="page-navigation">
-          <button class="page-btn" :disabled="currentPage === 1" @click="changePage(currentPage - 1)">Anterior</button>
+          <button class="page-btn" :disabled="currentPage === 1" @click="changePage(currentPage - 1)">
+            Anterior
+          </button>
           <span class="page-info">
             Página 
-            <input type="number" v-model="currentPage" min="1" :max="totalPages" class="page-input" @change="changePage(currentPage)">
+            <input 
+              type="number" 
+              v-model="currentPage" 
+              min="1" 
+              :max="totalPages" 
+              class="page-input" 
+              @change="changePage(currentPage)"
+            >
             de {{ totalPages }}
           </span>
-          <button class="page-btn" :disabled="currentPage === totalPages" @click="changePage(currentPage + 1)">Siguiente</button>
+          <button class="page-btn" :disabled="currentPage === totalPages" @click="changePage(currentPage + 1)">
+            Siguiente
+          </button>
         </div>
       </div>
     </div>
@@ -543,10 +404,26 @@ function abrirNuevoMantenimiento() {
         <p>{{ filteredMantenimientos.length }} mantenimientos encontrados</p>
       </div>
     </div>
+
+    <!-- MODALS -->
+    <ModalEditarMantenimiento 
+      v-if="showEditModal" 
+      :mantenimiento="selectedMantenimiento"
+      @close="showEditModal = false"
+      @updated="handleUpdated"
+    />
+
+    <ModalEliminarMantenimiento 
+      v-if="showDeleteModal" 
+      :mantenimiento="selectedMantenimiento"
+      @close="showDeleteModal = false"
+      @deleted="handleDeleted"
+    />
   </div>
 </template>
 
 <style scoped>
+/* Estilos específicos del componente */
 .mantenimientos-container {
   width: 100%;
   max-width: 100%;
@@ -557,6 +434,36 @@ function abrirNuevoMantenimiento() {
   font-size: 28px;
   color: #006633;
   font-weight: 600;
+  margin: 0;
+}
+
+.info-box {
+  background: rgba(0, 102, 51, 0.08);
+  border-left: 4px solid #006633;
+  padding: 15px 20px;
+  border-radius: 8px;
+  margin-bottom: 25px;
+  display: flex;
+  align-items: flex-start;
+  gap: 15px;
+}
+
+.info-icon {
+  font-size: 24px;
+}
+
+.info-content strong {
+  display: block;
+  color: #006633;
+  margin-bottom: 5px;
+  font-size: 15px;
+}
+
+.info-content p {
+  margin: 0;
+  color: #424242;
+  font-size: 14px;
+  line-height: 1.5;
 }
 
 .content-card {
@@ -639,127 +546,30 @@ function abrirNuevoMantenimiento() {
   color: #006633;
 }
 
-.btn {
-  padding: 12px 24px;
-  border: none;
-  border-radius: 6px;
+.action-buttons {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  flex-wrap: nowrap;
+}
+
+.clickable-row {
   cursor: pointer;
-  font-weight: 600;
-  transition: all 0.3s;
-  font-size: 14px;
-}
-
-.btn-primary {
-  background: #006633;
-  color: white;
-}
-
-.btn-primary:hover {
-  background: #2d5016;
-  transform: translateY(-2px);
-}
-
-.btn-sm {
-  padding: 6px 12px;
-  font-size: 12px;
-}
-
-.btn-info {
-  background: #00a99d;
-  color: white;
-}
-
-.btn-secondary {
-  background: #e0e0e0;
-  color: #424242;
-}
-
-.btn-danger {
-  background: #f44336;
-  color: white;
-}
-
-.btn-close {
-  position: absolute;
-  top: 25px;
-  right: 25px;
-}
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-  min-width: 800px;
-}
-
-thead {
-  background: linear-gradient(135deg, #006633 0%, #2d5016 100%);
-  color: white;
-}
-
-th {
-  padding: 15px;
-  text-align: left;
-  font-size: 13px;
-  text-transform: uppercase;
-  font-weight: 600;
-}
-
-td {
-  padding: 15px;
-  border-bottom: 1px solid #e0e0e0;
-  font-size: 14px;
-}
-
-.col-codigo {
-  width: 120px;
-}
-
-tbody tr {
   background: white;
   transition: all 0.2s;
 }
 
-tbody tr:hover {
+.clickable-row:hover {
   background: rgba(0, 102, 51, 0.04);
 }
 
-tbody tr.row-active {
+.row-active {
   background: rgba(0, 102, 51, 0.12) !important;
   border-left: 4px solid #006633;
 }
 
-.badge {
-  padding: 4px 12px;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 600;
-  display: inline-block;
-}
-
-.badge-success {
-  background: rgba(76, 175, 80, 0.1);
-  color: #4CAF50;
-}
-
-.badge-danger {
-  background: rgba(244, 67, 54, 0.1);
-  color: #f44336;
-}
-
-.badge-warning {
-  background: rgba(255, 152, 0, 0.1);
-  color: #ff9800;
-}
-
-.badge-info {
-  background: rgba(0, 169, 157, 0.1);
-  color: #00a99d;
-}
-
-.badge-secondary {
-  background: rgba(97, 97, 97, 0.1);
-  color: #616161;
-}
+.equipo-nombre { font-weight: 600; }
+.equipo-meta { font-size: 12px; color: #616161; }
 
 .alert {
   padding: 15px 20px;
@@ -774,6 +584,12 @@ tbody tr.row-active {
   background: rgba(244, 67, 54, 0.1);
   color: #f44336;
   border-left: 4px solid #f44336;
+}
+
+.empty-state {
+  text-align: center;
+  color: #616161;
+  padding: 40px;
 }
 
 /* Accordion Styles */
@@ -811,9 +627,6 @@ tbody tr.row-active {
   font-size: 18px;
   color: #006633;
   font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: 10px;
 }
 
 .detail-grid-horizontal {
@@ -831,17 +644,16 @@ tbody tr.row-active {
   box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 
-.detail-item-horizontal .detail-label {
+.detail-label {
   display: block;
   font-weight: 700;
   color: #006633;
   font-size: 12px;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
   margin-bottom: 8px;
 }
 
-.detail-item-horizontal .detail-value {
+.detail-value {
   display: block;
   color: #212121;
   font-size: 14px;
@@ -862,7 +674,6 @@ tbody tr.row-active {
   font-weight: 700;
   margin-bottom: 12px;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
 }
 
 .observaciones-content {
@@ -896,13 +707,6 @@ tbody tr.row-active {
   border-radius: 4px;
   background: #f5f5f5;
   cursor: pointer;
-  color: #212121;
-  font-weight: 500;
-}
-
-.page-select:hover {
-  background: #e8e8e8;
-  border-color: #a0a0a0;
 }
 
 .page-navigation {
@@ -919,8 +723,6 @@ tbody tr.row-active {
   cursor: pointer;
   font-size: 13px;
   transition: all 0.2s;
-  color: #212121;
-  font-weight: 500;
 }
 
 .page-btn:disabled {
@@ -950,14 +752,6 @@ tbody tr.row-active {
   border: 1px solid #c0c0c0;
   border-radius: 4px;
   background: #f5f5f5;
-  color: #212121;
-  font-weight: 600;
-}
-
-.page-input:focus {
-  outline: none;
-  border-color: #006633;
-  background: white;
 }
 
 /* FILTER PANEL STYLES */
@@ -1010,7 +804,6 @@ tbody tr.row-active {
   font-size: 18px;
   color: #006633;
   font-weight: 700;
-  letter-spacing: 0.5px;
 }
 
 .borrar-todo {
@@ -1021,13 +814,6 @@ tbody tr.row-active {
   cursor: pointer;
   font-size: 14px;
   text-decoration: underline;
-  padding: 5px 10px;
-  border-radius: 4px;
-  transition: all 0.2s;
-}
-
-.borrar-todo:hover {
-  background: rgba(244, 67, 54, 0.1);
 }
 
 .filtro-body {
@@ -1060,13 +846,11 @@ tbody tr.row-active {
   justify-content: space-between;
   align-items: center;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
 }
 
 .filtro-section-title .arrow {
   transition: transform 0.3s;
   color: #006633;
-  font-size: 12px;
 }
 
 .filtro-section-title.collapsed .arrow {

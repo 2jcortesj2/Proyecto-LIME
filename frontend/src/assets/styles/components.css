@@ -329,6 +329,11 @@ tbody tr[data-equipo] {
     color: #666;
 }
 
+.badge-info {
+    background: rgba(0, 169, 157, 0.1);
+    color: #00a99d;
+}
+
 /* Skeleton Loader */
 .skeleton-table table {
     width: 100%;
@@ -1079,7 +1084,233 @@ tbody tr[data-equipo] {
 
 .equipos-vencidos-container td:nth-child(8)>div,
 .equipos-proximos-container td:nth-child(8)>div {
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 11px;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+
+.btn-completar {
+    background: #4CAF50;
+    color: white;
+}
+
+.btn-completar:hover {
+    background: #45a049;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(76, 175, 80, 0.3);
+}
+
+.btn-reprogramar {
+    background: #ff9800;
+    color: white;
+}
+
+.btn-reprogramar:hover {
+    background: #f57c00;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(255, 152, 0, 0.3);
+}
+
+/* Filter Controls */
+.filter-controls {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 20px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.month-filter {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.month-filter label {
+    font-weight: 600;
+    font-size: 14px;
+    color: #212121;
+    white-space: nowrap;
+}
+
+.search-container-inline {
+    flex: 1;
+    min-width: 300px;
+}
+
+/* Empty State */
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+}
+
+.empty-state-content {
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+.empty-icon {
+    font-size: 64px;
+    margin-bottom: 20px;
+}
+
+.empty-state h3 {
+    color: #212121;
+    margin-bottom: 10px;
+}
+
+.empty-state p {
+    color: #616161;
+    font-size: 14px;
+    margin-bottom: 8px;
+}
+
+.empty-hint {
+    font-style: italic;
+    color: #9e9e9e;
+}
+
+/* Riesgo Badge variants */
+.riesgo-badge {
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    text-align: center;
+    display: inline-block;
+}
+
+.riesgo-I {
+    background: rgba(76, 175, 80, 0.1);
+    color: #4CAF50;
+}
+
+.riesgo-IIa {
+    background: rgba(255, 152, 0, 0.1);
+    color: #ff9800;
+}
+
+.riesgo-IIb {
+    background: rgba(244, 67, 54, 0.1);
+    color: #f44336;
+}
+
+.riesgo-III {
+    background: rgba(211, 47, 47, 0.15);
+    color: #c62828;
+}
+
+.riesgo-na {
+    background: rgba(158, 158, 158, 0.1);
+    color: #666;
+}
+
+/* ===== ESTILOS DE TABLA UNIFICADOS ===== */
+.equipos-vencidos-container table,
+.equipos-proximos-container table {
+    table-layout: fixed;
+    width: 100%;
+}
+
+/* Anchos de columnas ajustados */
+.equipos-vencidos-container th:nth-child(1),
+.equipos-proximos-container th:nth-child(1) {
+    width: 8%;
+}
+
+/* Código */
+.equipos-vencidos-container th:nth-child(2),
+.equipos-proximos-container th:nth-child(2) {
+    width: 14%;
+}
+
+/* Equipo - Reducido */
+.equipos-vencidos-container th:nth-child(3),
+.equipos-proximos-container th:nth-child(3) {
+    width: 16%;
+}
+
+/* INVIMA - Aumentado */
+.equipos-vencidos-container th:nth-child(4),
+.equipos-proximos-container th:nth-child(4) {
+    width: 8%;
+    text-align: center;
+}
+
+/* Riesgo - Centrado */
+.equipos-vencidos-container th:nth-child(5),
+.equipos-proximos-container th:nth-child(5) {
+    width: 15%;
+}
+
+/* Sede/Ubicación */
+.equipos-vencidos-container th:nth-child(6),
+.equipos-proximos-container th:nth-child(6) {
+    width: 10%;
+}
+
+/* Último Mant */
+.equipos-vencidos-container th:nth-child(7),
+.equipos-proximos-container th:nth-child(7) {
+    width: 10%;
+}
+
+/* Próximo Mant */
+.equipos-vencidos-container th:nth-child(8),
+.equipos-proximos-container th:nth-child(8) {
+    width: 20%;
+}
+
+/* Acciones */
+
+/* Centrado de contenido de columnas específicas */
+.equipos-vencidos-container td:nth-child(4),
+.equipos-proximos-container td:nth-child(4) {
+    text-align: center;
+    padding: 8px 4px;
+}
+
+.equipos-vencidos-container td:nth-child(8),
+.equipos-proximos-container td:nth-child(8) {
+    text-align: center;
+}
+
+.equipos-vencidos-container td:nth-child(8)>div,
+.equipos-proximos-container td:nth-child(8)>div {
     justify-content: center;
     display: flex;
     gap: 10px;
+}
+
+/* ===== COLUMNAS DE MANTENIMIENTOS (Globalizadas) ===== */
+.col-codigo {
+    width: 10%;
+}
+
+.col-equipo {
+    width: 16%;
+}
+
+.col-tipo {
+    width: 12%;
+    text-align: center !important;
+}
+
+.col-fecha {
+    width: 12%;
+}
+
+.col-proveedor {
+    width: 14%;
+}
+
+.col-costo {
+    width: 12%;
+}
+
+.col-acciones {
+    width: 24%;
+    text-align: center;
 }
