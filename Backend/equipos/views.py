@@ -217,8 +217,8 @@ def reprogramar_mantenimiento(request, pk):
         return Response({'error': 'Formato de fecha inválido. Use YYYY-MM-DD'}, status=status.HTTP_400_BAD_REQUEST)
     
     # Validar que la fecha sea futura
-    if nueva_fecha <= datetime.now().date():
-        return Response({'error': 'La nueva fecha debe ser posterior a hoy'}, status=status.HTTP_400_BAD_REQUEST)
+    if nueva_fecha < datetime.now().date():
+        return Response({'error': 'La nueva fecha debe ser posterior o igual a hoy'}, status=status.HTTP_400_BAD_REQUEST)
     
     if hasattr(equipo, 'informacion_metrologica'):
         equipo.informacion_metrologica.proximo_mantenimiento = nueva_fecha

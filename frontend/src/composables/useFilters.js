@@ -3,8 +3,11 @@
  * Lógica reutilizable para filtrado y ordenamiento de listas
  */
 import { ref, computed } from 'vue'
+import { useFormatting } from './useFormatting'
 
 export function useFilters(items, config = {}) {
+    const { normalizeText } = useFormatting()
+
     const showFilterPanel = ref(false)
     const searchQuery = ref('')
     const filtros = ref(config.customFilters || config.initialFilters || {
@@ -98,12 +101,15 @@ export function useFilters(items, config = {}) {
     const filteredItems = computed(() => {
         let result = items.value
 
-        // Filtro por búsqueda de texto
+        // Filtro por búsqueda de texto (SIN DISTINCIÓN DE MAYÚSCULAS NI TILDES)
         if (searchQuery.value) {
-            const query = searchQuery.value.toLowerCase()
+            const normalizedQuery = normalizeText(searchQuery.value)
             const searchFields = config.searchFields || ['nombre_equipo', 'codigo_interno', 'marca', 'modelo', 'serie']
             result = result.filter(item =>
-                searchFields.some(field => item[field]?.toString().toLowerCase().includes(query))
+                searchFields.some(field => {
+                    const fieldValue = item[field]?.toString() || ''
+                    return normalizeText(fieldValue).includes(normalizedQuery)
+                })
             )
         }
 

@@ -186,6 +186,9 @@ class InformacionMetrologica(models.Model):
     def estado_mantenimiento(self):
         """
         Determina el estado del mantenimiento: 'Vencido', 'Próximo', 'Normal', 'No Requiere'
+        - Vencido: Fecha anterior a hoy O en el mes/año actual
+        - Próximo: Dentro de los próximos 3 meses (pero no en el mes actual)
+        - Normal: Más de 3 meses en el futuro
         """
         if not self.requiere_mantenimiento:
             return "No Requiere"
@@ -198,9 +201,11 @@ class InformacionMetrologica(models.Model):
         from dateutil.relativedelta import relativedelta
         
         hoy = date.today()
+        inicio_mes_siguiente = date(hoy.year, hoy.month, 1) + relativedelta(months=1)
         limite_proximo = hoy + relativedelta(months=3)
         
-        if fecha_proxima < hoy:
+        # Si la fecha es anterior al inicio del mes siguiente (es decir, mes actual o anterior), es Vencido
+        if fecha_proxima < inicio_mes_siguiente:
             return "Vencido"
         elif fecha_proxima <= limite_proximo:
             return "Próximo"

@@ -6,24 +6,17 @@
 export function useFormatting() {
     /**
      * Formatea una fecha en formato legible en español
-     * @param {string} fecha - Fecha en formato ISO (YYYY-MM-DD)
+     * @param {string} fecha - Fecha en formato ISO
      * @returns {string} Fecha formateada (ej: "Enero 2024")
      */
     function formatFecha(fecha) {
         if (!fecha) return 'N/A'
-
-        // Parsear la fecha manualmente para evitar problemas de zona horaria
-        // Cuando usamos new Date('2025-01-01'), JavaScript lo interpreta como UTC
-        // y al convertir a hora local puede retroceder al día anterior
-        const [year, month, day] = fecha.split('T')[0].split('-').map(Number)
-
+        const date = new Date(fecha)
         const meses = [
             'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
             'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
         ]
-
-        // month viene como 1-12 o 01-12, necesitamos índice 0-11
-        return `${meses[month - 1]} ${year}`
+        return `${meses[date.getMonth()]} ${date.getFullYear()}`
     }
 
     function formatFechaCompleta(fecha) {
@@ -138,15 +131,6 @@ export function useFormatting() {
             .trim()
     }
 
-    /**
-     * Alias de formatMoneda para compatibilidad
-     * @param {number} valor - Valor numérico
-     * @returns {string} Valor formateado
-     */
-    function formatCosto(valor) {
-        return formatMoneda(valor)
-    }
-
     return {
         formatFecha,
         formatFechaCompleta,
@@ -155,7 +139,6 @@ export function useFormatting() {
         formatEstado,
         getMantenimientoBadgeClass,
         formatMoneda,
-        formatCosto,  // Alias para compatibilidad
         formatUbicacion,
         normalizeText
     }

@@ -132,12 +132,8 @@ function confirmarReprogramacion() {
   
   // Format as YYYY-MM-DD
   const year = selectedDate.value.getFullYear()
-  const monthIndex = selectedDate.value.getMonth()
-  const month = String(monthIndex + 1).padStart(2, '0')
-  
-  // Set to last day of the month to avoid "Vencido" status if current month is selected
-  const lastDay = new Date(year, monthIndex + 1, 0).getDate()
-  const day = String(lastDay).padStart(2, '0')
+  const month = String(selectedDate.value.getMonth() + 1).padStart(2, '0')
+  const day = '01' // Always set to 1st of month for simplicity in this UI
   
   const fechaFormateada = `${year}-${month}-${day}`
   

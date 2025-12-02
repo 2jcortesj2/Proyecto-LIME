@@ -1,4 +1,5 @@
 import { ref, computed, watch } from 'vue'
+import { useFormatting } from './useFormatting'
 
 /**
  * Composable para manejar la lógica de dropdowns filtrables (combobox)
@@ -7,11 +8,13 @@ import { ref, computed, watch } from 'vue'
  * @param {Function} formatDisplay - Función opcional para formatear el texto a mostrar en el input
  */
 export function useDropdown(items, searchKeys = ['nombre'], formatDisplay = null) {
+    const { normalizeText } = useFormatting()
+
     const searchTerm = ref('')
     const isOpen = ref(false)
     const selectedItem = ref(null)
 
-    // Filtrar items basado en el término de búsqueda
+    // Filtrar items basado en el término de búsqueda (SIN DISTINCIÓN DE MAYÚSCULAS NI TILDES)
     const filteredItems = computed(() => {
         if (!items.value) return []
 
@@ -19,12 +22,12 @@ export function useDropdown(items, searchKeys = ['nombre'], formatDisplay = null
             return items.value
         }
 
-        const search = searchTerm.value.toLowerCase()
+        const normalizedSearch = normalizeText(searchTerm.value)
 
         return items.value.filter(item => {
             return searchKeys.some(key => {
                 const value = item[key]
-                return value && String(value).toLowerCase().includes(search)
+                return value && normalizeText(String(value)).includes(normalizedSearch)
             })
         })
     })

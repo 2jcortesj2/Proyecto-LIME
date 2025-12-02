@@ -4,7 +4,8 @@ import Header from './components/Header.vue'
 import Sidebar from './components/Sidebar.vue'
 import Dashboard from './components/Dashboard.vue'
 import Mantenimientos from './components/Mantenimientos.vue'
-import EquiposPendientes from './components/EquiposPendientes.vue'
+import EquiposVencidos from './components/EquiposVencidos.vue'
+import EquiposProximos from './components/EquiposProximos.vue'
 import Inventario from './components/Inventario.vue'
 import Traslados from './components/Traslados.vue'
 import SedesUbicaciones from './components/SedesUbicaciones.vue'
@@ -30,9 +31,8 @@ function showPage(page) {
         <SedesUbicaciones v-else-if="currentPage === 'Sedes y Ubicaciones'" />
         <Responsables v-else-if="currentPage === 'Responsables'" />
 
-        <EquiposPendientes v-else-if="currentPage === 'Realizar Revisión'" viewMode="vencidos" />
-        <EquiposPendientes v-else-if="currentPage === 'Proximos de Revision'" viewMode="proximos" />
-        <EquiposPendientes v-else-if="currentPage === 'Equipos Pendientes'" viewMode="all" />
+        <EquiposVencidos v-else-if="currentPage === 'Realizar Revisión'" />
+        <EquiposProximos v-else-if="currentPage === 'Proximos de Revision'" />
         <div v-else class="page-placeholder">
           <h2 class="page-title">{{ currentPage }}</h2>
           <p style="color: #616161;">Esta página está en desarrollo.</p>
