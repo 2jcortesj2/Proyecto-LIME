@@ -1,5 +1,6 @@
-from rest_framework import viewsets, filters
+from rest_framework import viewsets, filters, status
 from rest_framework.permissions import AllowAny
+from rest_framework.response import Response
 from .models import Ubicacion
 from .serializers import UbicacionSerializer, UbicacionDetailSerializer
 
@@ -27,3 +28,22 @@ class UbicacionViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(estado=estado)
             
         return queryset
+    
+    def destroy(self, request, *args, **kwargs):
+        """
+        Elimina una ubicación solo si no tiene equipos asignados
+        """
+        ubicacion = self.get_object()
+        
+        # Verificar que no tenga equipos asignados
+        num_equipos = ubicacion.equipos.count()
+        if num_equipos > 0:
+            return Response(
+                {
+                    'error': 'No se puede eliminar una ubicación que tiene equipos asignados',
+                    'num_equipos': num_equipos
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        return super().destroy(request, *args, **kwargs)

@@ -1,84 +1,106 @@
 <script setup>
-import { ref, onMounted } from 'vue'
-import { sedesAPI } from '../services/api'
+import { onMounted } from 'vue'
+import { useSedesUbicaciones } from '../composables/useSedesUbicaciones'
+import { useAccordion } from '../composables/useAccordion'
+import { useModal } from '../composables/useModal'
 
-const sedes = ref([])
-const loading = ref(true)
-const error = ref(null)
-const expandedSedes = ref(new Set())
-const showAllServices = ref(new Map()) // Track which sedes have expanded service lists
+// Importar modales
+import ModalCrearSede from './modals/sedes/ModalCrearSede.vue'
+import ModalEditarSede from './modals/sedes/ModalEditarSede.vue'
+import ModalEliminarSede from './modals/sedes/ModalEliminarSede.vue'
+import ModalCrearUbicacion from './modals/ubicaciones/ModalCrearUbicacion.vue'
+import ModalEditarUbicacion from './modals/ubicaciones/ModalEditarUbicacion.vue'
+import ModalEliminarUbicacion from './modals/ubicaciones/ModalEliminarUbicacion.vue'
 
-async function fetchSedes() {
-  try {
-    loading.value = true
-    const response = await sedesAPI.getAll()
-    sedes.value = response.data
-    // All accordions closed by default
-  } catch (err) {
-    console.error('Error fetching sedes:', err)
-    error.value = 'Error al cargar la información de sedes y ubicaciones.'
-  } finally {
-    loading.value = false
-  }
-}
+// Composables
+const { sedes, loading, error, fetchSedes } = useSedesUbicaciones()
+const { toggleRow: toggleSede, isExpanded } = useAccordion()
 
-function toggleSede(sedeId) {
-  if (expandedSedes.value.has(sedeId)) {
-    expandedSedes.value.delete(sedeId)
-  } else {
-    expandedSedes.value.add(sedeId)
-  }
-}
+// Modales de Sedes
+const modalCrearSede = useModal()
+const modalEditarSede = useModal()
+const modalEliminarSede = useModal()
 
-function toggleShowAllServices(sedeId) {
-  const current = showAllServices.value.get(sedeId) || false
-  showAllServices.value.set(sedeId, !current)
-}
-
-function getVisibleUbicaciones(sede) {
-  const showAll = showAllServices.value.get(sede.id) || false
-  if (!sede.ubicaciones) return []
-  return showAll ? sede.ubicaciones : sede.ubicaciones.slice(0, 5)
-}
-
-function hasMoreUbicaciones(sede) {
-  return sede.ubicaciones && sede.ubicaciones.length > 5
-}
+// Modales de Ubicaciones
+const modalCrearUbicacion = useModal()
+const modalEditarUbicacion = useModal()
+const modalEliminarUbicacion = useModal()
 
 onMounted(() => {
   fetchSedes()
 })
+
+// Handlers para Sedes
+function handleCrearSede() {
+  modalCrearSede.open()
+}
+
+function handleEditarSede(sede) {
+  modalEditarSede.open(sede)
+}
+
+function handleEliminarSede(sede) {
+  modalEliminarSede.open(sede)
+}
+
+// Handlers para Ubicaciones
+function handleNuevaUbicacion(sedeId) {
+  modalCrearUbicacion.open({ sedeId })
+}
+
+function handleEditarUbicacion(ubicacion) {
+  modalEditarUbicacion.open(ubicacion)
+}
+
+function handleEliminarUbicacion(ubicacion) {
+  modalEliminarUbicacion.open(ubicacion)
+}
+
+// Get computed sedeId from modal data
+function getSedeIdFromModal() {
+  return modalCrearUbicacion.data.value?.sedeId || null
+}
 </script>
 
 <template>
   <div class="sedes-container">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+    <!-- Header -->
+    <div class="page-header">
       <div>
-        <h2 class="page-title" style="margin: 0;">Sedes y Ubicaciones</h2>
-        <div style="color: #616161; font-size: 14px; margin-top: 5px;">Inicio / Configuración / Sedes</div>
+        <h2 class="page-title">Sedes y Ubicaciones</h2>
+        <div class="breadcrumb">Inicio / Configuración / Sedes</div>
       </div>
-      <button class="btn btn-primary" @click="() => {}">➕ Nueva Sede</button>
+      <button class="btn btn-primary" @click="handleCrearSede">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+        Nueva Sede
+      </button>
     </div>
 
+    <!-- Loading State -->
     <div v-if="loading" class="loading-state">
       <div class="spinner"></div>
       <p>Cargando sedes y ubicaciones...</p>
     </div>
 
+    <!--  Error State -->
     <div v-else-if="error" class="error-state">
       {{ error }}
     </div>
 
+    <!-- Sedes List -->
     <div v-else class="sedes-list">
-      <div v-for="sede in sedes" :key="sede.id" class="sede-card" :class="{ expanded: expandedSedes.has(sede.id) }">
+      <div v-for="sede in sedes" :key="sede.id" class="sede-card" :class="{ expanded: isExpanded(sede.id) }">
         <!-- Header Section - Clickable for Accordion -->
         <div class="sede-header" @click="toggleSede(sede.id)">
           <div class="sede-header-content">
             <div class="header-left">
-              <span class="chevron" :class="{ rotated: expandedSedes.has(sede.id) }">▼</span>
+              <span class="chevron" :class="{ rotated: isExpanded(sede.id) }">▼</span>
               <div class="sede-title-section">
-                <h2 class="sede-title">🏢 Sede {{ sede.nombre }}</h2>
-                <p class="sede-address">Dirección {{ sede.nombre }}, {{ sede.ciudad }}</p>
+                <h2 class="sede-title">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: #006633; width: 24px; height: 24px;"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect><path d="M9 22v-4h6v4"></path><path d="M8 6h.01"></path><path d="M16 6h.01"></path><path d="M8 10h.01"></path><path d="M16 10h.01"></path><path d="M8 14h.01"></path><path d="M16 14h.01"></path></svg>
+                  Sede {{ sede.nombre }}
+                </h2>
+                <p class="sede-address">{{ sede.direccion }}, {{ sede.ciudad }}</p>
               </div>
             </div>
             
@@ -94,44 +116,60 @@ onMounted(() => {
                 </div>
               </div>
               <div class="sede-actions">
-                <button class="btn-secondary" @click.stop>✏️ Editar Sede</button>
-                <button class="btn-tertiary" @click.stop>➕ Nueva Ubicación</button>
+                <button class="btn btn-secondary btn-sm" @click.stop="handleEditarSede(sede)">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                  Editar
+                </button>
+                <button class="btn btn-tertiary btn-sm" @click.stop="handleNuevaUbicacion(sede.id)">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                  Ubicación
+                </button>
+                <button class="btn btn-danger btn-icon-only" @click.stop="handleEliminarSede(sede)" title="Desactivar Sede">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                </button>
               </div>
             </div>
           </div>
         </div>
         
         <!-- Collapsible Content -->
-        <div v-show="expandedSedes.has(sede.id)" class="sede-body">
-          <!-- Stats Cards -->
-          <!-- Stats Cards Removed (Moved to Header) -->
-
-          <!-- Services Section -->
-          <div class="services-section">
-            <h3 class="services-title">Ubicaciones de la Sede</h3>
+        <div v-show="isExpanded(sede.id)" class="sede-body">
+          <!-- Ubicaciones Section -->
+          <div class="ubicaciones-section">
+            <h3 class="ubicaciones-title">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 18px; height: 18px;"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+              Ubicaciones de la Sede
+            </h3>
             
-            <div class="services-list">
-              <div v-for="ubicacion in getVisibleUbicaciones(sede)" :key="ubicacion.id" class="servicio-row">
-                <div class="servicio-info">
-                  <h4 class="servicio-name">{{ ubicacion.nombre }}</h4>
-                  <div class="servicio-meta">
-                    <span class="servicio-equipos">🔧 {{ ubicacion.num_equipos }} equipos</span>
+            <div class="ubicaciones-list">
+              <div v-for="ubicacion in sede.ubicaciones" :key="ubicacion.id" class="ubicacion-row">
+                <div class="ubicacion-info">
+                  <h4 class="ubicacion-name">{{ ubicacion.nombre }}</h4>
+                  <div class="ubicacion-meta">
+                    <div class="meta-item">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="meta-icon"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg>
+                      <span>{{ ubicacion.num_equipos }} equipos</span>
+                    </div>
                     <span class="separator">•</span>
-                    <span class="servicio-responsable">👤 Responsable: {{ ubicacion.responsable || 'Sin responsable asignado' }}</span>
+                    <div class="meta-item">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="meta-icon"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                      <span>{{ ubicacion.responsable || 'Sin responsable' }}</span>
+                    </div>
                   </div>
                 </div>
-                <div class="servicio-actions">
-                  <button class="btn-edit">✏️ Editar</button>
+                <div class="ubicacion-actions">
+                  <button class="btn btn-secondary btn-sm" @click="handleEditarUbicacion(ubicacion)">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                    Editar
+                  </button>
+                  <button class="btn btn-danger btn-sm" @click="handleEliminarUbicacion(ubicacion)" :disabled="ubicacion.num_equipos > 0">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                    Eliminar
+                  </button>
                 </div>
               </div>
               
-              <div v-if="hasMoreUbicaciones(sede)" class="ver-mas-container">
-                <button class="btn-ver-mas" @click.stop="toggleShowAllServices(sede.id)">
-                  {{ showAllServices.get(sede.id) ? '▲ Ver menos' : '▼ Ver más (' + (sede.ubicaciones.length - 5) + ' más)' }}
-                </button>
-              </div>
-              
-              <div v-if="!sede.ubicaciones || sede.ubicaciones.length === 0" class="no-services">
+              <div v-if="!sede.ubicaciones || sede.ubicaciones.length === 0" class="no-ubicaciones">
                 No hay ubicaciones registradas en esta sede.
               </div>
             </div>
@@ -139,38 +177,77 @@ onMounted(() => {
         </div>
       </div>
     </div>
+
+    <!-- Modales de Sedes -->
+    <ModalCrearSede 
+      :show="modalCrearSede.isOpen.value" 
+      @close="modalCrearSede.close()" 
+      @created="modalCrearSede.close()"
+    />
+    
+    <ModalEditarSede 
+      :show="modalEditarSede.isOpen.value"
+      :sede="modalEditarSede.data.value"
+      @close="modalEditarSede.close()" 
+      @updated="modalEditarSede.close()"
+    />
+    
+    <ModalEliminarSede 
+      :show="modalEliminarSede.isOpen.value"
+      :sede="modalEliminarSede.data.value"
+      @close="modalEliminarSede.close()" 
+      @deleted="modalEliminarSede.close()"
+    />
+
+    <!-- Modales de Ubicaciones -->
+    <ModalCrearUbicacion 
+      :show="modalCrearUbicacion.isOpen.value"
+      :sede-id="getSedeIdFromModal()"
+      @close="modalCrearUbicacion.close()" 
+      @created="modalCrearUbicacion.close()"
+    />
+    
+    <ModalEditarUbicacion 
+      :show="modalEditarUbicacion.isOpen.value"
+      :ubicacion="modalEditarUbicacion.data.value"
+      @close="modalEditarUbicacion.close()" 
+      @updated="modalEditarUbicacion.close()"
+    />
+    
+    <ModalEliminarUbicacion 
+      :show="modalEliminarUbicacion.isOpen.value"
+      :ubicacion="modalEliminarUbicacion.data.value"
+      @close="modalEliminarUbicacion.close()" 
+      @deleted="modalEliminarUbicacion.close()"
+    />
   </div>
 </template>
 
 <style scoped>
+@import './modals/button-styles.css';
+
 .sedes-container {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
 }
 
 .page-title { 
   font-size: 28px; 
   color: #006633; 
   font-weight: 600; 
-  margin-bottom: 30px; 
+  margin: 0; 
 }
 
-.btn { 
-  padding: 12px 24px; 
-  border: none; 
-  border-radius: 6px; 
-  cursor: pointer; 
-  font-weight: 600; 
-  transition: all 0.3s; 
-}
-
-.btn-primary { 
-  background: #006633; 
-  color: white; 
-}
-
-.btn-primary:hover { 
-  background: #2d5016; 
-  transform: translateY(-2px); 
+.breadcrumb {
+  color: #616161;
+  font-size: 14px;
+  margin-top: 5px;
 }
 
 .loading-state, .error-state {
@@ -206,7 +283,7 @@ onMounted(() => {
   box-shadow: 0 4px 12px rgba(0,0,0,0.05);
   overflow: hidden;
   transition: all 0.3s ease;
-  /* Removed border as requested */
+  border: 1px solid #f0f0f0;
 }
 
 .sede-header {
@@ -324,182 +401,83 @@ onMounted(() => {
   to { opacity: 1; transform: translateY(0); }
 }
 
-
-
-.btn-secondary {
-  background-color: #26a69a; /* Teal/Cyan color from mockup */
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 6px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.2s;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
-
-.btn-secondary:hover {
-  background-color: #00897b;
-}
-
-.btn-tertiary {
-  background-color: #006633; /* Color del primario */
-  color: white;
-
-  /* Tamaño y forma del secundario */
-  border: none;
-  padding: 8px 16px;
-  border-radius: 6px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.2s;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
-
-.btn-tertiary:hover {
-  background-color: #2d5016; /* Hover del primario */
-}
-
-.stats-row {
-  display: flex;
-  gap: 20px;
-  margin-bottom: 15px; /* Reduced from 30px to bring services closer */
-  margin-top: 10px;
-}
-
-.stat-card {
-  padding: 15px;
-  border-radius: 8px;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-}
-
-.stat-card-green {
-  background: rgba(0,102,51,0.05); /* Light green background from mockup */
-}
-
-.stat-card-green .stat-value {
-  color: #006633; /* Green text from mockup */
-}
-
-.stat-card-blue {
-  background: rgba(0,169,157,0.05); /* Light cyan/turquoise background from mockup */
-}
-
-.stat-card-blue .stat-value {
-  color: #00a99d; /* Cyan/turquoise text from mockup */
-}
-
-.stat-label {
-  font-size: 12px;
-  color: #616161;
-  margin-bottom: 0px;
-}
-
-.stat-value {
-  font-size: 24px;
-  font-weight: 600;
-}
-
-.services-title {
+.ubicaciones-title {
   color: #006633;
   font-size: 16px;
-  margin-bottom: 10px; /* Reduced from 15px to bring closer to stats */
-  margin-top: 10px; /* Reduced spacing from stats cards */
-  font-weight: 700; /* Bold */
+  margin-bottom: 15px;
+  margin-top: 20px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
-.services-list {
+.ubicaciones-list {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
-.servicio-row {
-  background: #f5f5f5; /* Same as page background */
-  /* Removed border */
+.ubicacion-row {
+  background: #f8f9fa;
   border-radius: 8px;
-  padding: 12px 20px; /* Reduced from 15px to 12px for less height */
+  padding: 16px 24px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  transition: background 0.2s;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.03); /* Subtle shadow instead of border */
+  transition: all 0.2s;
+  border: 1px solid #eee;
 }
 
-.servicio-row:hover {
-  background: #eeeeee;
+.ubicacion-row:hover {
+  background: white;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  border-color: #e0e0e0;
 }
 
-.servicio-name {
+.ubicacion-name {
   margin: 0 0 5px 0;
   color: #333;
   font-size: 16px;
   font-weight: 600;
 }
 
-.servicio-meta {
+.ubicacion-meta {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 15px;
   font-size: 13px;
   color: #666;
 }
 
-.separator {
-  color: #ccc;
-}
-
-.btn-edit {
-  background: #e0e0e0;
-  border: none;
-  padding: 6px 16px;
-  border-radius: 4px;
-  color: #333;
-  font-weight: 600;
-  cursor: pointer;
-  font-size: 13px;
+.meta-item {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
 }
 
-.btn-edit:hover {
-  background: #d0d0d0;
+.meta-icon {
+  width: 14px;
+  height: 14px;
+  opacity: 0.7;
 }
 
-.ver-mas-container {
+.separator {
+  color: #ddd;
+}
+
+.ubicacion-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.no-ubicaciones {
   text-align: center;
-  margin-top: 10px;
-}
-
-.btn-ver-mas {
-  background: transparent;
-  border: none;
-  color: #006633;
-  font-weight: 600;
-  cursor: pointer;
-  font-size: 13px;
-  padding: 8px 16px;
-  transition: all 0.2s;
-}
-
-.btn-ver-mas:hover {
-  background: rgba(0, 102, 51, 0.05);
-  border-radius: 4px;
-}
-
-.no-services {
-  text-align: center;
-  padding: 20px;
+  padding: 30px;
   color: #888;
   font-style: italic;
   background: #f9f9f9;
   border-radius: 8px;
+  border: 1px dashed #ddd;
 }
 </style>

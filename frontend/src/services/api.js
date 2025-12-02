@@ -157,6 +157,18 @@ export const sedesAPI = {
     getById(id) {
         return apiClient.get(`/sedes/${id}/`)
     },
+
+    create(data) {
+        return apiClient.post('/sedes/', data)
+    },
+
+    update(id, data) {
+        return apiClient.put(`/sedes/${id}/`, data)
+    },
+
+    delete(id) {
+        return apiClient.delete(`/sedes/${id}/`)
+    },
 }
 
 // ============================================
@@ -164,12 +176,24 @@ export const sedesAPI = {
 // ============================================
 
 export const ubicacionesAPI = {
-    getAll() {
-        return apiClient.get('/ubicaciones/')
+    getAll(params = {}) {
+        return apiClient.get('/ubicaciones/', { params })
     },
 
     getById(id) {
         return apiClient.get(`/ubicaciones/${id}/`)
+    },
+
+    create(data) {
+        return apiClient.post('/ubicaciones/', data)
+    },
+
+    update(id, data) {
+        return apiClient.put(`/ubicaciones/${id}/`, data)
+    },
+
+    delete(id) {
+        return apiClient.delete(`/ubicaciones/${id}/`)
     },
 }
 

@@ -1,0 +1,187 @@
+/* 
+ * Estilos compartidos para botones
+ * Importar en componentes que necesiten botones
+ */
+
+.btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    line-height: 1;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+.btn svg {
+    width: 18px;
+    height: 18px;
+    stroke-width: 2.5;
+}
+
+/* Primary Button - Verde principal */
+.btn-primary {
+    background: linear-gradient(145deg, #006633 0%, #00552b 100%);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.btn-primary:hover:not(:disabled) {
+    background: linear-gradient(145deg, #00753a 0%, #006633 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 102, 51, 0.25);
+}
+
+.btn-primary:active:not(:disabled) {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(0, 102, 51, 0.2);
+}
+
+/* Secondary Button - Cyan/Teal */
+.btn-secondary {
+    background: white;
+    color: #006633;
+    border: 1px solid #e0e0e0;
+}
+
+.btn-secondary:hover:not(:disabled) {
+    background: #f8f9fa;
+    border-color: #006633;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.btn-secondary:active:not(:disabled) {
+    transform: translateY(0);
+    background: #f0f0f0;
+}
+
+/* Tertiary Button - Used for "New Ubicacion" often */
+.btn-tertiary {
+    background: rgba(0, 102, 51, 0.1);
+    color: #006633;
+    border: 1px solid transparent;
+}
+
+.btn-tertiary:hover:not(:disabled) {
+    background: rgba(0, 102, 51, 0.15);
+    transform: translateY(-1px);
+}
+
+.btn-tertiary:active:not(:disabled) {
+    transform: translateY(0);
+    background: rgba(0, 102, 51, 0.2);
+}
+
+/* Danger Button */
+.btn-danger {
+    background: #ffebee;
+    color: #d32f2f;
+    border: 1px solid transparent;
+}
+
+.btn-danger:hover:not(:disabled) {
+    background: #ffcdd2;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(211, 47, 47, 0.15);
+}
+
+.btn-danger:active:not(:disabled) {
+    transform: translateY(0);
+    background: #ef9a9a;
+}
+
+/* Cancel Button */
+.btn-cancel {
+    background: white;
+    color: #666;
+    border: 1px solid #e0e0e0;
+}
+
+.btn-cancel:hover:not(:disabled) {
+    background: #f5f5f5;
+    color: #333;
+    border-color: #d0d0d0;
+}
+
+/* Icon Only Button */
+.btn-icon-only {
+    padding: 0;
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-icon-only svg {
+    width: 16px;
+    height: 16px;
+}
+
+/* Sizes */
+.btn-sm {
+    padding: 6px 12px;
+    font-size: 13px;
+    gap: 6px;
+}
+
+.btn-sm svg {
+    width: 14px;
+    height: 14px;
+}
+
+.btn-xs {
+    padding: 4px 8px;
+    font-size: 12px;
+    gap: 4px;
+    border-radius: 4px;
+}
+
+/* Loading State */
+.btn.loading {
+    position: relative;
+    color: transparent !important;
+    pointer-events: none;
+}
+
+.btn.loading::after {
+    content: '';
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    top: 50%;
+    left: 50%;
+    margin-left: -8px;
+    margin-top: -8px;
+    border: 2px solid rgba(0, 0, 0, 0.2);
+    border-top-color: currentColor;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+}
+
+.btn-primary.loading::after {
+    border-color: rgba(255, 255, 255, 0.3);
+    border-top-color: white;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
