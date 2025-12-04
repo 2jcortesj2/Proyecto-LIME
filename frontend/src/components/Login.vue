@@ -86,7 +86,7 @@ const togglePasswordVisibility = () => {
           <!-- Email -->
           <div class="form-group">
             <label class="form-label">
-              <span class="label-icon">📧</span>
+              <span class="label-icon"><AppIcon name="mail" size="16" /></span>
               Correo Electrónico
             </label>
             <input 
@@ -118,14 +118,14 @@ const togglePasswordVisibility = () => {
                 @click="togglePasswordVisibility"
                 tabindex="-1"
               >
-                {{ showPassword ? '👁️' : '👁️‍🗨️' }}
+                <AppIcon :name="showPassword ? 'eye' : 'eye-off'" size="20" />
               </button>
             </div>
           </div>
 
           <!-- Error Message -->
           <div v-if="error" class="error-message">
-            ⚠️ {{ error }}
+            <AppIcon name="alert" size="16" /> {{ error }}
           </div>
 
           <!-- Opciones -->

@@ -9,6 +9,7 @@ export { equiposService } from './equipos.service'
 export { trasladosService } from './traslados.service'
 export { catalogsService } from './catalogs.service'
 export { mantenimientosService } from './mantenimientos.service'
+export { responsablesService } from './responsables.service'
 
 // También exporta el cliente API base por si se necesita
 export { default as apiClient } from './api'

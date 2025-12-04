@@ -131,7 +131,7 @@ function getProximoMantenimientoDisplay(equipo) {
   <div class="equipos-proximos-container">
     <div class="page-header">
       <div>
-        <h2 class="page-title">⏰ Próximos de Revisión</h2>
+        <h2 class="page-title"><AppIcon name="clock" size="16" /> Próximos de Revisión</h2>
         <div class="breadcrumb">Inicio / Mantenimientos / Próximos de Revisión</div>
       </div>
     </div>
@@ -176,7 +176,7 @@ function getProximoMantenimientoDisplay(equipo) {
     <!-- Content -->
     <div v-else class="content-card">
       <div class="section-header proximo">
-        <h3>⏰ Equipos Próximos a Revisión ({{ equiposProximos.length }})</h3>
+        <h3><AppIcon name="clock" size="16" /> Equipos Próximos a Revisión ({{ equiposProximos.length }})</h3>
         <p>Equipos que requieren mantenimiento en los próximos {{ monthsFilter }} meses</p>
       </div>
 
@@ -195,7 +195,7 @@ function getProximoMantenimientoDisplay(equipo) {
             v-model="searchQuery" 
             type="text" 
             class="search-input" 
-            placeholder="🔍 Buscar por código, nombre, marca, modelo, sede o ubicación..."
+            placeholder="Buscar por código, nombre, marca, modelo, sede o ubicación..."
           >
         </div>
       </div>
@@ -241,7 +241,7 @@ function getProximoMantenimientoDisplay(equipo) {
       <!-- Empty state -->
       <div v-else class="empty-state">
         <div class="empty-state-content">
-          <div class="empty-icon">✅</div>
+          <div class="empty-icon"><AppIcon name="check" size="16" /></div>
           <h3>No hay equipos próximos a revisión</h3>
           <p>No hay equipos que requieran mantenimiento en los próximos {{ monthsFilter }} meses.</p>
           <p class="empty-hint">Intenta aumentar el rango de meses usando el filtro arriba.</p>

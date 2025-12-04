@@ -47,14 +47,14 @@ onMounted(() => {
         :class="{ active: currentPage === 'Información General' }"
         @click="changePage('Información General')"
       >
-        📊 Información General
+        <AppIcon name="activity" size="16" /> Información General
       </div>
       <div 
         class="menu-item" 
         :class="{ active: currentPage === 'Inventario de Equipos' }"
         @click="changePage('Inventario de Equipos')"
       >
-        🔬 Inventario de Equipos
+        <AppIcon name="package" size="16" /> Inventario de Equipos
       </div>
       
       <div 
@@ -62,7 +62,7 @@ onMounted(() => {
         :class="{ active: currentPage === 'Traslados' }"
         @click="changePage('Traslados')"
       >
-        🔄 Traslados
+        <AppIcon name="refresh" size="16" /> Traslados
       </div>
 
       <!-- Accordion for Mantenimientos -->
@@ -75,7 +75,7 @@ onMounted(() => {
           }"
           @click="toggleMantenimientos"
         >
-          🛠️ Mantenimientos
+          <AppIcon name="wrench" size="16" /> Mantenimientos
         </div>
         <div class="accordion-content" v-show="mantenimientosExpanded">
           <div 
@@ -83,7 +83,7 @@ onMounted(() => {
             :class="{ active: currentPage === 'Realizar Revisión' }"
             @click="changePage('Realizar Revisión')"
           >
-            ⚠️ Realizar Revisión
+            <AppIcon name="alert" size="16" /> Realizar Revisión
             <span v-if="stats.vencidos > 0" class="count-badge danger">{{ stats.vencidos }}</span>
           </div>
           <div 
@@ -91,7 +91,7 @@ onMounted(() => {
             :class="{ active: currentPage === 'Proximos de Revision' }"
             @click="changePage('Proximos de Revision')"
           >
-            ⏰ Próximos de revisión
+            <AppIcon name="clock" size="16" /> Próximos de revisión
             <span v-if="stats.proximos > 0" class="count-badge warning">{{ stats.proximos }}</span>
           </div>
           <div 
@@ -99,7 +99,7 @@ onMounted(() => {
             :class="{ active: currentPage === 'Historial de Mantenimientos' }"
             @click="changePage('Historial de Mantenimientos')"
           >
-            📋 Historial Completo
+            <AppIcon name="file" size="16" /> Historial Completo
           </div>
         </div>
       </div>
@@ -111,14 +111,14 @@ onMounted(() => {
         :class="{ active: currentPage === 'Sedes y Ubicaciones' }"
         @click="changePage('Sedes y Ubicaciones')"
       >
-        🏢 Sedes y Ubicaciones
+        <AppIcon name="building" size="16" /> Sedes y Ubicaciones
       </div>
       <div 
         class="menu-item" 
         :class="{ active: currentPage === 'Responsables' }"
         @click="changePage('Responsables')"
       >
-        👥 Responsables
+        <AppIcon name="user" size="16" /> Responsables
       </div>
       
       <div class="divider"></div>
@@ -128,14 +128,14 @@ onMounted(() => {
         :class="{ active: currentPage === 'Reportes' }"
         @click="changePage('Reportes')"
       >
-        📈 Reportes
+        <AppIcon name="trending-up" size="16" /> Reportes
       </div>
       <div 
         class="menu-item" 
         :class="{ active: currentPage === 'Configuración' }"
         @click="changePage('Configuración')"
       >
-        ⚙️ Configuración
+        <AppIcon name="settings" size="16" /> Configuración
       </div>
     </nav>
   </aside>
@@ -183,7 +183,7 @@ onMounted(() => {
   transition: all 0.3s;
   text-align: left;
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: center;
   white-space: nowrap;
   gap: 8px;

@@ -3,14 +3,14 @@
     <div class="modal-content">
       <div class="modal-header">
         <h2>Desactivar Sede</h2>
-        <button class="modal-close" @click="handleClose">×</button>
+        <button class="modal-close" @click="handleClose"><AppIcon name="close" size="16" /></button>
       </div>
       
       <div class="modal-body">
         <div v-if="errors.submit" class="error-message">{{ errors.submit }}</div>
         
         <div class="warning-message">
-          ⚠️ Esta acción desactivará la sede pero NO eliminará los datos permanentemente.
+          <AppIcon name="alert" size="16" /> Esta acción desactivará la sede pero NO eliminará los datos permanentemente.
         </div>
 
         <div class="info-section">

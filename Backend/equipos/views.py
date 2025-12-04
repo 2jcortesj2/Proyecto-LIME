@@ -22,12 +22,15 @@ def equipo_list(request):
         sede_id = request.GET.get('sede_id', None)
         ubicacion_id = request.GET.get('ubicacion_id', None)
         estado_equipo = request.GET.get('estado', None)
+        responsable_id = request.GET.get('responsable', None)
         busqueda = request.GET.get('busqueda', None)
         
         if sede_id:
             equipos = equipos.filter(sede_id=sede_id)
         if ubicacion_id:
             equipos = equipos.filter(ubicacion_id=ubicacion_id)
+        if responsable_id:
+            equipos = equipos.filter(responsable_id=responsable_id)
         if estado_equipo:
             equipos = equipos.filter(estado=estado_equipo)
         if busqueda:
@@ -67,6 +70,39 @@ def equipo_detail(request, pk):
         return Response(serializer.data)
     
     elif request.method == 'PUT':
+        # Verificar si hay cambio de responsable y justificación
+        nuevo_responsable_id = request.data.get('responsable')
+        justificacion = request.data.get('justificacion')
+        
+        # Si se envía responsable y es diferente al actual
+        if nuevo_responsable_id is not None and str(nuevo_responsable_id) != str(equipo.responsable_id):
+            from datetime import datetime
+            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            
+            # Obtener nombres para el registro
+            try:
+                from responsables.models import Responsable
+                nuevo_resp = Responsable.objects.get(id=nuevo_responsable_id)
+                nombre_nuevo = nuevo_resp.nombre_completo
+            except:
+                nombre_nuevo = "Desconocido"
+                
+            nombre_anterior = equipo.responsable.nombre_completo if equipo.responsable else "Sin asignar"
+            
+            # Crear la anotación
+            nueva_anotacion = f"[{timestamp}] CAMBIO DE RESPONSABLE: De '{nombre_anterior}' a '{nombre_nuevo}'."
+            if justificacion:
+                nueva_anotacion += f" Motivo: {justificacion}"
+            
+            # Agregar a las anotaciones existentes
+            if equipo.anotaciones:
+                equipo.anotaciones += "\n" + nueva_anotacion
+            else:
+                equipo.anotaciones = nueva_anotacion
+            
+            # Guardar anotaciones antes de pasar al serializer
+            equipo.save()
+
         serializer = EquipoSerializer(equipo, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()

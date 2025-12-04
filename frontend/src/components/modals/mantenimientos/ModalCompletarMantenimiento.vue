@@ -2,8 +2,8 @@
   <div class="modal" :class="{ active: show }">
     <div class="modal-content">
       <div class="modal-header">
-        <h3 class="modal-title">✅ Completar Mantenimiento</h3>
-        <button class="close-btn" @click="$emit('close')">×</button>
+        <h3 class="modal-title"><AppIcon name="check" size="16" /> Completar Mantenimiento</h3>
+        <button class="close-btn" @click="$emit('close')"><AppIcon name="close" size="16" /></button>
       </div>
       
       <div class="modal-body">

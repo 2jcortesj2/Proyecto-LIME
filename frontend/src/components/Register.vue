@@ -119,7 +119,7 @@ const handleRegister = async () => {
           <!-- Nombre -->
           <div class="form-group">
             <label class="form-label">
-              <span class="label-icon">👤</span>
+              <span class="label-icon"><AppIcon name="user" size="16" /></span>
               Nombre Completo
             </label>
             <input 
@@ -134,7 +134,7 @@ const handleRegister = async () => {
           <!-- Email -->
           <div class="form-group">
             <label class="form-label">
-              <span class="label-icon">📧</span>
+              <span class="label-icon"><AppIcon name="mail" size="16" /></span>
               Correo Electrónico
             </label>
             <input 
@@ -166,7 +166,7 @@ const handleRegister = async () => {
                 @click="showPassword = !showPassword"
                 tabindex="-1"
               >
-                {{ showPassword ? '👁️' : '👁️‍🗨️' }}
+                <AppIcon :name="showPassword ? 'eye' : 'eye-off'" size="20" />
               </button>
             </div>
 
@@ -230,7 +230,7 @@ const handleRegister = async () => {
                 @click="showConfirmPassword = !showConfirmPassword"
                 tabindex="-1"
               >
-                {{ showConfirmPassword ? '👁️' : '👁️‍🗨️' }}
+                <AppIcon :name="showConfirmPassword ? 'eye' : 'eye-off'" size="20" />
               </button>
             </div>
             <div v-if="passwordsMatch === false" class="password-match-error">
@@ -243,7 +243,7 @@ const handleRegister = async () => {
 
           <!-- Error Message -->
           <div v-if="error" class="error-message">
-            ⚠️ {{ error }}
+            <AppIcon name="alert" size="16" /> {{ error }}
           </div>
 
           <!-- Submit Button -->

@@ -2,7 +2,7 @@
   <div class="modal" :class="{ active: show }">
     <div class="modal-content" style="max-width: 500px;">
       <div class="modal-header" style="background: rgba(244, 67, 54, 0.05);">
-        <h3 class="modal-title" style="color: #d32f2f;">🗑️ Eliminar Traslado</h3>
+        <h3 class="modal-title" style="color: #d32f2f;"><AppIcon name="trash" size="16" /> Eliminar Traslado</h3>
         <button class="close-btn" @click="$emit('close')">&times;</button>
       </div>
       <div class="modal-body" style="text-align: center; padding: 30px;">
@@ -26,7 +26,7 @@
         </div>
         
         <div class="alert alert-warning" style="margin-top: 20px;">
-          ⚠️ Esta acción no se puede deshacer
+          <AppIcon name="alert" size="16" /> Esta acción no se puede deshacer
         </div>
       </div>
       <div class="modal-footer" style="justify-content: center;">

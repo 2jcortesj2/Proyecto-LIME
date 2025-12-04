@@ -1,9 +1,36 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
+import { useResponsables, useNotifications, useFormatting, useAccordion, useModal } from '@/composables'
+import { equiposService } from '@/services'
+import ModalCrearResponsable from '@/components/modals/responsables/ModalCrearResponsable.vue'
+import ModalEditarResponsable from '@/components/modals/responsables/ModalEditarResponsable.vue'
+import ModalEliminarResponsable from '@/components/modals/responsables/ModalEliminarResponsable.vue'
+import ModalCambiarResponsable from '@/components/modals/responsables/ModalCambiarResponsable.vue'
 
-const responsables = ref([])
-const loading = ref(true)
-const error = ref(null)
+const notifications = useNotifications()
+const { normalizeText, formatUbicacion } = useFormatting()
+const { expandedRows, toggleRow, isExpanded } = useAccordion()
+const changeResponsableModal = useModal()
+
+// Usar composable de responsables
+const {
+  responsables,
+  loading,
+  error,
+  submitLoading,
+  successMessage, // Keeping it for now if modals rely on it, but we'll use notifications
+  formErrors,
+  fetchResponsables,
+  createResponsable,
+  updateResponsable,
+  deleteResponsable,
+  resetFormErrors
+} = useResponsables()
+
+// Equipment accordion state
+const equiposPorResponsable = ref({}) // Cache: { responsableId: [equipos] }
+const loadingEquipos = ref({}) // Loading state: { responsableId: boolean }
+
 const searchQuery = ref('')
 
 // Pagination state
@@ -17,9 +44,6 @@ const showEditModal = ref(false)
 const showDeleteModal = ref(false)
 
 // Form state
-const submitLoading = ref(false)
-const formErrors = ref({})
-const successMessage = ref('')
 const selectedResponsable = ref(null)
 
 // Filter Panel State
@@ -27,9 +51,17 @@ const showFilterPanel = ref(false)
 
 // Filter State
 const filtros = ref({
-  roles: [],
-  estados: []
+  roles: []
 })
+
+const collapsedSections = ref({
+  ordenar: false,
+  rol: false
+})
+
+const toggleSection = (section) => {
+  collapsedSections.value[section] = !collapsedSections.value[section]
+}
 
 const ordenamiento = ref('nombre-asc')
 
@@ -52,20 +84,6 @@ const editForm = ref({
   activo: true
 })
 
-const fetchResponsables = async () => {
-  loading.value = true
-  try {
-    const response = await fetch('http://127.0.0.1:8000/api/responsables/')
-    if (!response.ok) throw new Error('Error al cargar responsables')
-    responsables.value = await response.json()
-  } catch (err) {
-    error.value = err.message
-    console.error(err)
-  } finally {
-    loading.value = false
-  }
-}
-
 // Obtener roles únicos
 const rolesUnicos = computed(() => {
   const roles = responsables.value.map(r => r.rol).filter(Boolean)
@@ -77,26 +95,18 @@ const filteredResponsables = computed(() => {
 
   // Filtro por búsqueda
   if (searchQuery.value) {
-    const query = searchQuery.value.toLowerCase()
+    const normalizedQuery = normalizeText(searchQuery.value)
     result = result.filter(resp => 
-      (resp.nombre_completo && resp.nombre_completo.toLowerCase().includes(query)) ||
-      (resp.rol && resp.rol.toLowerCase().includes(query)) ||
-      (resp.email && resp.email.toLowerCase().includes(query))
+      normalizeText(resp.nombre_completo || '').includes(normalizedQuery) ||
+      normalizeText(resp.rol || '').includes(normalizedQuery) ||
+      normalizeText(resp.email || '').includes(normalizedQuery) ||
+      normalizeText(resp.telefono || '').includes(normalizedQuery)
     )
   }
 
   // Filtro por roles
   if (filtros.value.roles.length > 0) {
     result = result.filter(resp => filtros.value.roles.includes(resp.rol))
-  }
-
-  // Filtro por estados
-  if (filtros.value.estados.length > 0) {
-    result = result.filter(resp => {
-      if (filtros.value.estados.includes('activo') && resp.activo) return true
-      if (filtros.value.estados.includes('inactivo') && !resp.activo) return true
-      return false
-    })
   }
 
   // Ordenamiento
@@ -112,6 +122,12 @@ const filteredResponsables = computed(() => {
       break
     case 'rol-desc':
       result.sort((a, b) => (b.rol || '').localeCompare(a.rol || ''))
+      break
+    case 'equipos-asc':
+      result.sort((a, b) => (a.equipos_asignados_count || 0) - (b.equipos_asignados_count || 0))
+      break
+    case 'equipos-desc':
+      result.sort((a, b) => (b.equipos_asignados_count || 0) - (a.equipos_asignados_count || 0))
       break
   }
 
@@ -149,62 +165,36 @@ function toggleRolFilter(rol) {
   currentPage.value = 1
 }
 
-function toggleEstadoFilter(estado) {
-  const index = filtros.value.estados.indexOf(estado)
-  if (index > -1) {
-    filtros.value.estados.splice(index, 1)
-  } else {
-    filtros.value.estados.push(estado)
-  }
-  currentPage.value = 1
-}
-
 function borrarTodosFiltros() {
   filtros.value.roles = []
-  filtros.value.estados = []
   ordenamiento.value = 'nombre-asc'
   currentPage.value = 1
 }
 
+// Sort toggle methods
+const toggleSortCheckbox = (field) => {
+  const isActive = ordenamiento.value === `${field}-asc` || ordenamiento.value === `${field}-desc`
+  if (isActive) {
+    ordenamiento.value = 'nombre-asc' // Reset to default
+  } else {
+    ordenamiento.value = `${field}-asc` // Activate in ascending order
+  }
+}
+
+const toggleSortDirection = (field) => {
+  const isActive = ordenamiento.value === `${field}-asc` || ordenamiento.value === `${field}-desc`
+  if (isActive) {
+    ordenamiento.value = ordenamiento.value === `${field}-asc` ? `${field}-desc` : `${field}-asc`
+  }
+}
+
 const filtrosActivos = computed(() => {
-  return filtros.value.roles.length + filtros.value.estados.length
+  return filtros.value.roles.length
 })
 
-// ===== VALIDATION FUNCTIONS =====
-const validateCreateForm = () => {
-  const errors = {}
-  
-  if (!createForm.value.nombre_completo?.trim()) {
-    errors.nombre_completo = 'El nombre es requerido'
-  }
-  if (!createForm.value.rol?.trim()) {
-    errors.rol = 'El rol es requerido'
-  }
-  if (!createForm.value.email?.trim()) {
-    errors.email = 'El email es requerido'
-  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(createForm.value.email)) {
-    errors.email = 'El email no es válido'
-  }
-  
-  formErrors.value = errors
-  return Object.keys(errors).length === 0
-}
-
-const validateEditForm = () => {
-  const errors = {}
-  
-  if (!editForm.value.nombre_completo?.trim()) {
-    errors.nombre_completo = 'El nombre es requerido'
-  }
-  if (!editForm.value.email?.trim()) {
-    errors.email = 'El email es requerido'
-  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editForm.value.email)) {
-    errors.email = 'El email no es válido'
-  }
-  
-  formErrors.value = errors
-  return Object.keys(errors).length === 0
-}
+const ordenamientoActivo = computed(() => {
+  return ordenamiento.value !== 'nombre-asc'
+})
 
 // ===== CREATE FUNCTIONS =====
 const resetCreateForm = () => {
@@ -215,48 +205,17 @@ const resetCreateForm = () => {
     telefono: '',
     activo: true
   }
-  formErrors.value = {}
+  resetFormErrors()
 }
 
 const submitCreateForm = async () => {
-  if (!validateCreateForm()) {
-    successMessage.value = ''
-    return
-  }
-  
-  submitLoading.value = true
-  successMessage.value = ''
-  
-  try {
-    const response = await fetch('http://127.0.0.1:8000/api/responsables/', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(createForm.value)
-    })
-    
-    if (!response.ok) {
-      const errorData = await response.json()
-      console.error('Error response:', errorData)
-      throw new Error(errorData.detail || 'Error al crear el responsable')
-    }
-    
-    successMessage.value = '✅ Responsable creado exitosamente'
-    
-    await fetchResponsables()
-    
-    setTimeout(() => {
-      closeCreateModal()
-      resetCreateForm()
-      successMessage.value = ''
-    }, 2000)
-    
-  } catch (err) {
-    console.error('Error creating responsable:', err)
-    formErrors.value = { submit: err.message || 'Error al crear el responsable. Por favor, intente nuevamente.' }
-  } finally {
-    submitLoading.value = false
+  const success = await createResponsable(createForm.value)
+  if (success) {
+    notifications.success('<AppIcon name="check" size="16" /> Responsable creado exitosamente')
+    closeCreateModal()
+    resetCreateForm()
+  } else {
+    notifications.error('<AppIcon name="close" size="16" /> Error al crear el responsable')
   }
 }
 
@@ -273,69 +232,37 @@ const loadResponsableDataIntoEditForm = (responsable) => {
 }
 
 const submitEditForm = async () => {
-  if (!validateEditForm()) {
-    successMessage.value = ''
+  const success = await updateResponsable(editForm.value.id, editForm.value)
+  if (success) {
+    notifications.success('<AppIcon name="check" size="16" /> Responsable actualizado exitosamente')
+    closeEditModal()
+  } else {
+    notifications.error('<AppIcon name="close" size="16" /> Error al actualizar el responsable')
+  }
+}
+
+// Handle delete button click with validation
+const handleDeleteClick = (responsable) => {
+  if (responsable.equipos_asignados_count > 0) {
+    notifications.warning(
+      `<AppIcon name="alert" size="16" /> No se puede eliminar a ${responsable.nombre_completo}. Tiene ${responsable.equipos_asignados_count} equipo(s) asignado(s). Por favor, reasigne los equipos primero.`,
+      5000
+    )
     return
   }
-  
-  submitLoading.value = true
-  successMessage.value = ''
-  
-  try {
-    const response = await fetch(`http://127.0.0.1:8000/api/responsables/${editForm.value.id}/`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(editForm.value)
-    })
-    
-    if (!response.ok) {
-      const errorData = await response.json()
-      console.error('Error response:', errorData)
-      throw new Error(errorData.detail || 'Error al actualizar el responsable')
-    }
-    
-    successMessage.value = '✅ Responsable actualizado exitosamente'
-    
-    await fetchResponsables()
-    
-    setTimeout(() => {
-      closeEditModal()
-      successMessage.value = ''
-    }, 2000)
-    
-  } catch (err) {
-    console.error('Error updating responsable:', err)
-    formErrors.value = { submit: err.message || 'Error al actualizar el responsable. Por favor, intente nuevamente.' }
-  } finally {
-    submitLoading.value = false
-  }
+  openDeleteModal(responsable)
 }
 
 // ===== DELETE FUNCTIONS =====
 const confirmDelete = async () => {
   if (!selectedResponsable.value) return
   
-  submitLoading.value = true
-  
-  try {
-    const response = await fetch(`http://127.0.0.1:8000/api/responsables/${selectedResponsable.value.id}/`, {
-      method: 'DELETE'
-    })
-    
-    if (!response.ok) {
-      throw new Error('Error al eliminar el responsable')
-    }
-    
-    await fetchResponsables()
+  const result = await deleteResponsable(selectedResponsable.value)
+  if (result.success) {
+    notifications.success('<AppIcon name="check" size="16" /> Responsable eliminado exitosamente')
     closeDeleteModal()
-    
-  } catch (err) {
-    console.error('Error deleting responsable:', err)
-    alert('Error al eliminar el responsable. Puede estar asociado a equipos.')
-  } finally {
-    submitLoading.value = false
+  } else {
+    notifications.error(result.message || '<AppIcon name="close" size="16" /> Error al eliminar el responsable')
   }
 }
 
@@ -357,7 +284,7 @@ const openEditModal = (responsable) => {
 
 const closeEditModal = () => {
   showEditModal.value = false
-  formErrors.value = {}
+  resetFormErrors()
 }
 
 const openDeleteModal = (responsable) => {
@@ -370,6 +297,72 @@ const closeDeleteModal = () => {
   selectedResponsable.value = null
 }
 
+// ===== EQUIPMENT ACCORDION FUNCTIONS =====
+const fetchEquiposForResponsable = async (responsableId) => {
+  // Check if already cached
+  if (equiposPorResponsable.value[responsableId]) {
+    return
+  }
+
+  loadingEquipos.value[responsableId] = true
+  
+  try {
+    const equipos = await equiposService.getAll({ responsable: responsableId })
+    equiposPorResponsable.value[responsableId] = equipos
+  } catch (err) {
+    console.error('Error fetching equipment:', err)
+    notifications.error('Error al cargar los equipos')
+    equiposPorResponsable.value[responsableId] = []
+  } finally {
+    loadingEquipos.value[responsableId] = false
+  }
+}
+
+const handleRowClick = async (responsable) => {
+  const wasExpanded = isExpanded(responsable.id)
+  toggleRow(responsable.id)
+  
+  // If expanding and no data cached, fetch equipment
+  if (!wasExpanded && !equiposPorResponsable.value[responsable.id]) {
+    await fetchEquiposForResponsable(responsable.id)
+  }
+}
+
+const openChangeResponsableModal = (equipo) => {
+  changeResponsableModal.open(equipo)
+}
+
+const handleChangeResponsable = async (data) => {
+  try {
+    const { equipoId, nuevoResponsableId, justificacion } = data
+    
+    // Update equipment with new responsable
+    await equiposService.update(equipoId, {
+      responsable: nuevoResponsableId,
+      justificacion: justificacion
+    })
+    
+    notifications.success('Responsable cambiado exitosamente')
+    
+    // Refresh responsables list
+    await fetchResponsables()
+    
+    // Clear equipment cache for affected responsables
+    equiposPorResponsable.value = {}
+    
+    // Reload equipment for currently expanded rows to reflect changes immediately
+    for (const id of expandedRows.value) {
+      await fetchEquiposForResponsable(id)
+    }
+    
+    changeResponsableModal.close()
+  } catch (err) {
+    console.error('Error changing responsable:', err)
+    notifications.error('Error al cambiar el responsable')
+    throw err
+  }
+}
+
 onMounted(() => {
   fetchResponsables()
 })
@@ -377,12 +370,24 @@ onMounted(() => {
 
 <template>
   <div id="responsables-page">
+    <!-- Notifications Toast Container -->
+    <div class="notifications-container">
+      <div 
+        v-for="notification in notifications.notifications.value" 
+        :key="notification.id"
+        class="notification-toast"
+        :class="`notification-${notification.type}`"
+      >
+        {{ notification.message }}
+      </div>
+    </div>
+
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
       <div>
         <h2 class="page-title" style="margin: 0;">Responsables</h2>
         <div style="color: #616161; font-size: 14px; margin-top: 5px;">Inicio / Responsables / Lista</div>
       </div>
-      <button class="btn btn-primary" @click="openCreateModal">➕ Nuevo Responsable</button>
+      <button class="btn btn-primary" @click="openCreateModal"><AppIcon name="plus" size="16" /> Nuevo Responsable</button>
     </div>
 
     <div class="content-card">
@@ -391,7 +396,7 @@ onMounted(() => {
           <input 
             type="text" 
             v-model="searchQuery" 
-            placeholder="🔍 Buscar por nombre, rol o email..." 
+            placeholder="Buscar por nombre, rol, email o teléfono..." 
             class="search-input"
           >
           <button 
@@ -400,12 +405,14 @@ onMounted(() => {
             class="clear-search-btn"
             title="Limpiar búsqueda"
           >
-            ✕
+            <AppIcon name="close" size="16" />
           </button>
         </div>
         <button class="filter-button" @click="toggleFilterPanel">
-          ☰ Filtrar y Ordenar
-          <span v-if="filtrosActivos > 0" class="filter-badge">{{ filtrosActivos }}</span>
+          <AppIcon name="menu" size="16" /> Filtrar y Ordenar
+          <span v-if="filtrosActivos > 0 || ordenamientoActivo" class="filter-badge">
+            {{ filtrosActivos + (ordenamientoActivo ? 1 : 0) }}
+          </span>
         </button>
       </div>
 
@@ -414,17 +421,19 @@ onMounted(() => {
       <table>
         <thead>
           <tr>
-            <th style="width: 28%;">Nombre</th>
-            <th style="width: 22%;">Rol</th>
-            <th style="width: 26%;">Email</th>
-            <th style="width: 14%;">Teléfono</th>
-            <th style="width: 110px; text-align: center;">Acciones</th>
+            <th style="width: 25%;">Nombre</th>
+            <th style="width: 15%;">Rol</th>
+            <th style="width: 10%; text-align: center;">Equipos</th>
+            <th style="width: 25%;">Email</th>
+            <th style="width: 15%;">Teléfono</th>
+            <th style="width: 10%; text-align: center;">Acciones</th>
           </tr>
         </thead>
         <tbody>
           <tr v-for="i in 8" :key="i">
             <td><div class="skeleton-text"></div></td>
             <td><div class="skeleton-text"></div></td>
+            <td><div class="skeleton-text" style="width: 40%; margin: 0 auto;"></div></td>
             <td><div class="skeleton-text"></div></td>
             <td><div class="skeleton-text"></div></td>
             <td><div class="skeleton-text skeleton-buttons"></div></td>
@@ -440,38 +449,137 @@ onMounted(() => {
     <table v-else id="responsablesTable">
       <thead>
         <tr>
-          <th style="width: 28%;">Nombre</th>
-          <th style="width: 22%;">Rol</th>
-          <th style="width: 26%;">Email</th>
-          <th style="width: 14%;">Teléfono</th>
-          <th style="width: 110px; text-align: center;">Acciones</th>
+          <th style="width: 23%;">Nombre</th>
+          <th style="width: 14%;">Rol</th>
+          <th style="width: 10%; text-align: center;">Equipos</th>
+          <th style="width: 22%;">Email</th>
+          <th style="width: 13%;">Teléfono</th>
+          <th style="width: 18%;">Acciones</th>
         </tr>
       </thead>
       <tbody>
-        <tr v-for="responsable in paginatedResponsables" :key="responsable.id">
-          <td>
-            <div style="font-weight: 600;">{{ responsable.nombre_completo }}</div>
-          </td>
-          <td>
-            <div style="font-size: 14px; color: #616161;">{{ responsable.rol || 'N/A' }}</div>
-          </td>
-          <td>
-            <div style="font-size: 14px; color: #616161;">{{ responsable.email || 'N/A' }}</div>
-          </td>
-          <td>
-            <div style="font-size: 14px; color: #616161;">{{ responsable.telefono || 'N/A' }}</div>
-          </td>
-          <td @click.stop>
-            <div style="display: flex; gap: 6px; justify-content: center;">
-              <button class="action-btn edit-btn" @click="openEditModal(responsable)" title="Editar">
-                ✏️
-              </button>
-              <button class="action-btn delete-btn" @click="openDeleteModal(responsable)" title="Eliminar">
-                🗑️
-              </button>
-            </div>
-          </td>
-        </tr>
+        <template v-for="responsable in paginatedResponsables" :key="responsable.id">
+          <tr @click="handleRowClick(responsable)" class="clickable-row" :class="{ 'row-expanded': isExpanded(responsable.id) }">
+            <td>
+              <div style="font-weight: 600;">{{ responsable.nombre_completo }}</div>
+            </td>
+            <td>
+              <div style="font-size: 14px; color: #616161;">{{ responsable.rol || 'N/A' }}</div>
+            </td>
+            <td style="text-align: center;">
+              <span class="badge badge-success" style="font-size: 13px;">
+                {{ responsable.equipos_asignados_count || 0 }}
+              </span>
+            </td>
+            <td>
+              <div style="font-size: 14px; color: #616161;">{{ responsable.email || 'N/A' }}</div>
+            </td>
+            <td>
+              <div style="font-size: 14px; color: #616161;">{{ responsable.telefono || 'N/A' }}</div>
+            </td>
+            <td @click.stop>
+              <div class="actions-container">
+                <button 
+                  class="btn btn-info btn-sm btn-ver" 
+                  :class="{ 'btn-ver-active': isExpanded(responsable.id) }"
+                  @click="handleRowClick(responsable)"
+                  title="Ver equipos asignados"
+                >
+                  <AppIcon name="eye" size="16" />
+                </button>
+                <button class="btn btn-secondary btn-sm" @click="openEditModal(responsable)" title="Editar">
+                  <AppIcon name="edit" size="16" />
+                </button>
+                <button 
+                  class="btn btn-danger btn-sm" 
+                  :class="{ 'btn-disabled': responsable.equipos_asignados_count > 0 }"
+                  @click="handleDeleteClick(responsable)" 
+                  :title="responsable.equipos_asignados_count > 0 
+                    ? `No se puede eliminar: tiene ${responsable.equipos_asignados_count} equipo(s) asignado(s)` 
+                    : 'Eliminar'"
+                >
+                  <AppIcon name="trash" size="16" />
+                </button>
+              </div>
+            </td>
+          </tr>
+          
+          <!-- Expanded equipment details row -->
+          <tr v-if="isExpanded(responsable.id)" class="detalle-row active">
+            <td colspan="6" class="detalle-cell">
+              <div class="detalle-container">
+                <!-- Loading state -->
+                <div v-if="loadingEquipos[responsable.id]" style="text-align: center; padding: 20px;">
+                  <div class="spinner" style="display: inline-block; width: 30px; height: 30px; border: 3px solid #f3f3f3; border-top: 3px solid #006633; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                  <p style="color: #666; font-size: 13px; margin-top: 10px;">Cargando equipos...</p>
+                </div>
+                
+                <!-- Equipment list -->
+                <div v-else-if="equiposPorResponsable[responsable.id]?.length > 0">
+                  <div class="detalle-header">
+                    <div class="detalle-title"><AppIcon name="inventory" size="16" /> Equipos Asignados - {{ responsable.nombre_completo }}</div>
+                    <button class="btn btn-secondary btn-sm" @click="handleRowClick(responsable)"><AppIcon name="close" size="16" /> Cerrar</button>
+                  </div>
+                  
+                  <table class="tabla-equipos">
+                    <thead>
+                      <tr>
+                        <th style="width: 10%; text-align: center;">Código</th>
+                        <th style="width: 20%; text-align: center;">Equipo</th>
+                        <th style="width: 20%; text-align: center;">Registro INVIMA</th>
+                        <th style="width: 8%; text-align: center;">Riesgo</th>
+                        <th style="width: 20%; text-align: center;">Sede / Ubicación</th>
+                        <th style="width: 12%; text-align: center;">Estado</th>
+                        <th style="width: 10%; text-align: center;">Acción</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="equipo in equiposPorResponsable[responsable.id]" :key="equipo.id">
+                        <td style="text-align: center;"><strong>{{ equipo.codigo_interno || 'N/A' }}</strong></td>
+                        <td>
+                          <div style="font-weight: 600;">{{ equipo.nombre_equipo || 'N/A' }}</div>
+                          <div style="font-size: 11px; color: #616161;">{{ equipo.marca }} - {{ equipo.modelo }}</div>
+                        </td>
+                        <td style="text-align: center;">
+                          <span v-if="equipo.registro_invima" class="invima-badge">{{ equipo.registro_invima }}</span>
+                          <span v-else class="invima-badge" style="background: rgba(158, 158, 158, 0.1); color: #9e9e9e;">N/A</span>
+                        </td>
+                        <td style="text-align: center;">
+                          <span class="risk-box" :class="`risk-${equipo.clasificacion_riesgo}`">
+                            {{ equipo.clasificacion_riesgo || 'N/A' }}
+                          </span>
+                        </td>
+                        <td>
+                          <div style="font-weight: 600; font-size: 14px;">{{ equipo.sede?.nombre || 'N/A' }}</div>
+                          <div style="font-size: 12px; color: #616161;">{{ formatUbicacion(equipo.ubicacion?.nombre) }}</div>
+                        </td>
+                        <td style="text-align: center;">
+                          <span class="estado-badge" :class="`estado-${equipo.estado?.toLowerCase()}`">
+                            {{ equipo.estado || 'N/A' }}
+                          </span>
+                        </td>
+                        <td>
+                          <button 
+                            class="btn btn-secondary btn-sm" 
+                            @click.stop="openChangeResponsableModal(equipo)"
+                            title="Cambiar responsable"
+                          >
+                            Cambiar
+                          </button>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                
+                <!-- Empty state -->
+                <div v-else class="no-equipment">
+                  <AppIcon name="inventory" size="16" /> No hay equipos asignados a este responsable
+                </div>
+              </div>
+            </td>
+          </tr>
+        </template>
       </tbody>
     </table>
 
@@ -515,35 +623,91 @@ onMounted(() => {
       <div class="filtro-body">
         <!-- Ordenar por -->
         <div class="filtro-section">
-          <button class="filtro-section-title" @click="e => e.target.classList.toggle('collapsed')">
+          <button 
+            class="filtro-section-title" 
+            :class="{ collapsed: collapsedSections.ordenar }"
+            @click="toggleSection('ordenar')"
+          >
             Ordenar por
-            <span class="arrow">▼</span>
+            <span class="arrow"><AppIcon name="chevron-down" size="16" /></span>
           </button>
           <div class="filtro-content">
-            <label class="filtro-item">
-              <input type="radio" v-model="ordenamiento" value="nombre-asc">
-              <span>Nombre (A-Z)</span>
-            </label>
-            <label class="filtro-item">
-              <input type="radio" v-model="ordenamiento" value="nombre-desc">
-              <span>Nombre (Z-A)</span>
-            </label>
-            <label class="filtro-item">
-              <input type="radio" v-model="ordenamiento" value="rol-asc">
-              <span>Rol (A-Z)</span>
-            </label>
-            <label class="filtro-item">
-              <input type="radio" v-model="ordenamiento" value="rol-desc">
-              <span>Rol (Z-A)</span>
-            </label>
+            <div class="sort-options">
+              <label class="sort-item">
+                <input 
+                  type="checkbox" 
+                  :checked="ordenamiento === 'nombre-asc' || ordenamiento === 'nombre-desc'"
+                  @click="toggleSortCheckbox('nombre')"
+                >
+                <span 
+                  class="sort-label-area"
+                  @click.prevent="toggleSortDirection('nombre')"
+                >
+                  <span class="sort-label">Nombre</span>
+                  <span 
+                    class="sort-arrow" 
+                    :class="{ 'arrow-down': ordenamiento === 'nombre-desc' }"
+                    v-if="ordenamiento === 'nombre-asc' || ordenamiento === 'nombre-desc'"
+                  >
+                    <AppIcon name="sort-asc" size="16" />
+                  </span>
+                </span>
+              </label>
+
+              <label class="sort-item">
+                <input 
+                  type="checkbox" 
+                  :checked="ordenamiento === 'rol-asc' || ordenamiento === 'rol-desc'"
+                  @click="toggleSortCheckbox('rol')"
+                >
+                <span 
+                  class="sort-label-area"
+                  @click.prevent="toggleSortDirection('rol')"
+                >
+                  <span class="sort-label">Rol</span>
+                  <span 
+                    class="sort-arrow" 
+                    :class="{ 'arrow-down': ordenamiento === 'rol-desc' }"
+                    v-if="ordenamiento === 'rol-asc' || ordenamiento === 'rol-desc'"
+                  >
+                    <AppIcon name="sort-asc" size="16" />
+                  </span>
+                </span>
+              </label>
+
+              <label class="sort-item">
+                <input 
+                  type="checkbox" 
+                  :checked="ordenamiento === 'equipos-asc' || ordenamiento === 'equipos-desc'"
+                  @click="toggleSortCheckbox('equipos')"
+                >
+                <span 
+                  class="sort-label-area"
+                  @click.prevent="toggleSortDirection('equipos')"
+                >
+                  <span class="sort-label">Equipos Asignados</span>
+                  <span 
+                    class="sort-arrow" 
+                    :class="{ 'arrow-down': ordenamiento === 'equipos-desc' }"
+                    v-if="ordenamiento === 'equipos-asc' || ordenamiento === 'equipos-desc'"
+                  >
+                    <AppIcon name="sort-asc" size="16" />
+                  </span>
+                </span>
+              </label>
+            </div>
           </div>
         </div>
 
         <!-- Rol -->
         <div class="filtro-section" v-if="rolesUnicos.length > 0">
-          <button class="filtro-section-title" @click="e => e.target.classList.toggle('collapsed')">
+          <button 
+            class="filtro-section-title" 
+            :class="{ collapsed: collapsedSections.rol }"
+            @click="toggleSection('rol')"
+          >
             Rol
-            <span class="arrow">▼</span>
+            <span class="arrow"><AppIcon name="chevron-down" size="16" /></span>
           </button>
           <div class="filtro-content">
             <label class="filtro-item" v-for="rol in rolesUnicos" :key="rol">
@@ -556,32 +720,6 @@ onMounted(() => {
             </label>
           </div>
         </div>
-
-        <!-- Estado -->
-        <div class="filtro-section">
-          <button class="filtro-section-title" @click="e => e.target.classList.toggle('collapsed')">
-            Estado
-            <span class="arrow">▼</span>
-          </button>
-          <div class="filtro-content">
-            <label class="filtro-item">
-              <input 
-                type="checkbox" 
-                :checked="filtros.estados.includes('activo')"
-                @change="toggleEstadoFilter('activo')"
-              >
-              <span>Activo</span>
-            </label>
-            <label class="filtro-item">
-              <input 
-                type="checkbox" 
-                :checked="filtros.estados.includes('inactivo')"
-                @change="toggleEstadoFilter('inactivo')"
-              >
-              <span>Inactivo</span>
-            </label>
-          </div>
-        </div>
       </div>
 
       <div class="filtro-footer">
@@ -589,852 +727,242 @@ onMounted(() => {
       </div>
     </div>
 
-    <!-- CREATE MODAL -->
-    <div v-if="showCreateModal" class="modal-overlay" @click.self="closeCreateModal">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h2>Nuevo Responsable</h2>
-          <button class="modal-close" @click="closeCreateModal">×</button>
-        </div>
-        
-        <div class="modal-body">
-          <div v-if="successMessage" class="success-message">{{ successMessage }}</div>
-          <div v-if="formErrors.submit" class="error-message">{{ formErrors.submit }}</div>
-          
-          <form @submit.prevent="submitCreateForm">
-            <div class="form-group">
-              <label class="form-label required">Nombre Completo</label>
-              <input 
-                type="text" 
-                v-model="createForm.nombre_completo" 
-                class="form-input"
-                :class="{ 'input-error': formErrors.nombre_completo }"
-                placeholder="Ej: Juan Pérez"
-              >
-              <span v-if="formErrors.nombre_completo" class="error-text">{{ formErrors.nombre_completo }}</span>
-            </div>
+    <!-- EXTERNAL MODALS -->
+    <ModalCrearResponsable
+      :show="showCreateModal"
+      :formData="createForm"
+      :formErrors="formErrors"
+      :successMessage="successMessage"
+      :submitLoading="submitLoading"
+      @close="closeCreateModal"
+      @submit="submitCreateForm"
+      @update:formData="createForm = $event"
+    />
 
-            <div class="form-group">
-              <label class="form-label required">Rol</label>
-              <input 
-                type="text" 
-                v-model="createForm.rol" 
-                class="form-input"
-                :class="{ 'input-error': formErrors.rol }"
-                placeholder="Ej: Ingeniero Biomédico"
-              >
-              <span v-if="formErrors.rol" class="error-text">{{ formErrors.rol }}</span>
-            </div>
+    <ModalEditarResponsable
+      :show="showEditModal"
+      :formData="editForm"
+      :formErrors="formErrors"
+      :successMessage="successMessage"
+      :submitLoading="submitLoading"
+      @close="closeEditModal"
+      @submit="submitEditForm"
+      @update:formData="editForm = $event"
+    />
 
-            <div class="form-group">
-              <label class="form-label required">Email</label>
-              <input 
-                type="email" 
-                v-model="createForm.email" 
-                class="form-input"
-                :class="{ 'input-error': formErrors.email }"
-                placeholder="Ej: juan.perez@hospital.com"
-              >
-              <span v-if="formErrors.email" class="error-text">{{ formErrors.email }}</span>
-            </div>
+    <ModalEliminarResponsable
+      :show="showDeleteModal"
+      :responsable="selectedResponsable"
+      :submitLoading="submitLoading"
+      @close="closeDeleteModal"
+      @confirm="confirmDelete"
+    />
 
-            <div class="form-group">
-              <label class="form-label">Teléfono</label>
-              <input 
-                type="text" 
-                v-model="createForm.telefono" 
-                class="form-input"
-                placeholder="Ej: +57 300 123 4567"
-              >
-            </div>
-
-            <div class="form-actions">
-              <button type="button" class="btn-secondary" @click="closeCreateModal" :disabled="submitLoading">
-                Cancelar
-              </button>
-              <button type="submit" class="btn-primary" :disabled="submitLoading">
-                {{ submitLoading ? 'Guardando...' : 'Guardar' }}
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
-
-    <!-- EDIT MODAL -->
-    <div v-if="showEditModal" class="modal-overlay" @click.self="closeEditModal">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h2>Editar Responsable</h2>
-          <button class="modal-close" @click="closeEditModal">×</button>
-        </div>
-        
-        <div class="modal-body">
-          <div v-if="successMessage" class="success-message">{{ successMessage }}</div>
-          <div v-if="formErrors.submit" class="error-message">{{ formErrors.submit }}</div>
-          
-          <form @submit.prevent="submitEditForm">
-            <div class="form-group">
-              <label class="form-label required">Nombre Completo</label>
-              <input 
-                type="text" 
-                v-model="editForm.nombre_completo" 
-                class="form-input"
-                :class="{ 'input-error': formErrors.nombre_completo }"
-              >
-              <span v-if="formErrors.nombre_completo" class="error-text">{{ formErrors.nombre_completo }}</span>
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">Rol</label>
-              <input 
-                type="text" 
-                v-model="editForm.rol" 
-                class="form-input"
-                :class="{ 'input-error': formErrors.rol }"
-              >
-              <span v-if="formErrors.rol" class="error-text">{{ formErrors.rol }}</span>
-            </div>
-
-            <div class="form-group">
-              <label class="form-label required">Email</label>
-              <input 
-                type="email" 
-                v-model="editForm.email" 
-                class="form-input"
-                :class="{ 'input-error': formErrors.email }"
-              >
-              <span v-if="formErrors.email" class="error-text">{{ formErrors.email }}</span>
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">Teléfono</label>
-              <input 
-                type="text" 
-                v-model="editForm.telefono" 
-                class="form-input"
-              >
-            </div>
-
-            <div class="form-actions">
-              <button type="button" class="btn-secondary" @click="closeEditModal" :disabled="submitLoading">
-                Cancelar
-              </button>
-              <button type="submit" class="btn-primary" :disabled="submitLoading">
-                {{ submitLoading ? 'Guardando...' : 'Guardar Cambios' }}
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
-
-    <!-- DELETE MODAL -->
-    <div v-if="showDeleteModal" class="modal-overlay" @click.self="closeDeleteModal">
-      <div class="modal-content modal-small">
-        <div class="modal-header">
-          <h2>Confirmar Eliminación</h2>
-          <button class="modal-close" @click="closeDeleteModal">×</button>
-        </div>
-        
-        <div class="modal-body">
-          <p style="margin-bottom: 20px;">
-            ¿Está seguro que desea eliminar al responsable <strong>{{ selectedResponsable?.nombre_completo }}</strong>?
-          </p>
-          <p style="color: #d32f2f; font-size: 14px;">
-            Esta acción no se puede deshacer.
-          </p>
-          
-          <div class="form-actions">
-            <button type="button" class="btn-secondary" @click="closeDeleteModal" :disabled="submitLoading">
-              Cancelar
-            </button>
-            <button type="button" class="btn-danger" @click="confirmDelete" :disabled="submitLoading">
-              {{ submitLoading ? 'Eliminando...' : 'Eliminar' }}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+    <ModalCambiarResponsable
+      :show="changeResponsableModal.isOpen.value"
+      :equipo="changeResponsableModal.data.value"
+      :responsables="responsables"
+      @close="changeResponsableModal.close()"
+      @save="handleChangeResponsable"
+    />
   </div>
 </template>
 
 <style scoped>
-/* Estilos copiados de Inventario para mantener coherencia */
-.content-card { 
-  background: white; 
-  border-radius: 10px; 
-  padding: 25px; 
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08); 
-  margin-bottom: 25px; 
-}
+/* Estilos específicos si son necesarios, el resto viene de components.css y filter-styles.css */
 
-/* Search Section */
-.search-section {
-  position: relative;
-  flex: 1;
-}
-
-.search-input {
-  width: 100%;
-  padding: 14px 18px;
-  padding-right: 40px;
-  border: 2px solid #e0e0e0;
-  border-radius: 8px;
-  font-size: 14px;
-  transition: all 0.3s ease;
-  background: #f5f5f5;
-}
-
-.search-input:focus {
-  outline: none;
-  border-color: #006633;
-  box-shadow: 0 0 0 3px rgba(0, 102, 51, 0.1);
-  background: white;
-}
-
-.clear-search-btn {
-  position: absolute;
-  right: 10px;
-  top: 50%;
-  transform: translateY(-50%);
-  background: none;
-  border: none;
-  color: #999;
-  font-size: 18px;
+/* Clickable rows - use green highlight instead of pink */
+.clickable-row {
   cursor: pointer;
-  padding: 5px 8px;
-  border-radius: 4px;
-  transition: all 0.2s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  transition: background-color 0.2s ease;
 }
 
-.clear-search-btn:hover {
-  color: #006633;
-  background: rgba(0, 102, 51, 0.1);
+.clickable-row:hover {
+  background-color: #f5f5f5;
 }
 
-.search-filter-container { 
-  display: flex; 
-  gap: 20px; 
-  margin-bottom: 25px; 
-  align-items: center; 
+.clickable-row.row-expanded {
+  background-color: rgba(0, 102, 51, 0.05); /* Green tint */
 }
 
-.filter-button { 
-  padding: 14px 24px; 
-  background: white; 
-  border: 2px solid #006633; 
-  color: #006633; 
-  border-radius: 8px; 
-  cursor: pointer; 
-  font-weight: 600; 
-  font-size: 14px;
-  display: flex; 
-  align-items: center; 
-  gap: 8px; 
-  transition: all 0.3s ease;
-  white-space: nowrap;
-  position: relative;
-}
-
-.filter-button:hover { 
-  background: #006633; 
-  color: white; 
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(0, 102, 51, 0.2);
-}
-
-.filter-badge {
-  background: #006633;
-  color: white;
-  border-radius: 50%;
-  width: 22px;
-  height: 22px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.filter-button:hover .filter-badge {
-  background: white;
-  color: #006633;
-}
-
-/* Button Styles */
-.page-title { 
-  font-size: 28px; 
-  color: #006633; 
-  font-weight: 600; 
-  margin-bottom: 30px; 
-}
-
-.btn { 
-  padding: 12px 24px; 
-  border: none; 
-  border-radius: 6px; 
-  cursor: pointer; 
-  font-weight: 600; 
-  transition: all 0.3s; 
-}
-
-.btn-primary { 
-  background: #006633; 
-  color: white; 
-}
-
-.btn-primary:hover { 
-  background: #2d5016; 
-  transform: translateY(-2px); 
-}
-
-.btn-sm { 
-  padding: 8px 16px; 
-  font-size: 13px; 
-}
-
-.btn-secondary { 
-  background: #e0e0e0; 
-}
-
-.btn-danger { 
-  background: #f44336; 
-  color: white; 
-}
-
-table { 
-  width: 100%; 
-  border-collapse: collapse; 
-  table-layout: fixed;
-}
-
-thead { 
-  background: linear-gradient(135deg, #006633 0%, #2d5016 100%); 
-  color: white; 
-}
-
-th { 
-  padding: 15px; 
-  text-align: center; 
-  font-size: 13px; 
-  text-transform: uppercase;
-  white-space: nowrap;
-}
-
-td { 
-  padding: 15px; 
-  border-bottom: 1px solid #e0e0e0; 
-  font-size: 14px; 
-}
-
-tbody tr {
-  background: white;
-  transition: all 0.2s;
-}
-
-tbody tr:hover { 
-  background: rgba(0, 102, 51, 0.08); 
-}
-
-/* Action Buttons - Con emojis */
-.action-btn {
-  padding: 6px 8px;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 34px;
-  height: 34px;
-  font-size: 15px;
-  line-height: 1;
-}
-
-.edit-btn {
-  background: #f5f5f5;
-  color: #ff6b35;
-}
-
-.edit-btn:hover {
-  background: #ff6b35;
-  color: white;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 6px rgba(255, 107, 53, 0.3);
-}
-
-.delete-btn {
-  background: #ff4444;
-  color: white;
-}
-
-.delete-btn:hover {
-  background: #cc0000;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 6px rgba(255, 68, 68, 0.4);
-}
-
-/* Skeleton Styles */
-.skeleton-table {
+/* Equipment table uses global styles from components.css */
+.tabla-equipos {
   width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
 }
 
-.skeleton-text {
-  height: 15px;
-  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-  background-size: 200% 100%;
-  animation: loading 1.5s infinite;
-  border-radius: 4px;
+.tabla-equipos thead {
+  background-color: #006633 !important;
 }
 
-.skeleton-buttons {
-  width: 70%;
-  height: 32px;
-  margin: 0 auto;
+.tabla-equipos thead tr {
+  background-color: #006633 !important;
 }
 
-@keyframes loading {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
+.tabla-equipos thead tr:hover {
+  background-color: #006633 !important;
 }
 
-/* Pagination Styles */
-.pagination-footer {
+.tabla-equipos th {
+  padding: 12px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 13px;
+  color: white !important;
+  border-bottom: 2px solid #004d26;
+  background-color: #006633 !important;
+}
+
+.tabla-equipos td {
+  padding: 12px;
+  border-bottom: 1px solid #f0f0f0;
+  font-size: 13px;
+}
+
+.tabla-equipos tbody tr {
+  background-color: white;
+}
+
+.tabla-equipos tbody tr:hover {
+  background-color: #fafafa;
+}
+
+.no-equipment {
+  text-align: center;
+  padding: 40px;
+  color: #757575;
+  font-size: 14px;
+}
+
+/* Spinner animation */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Sort Items */
+.sort-options {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 20px;
-  padding-top: 20px;
-  border-top: 1px solid #e0e0e0;
+  flex-direction: column;
+  gap: 0;
 }
 
-.items-per-page {
+.sort-item {
   display: flex;
   align-items: center;
   gap: 10px;
-  font-size: 14px;
-  color: #616161;
-}
-
-.page-select {
-  padding: 6px;
-  border: 1px solid #c0c0c0;
-  border-radius: 4px;
-  background: #f5f5f5;
+  padding: 10px 12px;
   cursor: pointer;
-  color: #212121;
-  font-weight: 500;
+  transition: background-color 0.2s ease;
+  border-radius: 4px;
 }
 
-.page-select:hover {
-  background: #e8e8e8;
-  border-color: #a0a0a0;
+.sort-item:hover {
+  background-color: #f5f5f5;
 }
 
-.page-navigation {
+.sort-item input[type="checkbox"] {
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.sort-label-area {
+  flex: 1;
   display: flex;
   align-items: center;
-  gap: 15px;
-}
-
-.page-btn {
-  padding: 6px 12px;
-  border: 1px solid #c0c0c0;
-  background: #e8e8e8;
-  border-radius: 4px;
   cursor: pointer;
-  font-size: 13px;
-  transition: all 0.2s;
-  color: #212121;
-  font-weight: 500;
+  gap: 10px;
 }
 
-.page-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  background: #f0f0f0;
-}
-
-.page-btn:not(:disabled):hover {
-  background: #d0d0d0;
-  border-color: #006633;
-  color: #006633;
-}
-
-.page-info {
+.sort-item .sort-label {
+  flex: 1;
   font-size: 14px;
-  color: #616161;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.page-input {
-  width: 40px;
-  padding: 4px;
-  text-align: center;
-  border: 1px solid #c0c0c0;
-  border-radius: 4px;
-  background: #f5f5f5;
   color: #212121;
-  font-weight: 600;
+  user-select: none;
 }
 
-.page-input:focus {
-  outline: none;
-  border-color: #006633;
-  background: white;
+.sort-arrow {
+  font-size: 16px;
+  color: #757575;
+  font-weight: bold;
+  transition: transform 0.3s ease, color 0.2s ease;
+  flex-shrink: 0;
+  margin-left: auto;
 }
 
-/* FILTER PANEL STYLES */
-.filtro-overlay {
+.sort-item:hover .sort-arrow {
+  color: #9c27b0;
+}
+
+.sort-item input[type="checkbox"]:checked ~ .sort-label-area .sort-arrow {
+  color: #9c27b0;
+}
+
+.sort-arrow.arrow-down {
+  transform: rotate(180deg);
+}
+
+/* Button disabled state */
+.btn-disabled {
+  opacity: 0.4;
+  cursor: not-allowed !important;
+  pointer-events: auto !important;
+}
+
+.btn-disabled:hover {
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* Notifications Toast */
+.notifications-container {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.5);
-  z-index: 998;
-  opacity: 0;
-  visibility: hidden;
-  transition: all 0.3s ease;
-}
-
-.filtro-overlay.active {
-  opacity: 1;
-  visibility: visible;
-}
-
-.filtro-panel {
-  position: fixed;
-  top: 0;
-  right: -400px;
-  width: 400px;
-  height: 100vh;
-  background: white;
-  box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
-  z-index: 999;
-  transition: right 0.3s ease;
+  top: 20px;
+  right: 20px;
+  z-index: 9999;
   display: flex;
   flex-direction: column;
+  gap: 10px;
 }
 
-.filtro-panel.active {
-  right: 0;
-}
-
-.filtro-header {
-  padding: 25px;
-  border-bottom: 2px solid #e0e0e0;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: linear-gradient(90deg, rgba(0, 102, 51, 0.05) 0%, transparent 100%);
-}
-
-.filtro-header h3 {
-  font-size: 18px;
-  color: #006633;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-}
-
-.borrar-todo {
-  background: none;
-  border: none;
-  color: #f44336;
-  font-weight: 600;
-  cursor: pointer;
-  font-size: 14px;
-  text-decoration: underline;
-  padding: 5px 10px;
-  border-radius: 4px;
-  transition: all 0.2s;
-}
-
-.borrar-todo:hover {
-  background: rgba(244, 67, 54, 0.1);
-}
-
-.filtro-body {
-  flex: 1;
-  overflow-y: auto;
-  padding: 20px;
-}
-
-.filtro-section {
-  margin-bottom: 20px;
-  border-bottom: 1px solid #e0e0e0;
-  padding-bottom: 15px;
-}
-
-.filtro-section:last-child {
-  border-bottom: none;
-}
-
-.filtro-section-title {
-  width: 100%;
-  text-align: left;
-  background: none;
-  border: none;
-  font-size: 15px;
-  font-weight: 700;
-  color: #212121;
-  padding: 12px 0;
-  cursor: pointer;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.filtro-section-title .arrow {
-  transition: transform 0.3s;
-  color: #006633;
-  font-size: 12px;
-}
-
-.filtro-section-title.collapsed .arrow {
-  transform: rotate(-90deg);
-}
-
-.filtro-section-title.collapsed + .filtro-content {
-  display: none;
-}
-
-.filtro-content {
-  padding-top: 10px;
-}
-
-.filtro-item {
-  display: flex;
-  align-items: center;
-  padding: 10px 0;
-  cursor: pointer;
-  transition: background 0.2s;
-  border-radius: 4px;
-  padding-left: 10px;
-}
-
-.filtro-item:hover {
-  background: rgba(0, 102, 51, 0.05);
-}
-
-.filtro-item input[type="checkbox"],
-.filtro-item input[type="radio"] {
-  margin-right: 12px;
-  width: 18px;
-  height: 18px;
-  cursor: pointer;
-  accent-color: #006633;
-}
-
-.filtro-item span {
-  font-size: 14px;
-  color: #424242;
-}
-
-.filtro-footer {
-  padding: 20px 25px;
-  border-top: 2px solid #e0e0e0;
-  background: #f5f5f5;
-}
-
-.filtro-footer p {
-  font-size: 14px;
-  color: #616161;
-  font-weight: 600;
-  text-align: center;
-}
-
-/* Modal Styles */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-  padding: 20px;
-}
-
-.modal-content {
-  background: white;
-  border-radius: 12px;
-  width: 100%;
-  max-width: 600px;
-  max-height: 90vh;
-  overflow-y: auto;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-}
-
-.modal-small {
-  max-width: 450px;
-}
-
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 24px;
-  border-bottom: 1px solid #e0e0e0;
-}
-
-.modal-header h2 {
-  margin: 0;
-  color: #006633;
-  font-size: 24px;
-}
-
-.modal-close {
-  background: none;
-  border: none;
-  font-size: 32px;
-  cursor: pointer;
-  color: #757575;
-  line-height: 1;
-  padding: 0;
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  transition: all 0.2s;
-}
-
-.modal-close:hover {
-  background: #f0f0f0;
-  color: #212121;
-}
-
-.modal-body {
-  padding: 24px;
-}
-
-.form-group {
-  margin-bottom: 20px;
-}
-
-.form-label {
-  display: block;
-  margin-bottom: 8px;
-  font-weight: 600;
-  color: #424242;
-}
-
-.form-label.required::after {
-  content: ' *';
-  color: #d32f2f;
-}
-
-.form-input {
-  width: 100%;
-  padding: 12px;
-  border: 2px solid #e0e0e0;
+.notification-toast {
+  padding: 15px 20px;
   border-radius: 8px;
-  font-size: 15px;
-  transition: all 0.3s;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  font-weight: 500;
+  min-width: 300px;
+  animation: slideIn 0.3s ease-out;
 }
 
-.form-input:focus {
-  outline: none;
-  border-color: #006633;
-  box-shadow: 0 0 0 3px rgba(0, 102, 51, 0.1);
+@keyframes slideIn {
+  from {
+    transform: translateX(400px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
 }
 
-.form-input.input-error {
-  border-color: #d32f2f;
-}
-
-.error-text {
-  display: block;
-  color: #d32f2f;
-  font-size: 13px;
-  margin-top: 4px;
-}
-
-.success-message {
-  background: #e8f5e9;
-  color: #2e7d32;
-  padding: 12px 16px;
-  border-radius: 8px;
-  margin-bottom: 20px;
-  font-weight: 600;
-}
-
-.error-message {
-  background: #ffebee;
-  color: #c62828;
-  padding: 12px 16px;
-  border-radius: 8px;
-  margin-bottom: 20px;
-}
-
-.form-actions {
-  display: flex;
-  gap: 12px;
-  justify-content: flex-end;
-  margin-top: 24px;
-}
-
-.btn-primary,
-.btn-secondary,
-.btn-danger {
-  padding: 12px 24px;
-  border: none;
-  border-radius: 8px;
-  font-size: 15px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s;
-}
-
-.btn-primary {
-  background: #006633;
+.notification-success {
+  background: #4caf50;
   color: white;
 }
 
-.btn-primary:hover:not(:disabled) {
-  background: #004d26;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 102, 51, 0.3);
-}
-
-.btn-secondary {
-  background: #f5f5f5;
-  color: #424242;
-}
-
-.btn-secondary:hover:not(:disabled) {
-  background: #e0e0e0;
-}
-
-.btn-danger {
-  background: #d32f2f;
+.notification-error {
+  background: #f44336;
   color: white;
 }
 
-.btn-danger:hover:not(:disabled) {
-  background: #b71c1c;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(211, 47, 47, 0.3);
+.notification-warning {
+  background: #ff9800;
+  color: white;
 }
 
-.btn-primary:disabled,
-.btn-secondary:disabled,
-.btn-danger:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
+.notification-info {
+  background: #2196f3;
+  color: white;
 }
 </style>

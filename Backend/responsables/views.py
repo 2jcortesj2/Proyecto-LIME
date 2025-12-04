@@ -5,12 +5,14 @@ from django.contrib.auth.hashers import make_password, check_password
 from .models import Responsable
 from .serializers import ResponsableSerializer
 
+from django.db.models import Count
+
 @api_view(['GET', 'POST'])
 def responsable_list(request):
     """GET: list all responsables
     POST: create a new responsable"""
     if request.method == 'GET':
-        responsables = Responsable.objects.all()
+        responsables = Responsable.objects.annotate(equipos_asignados_count=Count('equipos_asignados'))
         sede_id = request.GET.get('sede_id')
         rol = request.GET.get('rol')
         if sede_id:
@@ -33,7 +35,7 @@ def responsable_list(request):
 def responsable_detail(request, pk):
     """GET: retrieve an responsable
     PUT: update an responsable
-    DELETE: deactivate an responsable"""
+    DELETE: delete an responsable"""
     try:
         responsable = Responsable.objects.get(pk=pk)
     except Responsable.DoesNotExist:
@@ -54,9 +56,15 @@ def responsable_detail(request, pk):
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     elif request.method == 'DELETE':
-        responsable.estado = False
-        responsable.save()
-        return Response({'message': 'Responsable desactivado correctamente'}, status=status.HTTP_200_OK)
+        # Check if responsable has assigned equipment
+        equipos_count = responsable.equipos_asignados.count()
+        if equipos_count > 0:
+            return Response({
+                'error': f'No se puede eliminar el responsable porque tiene {equipos_count} equipo(s) asignado(s). Por favor, reasigne los equipos primero.'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        responsable.delete()
+        return Response({'message': 'Responsable eliminado correctamente'}, status=status.HTTP_200_OK)
 
 @api_view(['POST'])
 def responsable_login(request):

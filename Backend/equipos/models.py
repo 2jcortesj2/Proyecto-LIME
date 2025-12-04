@@ -65,6 +65,8 @@ class Equipo(models.Model):
         ('En Mantenimiento', 'En Mantenimiento'),
     ]
     estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='Activo')
+    
+    anotaciones = models.TextField(null=True, blank=True, help_text="Historial de anotaciones y cambios importantes")
 
     def __str__(self):
         return f"{self.nombre_equipo} ({self.codigo_interno})"

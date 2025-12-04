@@ -2,12 +2,12 @@
   <div class="modal" :class="{ active: show }">
     <div class="modal-content" style="max-width: 600px;">
       <div class="modal-header">
-        <div class="modal-title">⚠️ Dar de Baja Equipo</div>
+        <div class="modal-title"><AppIcon name="alert" size="16" /> Dar de Baja Equipo</div>
         <button class="close-btn" @click="handleClose">&times;</button>
       </div>
       <div class="modal-body">
         <div class="alert alert-warning">
-          <span style="font-size: 20px;">⚠️</span>
+          <span style="font-size: 20px;"><AppIcon name="alert" size="16" /></span>
           <div><strong>Advertencia:</strong> Esta acción desactivará el equipo del inventario activo. El equipo quedará registrado en el historial pero no aparecerá en los reportes de equipos activos.</div>
         </div>
 
@@ -44,7 +44,7 @@
         <button class="btn btn-secondary" @click="handleClose" :disabled="loading">Cancelar</button>
         <button class="btn btn-danger" @click="handleConfirm" :disabled="loading">
           <span v-if="loading">Procesando...</span>
-          <span v-else>🗑️ Confirmar Baja</span>
+          <span v-else><AppIcon name="trash" size="16" /> Confirmar Baja</span>
         </button>
       </div>
     </div>

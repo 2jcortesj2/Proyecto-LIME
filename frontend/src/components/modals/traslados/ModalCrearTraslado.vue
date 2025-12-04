@@ -2,13 +2,13 @@
   <div class="modal" :class="{ active: show }">
     <div class="modal-content" style="max-width: 700px;">
       <div class="modal-header">
-        <h3 class="modal-title">➕ Registrar Nuevo Traslado</h3>
+        <h3 class="modal-title"><AppIcon name="plus" size="16" /> Registrar Nuevo Traslado</h3>
         <button class="close-btn" @click="handleClose">&times;</button>
       </div>
       <div class="modal-body">
         <!-- Error Alert -->
         <div v-if="errorMessage" class="alert alert-warning">
-          ⚠️ {{ errorMessage }}
+          <AppIcon name="alert" size="16" /> {{ errorMessage }}
         </div>
 
         <form @submit.prevent="handleSubmit">
@@ -217,7 +217,8 @@ const props = defineProps({
   show: Boolean,
   sedes: Array,
   ubicaciones: Array,
-  responsables: Array
+  responsables: Array,
+  initialEquipo: Object // Prop opcional para pre-seleccionar equipo
 })
 
 const emit = defineEmits(['close', 'save'])
@@ -311,12 +312,12 @@ async function searchEquipos() {
 
   searchTimeout = setTimeout(async () => {
     try {
-      console.log('🔍 Buscando equipos con:', equipoSearchTerm.value)
+      console.log('<AppIcon name="search" size="16" /> Buscando equipos con:', equipoSearchTerm.value)
       const response = await equiposService.search(equipoSearchTerm.value)
-      console.log('✅ Equipos encontrados:', response)
+      console.log('<AppIcon name="check" size="16" /> Equipos encontrados:', response)
       equiposFound.value = Array.isArray(response) ? response : []
     } catch (err) {
-      console.error('❌ Error buscando equipos:', err)
+      console.error('<AppIcon name="close" size="16" /> Error buscando equipos:', err)
       equiposFound.value = []
     } finally {
       isSearching.value = false
@@ -326,15 +327,19 @@ async function searchEquipos() {
 
 function selectEquipo(equipo) {
   form.value.equipo = equipo.id
-  equipoSearchTerm.value = `${equipo.nombre_equipo} - ${equipo.codigo_interno}`
+  equipoSearchTerm.value = `${equipo.nombre_equipo || equipo.nombre} - ${equipo.codigo_interno || equipo.codigo}`
   showEquipoDropdown.value = false
   
   // Auto-fill origen si está disponible
-  if (equipo.sede) form.value.sede_origen = equipo.sede
-  if (equipo.ubicacion) {
-    form.value.ubicacion_origen = equipo.ubicacion
+  // Manejar tanto estructura de objeto (id, nombre) como ID directo
+  const sedeId = equipo.sede?.id || equipo.sede
+  const ubicacionId = equipo.ubicacion?.id || equipo.ubicacion
+
+  if (sedeId) form.value.sede_origen = sedeId
+  if (ubicacionId) {
+    form.value.ubicacion_origen = ubicacionId
     // Buscar el nombre de la ubicación para mostrarlo
-    const ub = props.ubicaciones.find(u => u.id === equipo.ubicacion)
+    const ub = props.ubicaciones.find(u => u.id === ubicacionId)
     if (ub) ubicacionOrigenDropdown.setInitialValue(ub)
   }
   
@@ -430,6 +435,7 @@ function resetForm() {
   
   errors.value = {}
   errorMessage.value = ''
+  // No limpiar si hay initialEquipo y el modal está abriéndose (manejado en watch)
 }
 
 // Limpiar ubicación cuando cambia la sede
@@ -445,7 +451,13 @@ watch(() => form.value.sede_destino, () => {
 
 // Inicializar listas cuando se abre el modal
 watch(() => props.show, (newVal) => {
-  if (!newVal) {
+  if (newVal) {
+    if (props.initialEquipo) {
+      selectEquipo(props.initialEquipo)
+    } else {
+      resetForm()
+    }
+  } else {
     resetForm()
   }
 })

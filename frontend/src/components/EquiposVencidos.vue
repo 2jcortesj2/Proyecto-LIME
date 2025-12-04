@@ -121,7 +121,7 @@ function getProximoMantenimientoDisplay(equipo) {
   <div class="equipos-vencidos-container">
     <div class="page-header">
       <div>
-        <h2 class="page-title">⚠️ Realizar Revisión</h2>
+        <h2 class="page-title"><AppIcon name="alert" size="16" /> Realizar Revisión</h2>
         <div class="breadcrumb">Inicio / Mantenimientos / Realizar Revisión</div>
       </div>
     </div>
@@ -166,7 +166,7 @@ function getProximoMantenimientoDisplay(equipo) {
     <!-- Content -->
     <div v-else class="content-card">
       <div class="section-header vencido">
-        <h3>⚠️ Equipos que Requieren Atención Inmediata ({{ equiposVencidos.length }})</h3>
+        <h3><AppIcon name="alert" size="16" /> Equipos que Requieren Atención Inmediata ({{ equiposVencidos.length }})</h3>
         <p>Estos equipos tienen mantenimiento vencido y deben ser atendidos lo antes posible</p>
       </div>
 
@@ -176,7 +176,7 @@ function getProximoMantenimientoDisplay(equipo) {
           v-model="searchQuery" 
           type="text" 
           class="search-input" 
-          placeholder="🔍 Buscar por código, nombre, marca, modelo, sede o ubicación..."
+          placeholder="Buscar por código, nombre, marca, modelo, sede o ubicación..."
         >
       </div>
 
@@ -226,7 +226,7 @@ function getProximoMantenimientoDisplay(equipo) {
       <!-- Empty state -->
       <div v-else class="empty-state">
         <div class="empty-state-content">
-          <div class="empty-icon">✅</div>
+          <div class="empty-icon"><AppIcon name="check" size="16" /></div>
           <h3>¡Excelente! No hay equipos que requieran revisión inmediata</h3>
           <p>Todos los equipos están al día con su mantenimiento programado.</p>
         </div>

@@ -2,8 +2,8 @@
   <div class="modal" :class="{ active: show }">
     <div class="modal-content">
       <div class="modal-header">
-        <h3 class="modal-title">📅 Reprogramar Mantenimiento</h3>
-        <button class="close-btn" @click="$emit('close')">×</button>
+        <h3 class="modal-title"><AppIcon name="calendar" size="16" /> Reprogramar Mantenimiento</h3>
+        <button class="close-btn" @click="$emit('close')"><AppIcon name="close" size="16" /></button>
       </div>
       
       <div class="modal-body">
@@ -43,7 +43,7 @@
         </div>
 
         <div class="warning-note" v-if="selectedDate">
-          ⚠️ Esta acción actualizará la fecha del próximo mantenimiento sin crear un registro histórico.
+          <AppIcon name="alert" size="16" /> Esta acción actualizará la fecha del próximo mantenimiento sin crear un registro histórico.
         </div>
       </div>
 

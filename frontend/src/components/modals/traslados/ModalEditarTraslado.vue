@@ -2,13 +2,13 @@
   <div class="modal" :class="{ active: show }">
     <div class="modal-content" style="max-width: 700px;">
       <div class="modal-header">
-        <h3 class="modal-title">✏️ Editar Traslado</h3>
+        <h3 class="modal-title"><AppIcon name="edit" size="16" /> Editar Traslado</h3>
         <button class="close-btn" @click="handleClose">&times;</button>
       </div>
       <div class="modal-body">
         <!-- Error Alert -->
         <div v-if="errorMessage" class="alert alert-warning">
-          ⚠️ {{ errorMessage }}
+          <AppIcon name="alert" size="16" /> {{ errorMessage }}
         </div>
 
         <!-- Info del equipo (no editable) -->

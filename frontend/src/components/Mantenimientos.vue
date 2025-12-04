@@ -153,11 +153,11 @@ onMounted(() => {
             type="text" 
             v-model="searchQuery"
             class="search-input" 
-            placeholder="🔍 Buscar por código, equipo, tipo o proveedor..."
+            placeholder="Buscar por código, equipo, tipo o proveedor..."
           >
         </div>
         <button class="filter-button" @click="showFilterPanel = !showFilterPanel">
-          ☰ Filtrar y Ordenar
+          <AppIcon name="menu" size="16" /> Filtrar y Ordenar
           <span v-if="filtrosActivos > 0" class="filter-badge">{{ filtrosActivos }}</span>
         </button>
       </div>
@@ -202,13 +202,13 @@ onMounted(() => {
               <td class="col-acciones" @click.stop>
                 <div class="action-buttons">
                   <button class="btn btn-info btn-sm" @click="toggleRow(mant.id)" title="Ver detalles">
-                    👁️
+                    <AppIcon name="eye" size="16" />
                   </button>
                   <button class="btn btn-secondary btn-sm" @click="openEditModal(mant)" title="Editar">
-                    ✏️
+                    <AppIcon name="edit" size="16" />
                   </button>
                   <button class="btn btn-danger btn-sm" @click="openDeleteModal(mant)" title="Eliminar">
-                    🗑️
+                    <AppIcon name="trash" size="16" />
                   </button>
                 </div>
               </td>
@@ -219,9 +219,9 @@ onMounted(() => {
               <td colspan="7" class="detalle-cell">
                 <div class="accordion-details">
                   <div class="detalle-header">
-                    <div class="detalle-title">📋 Detalle del Mantenimiento</div>
+                    <div class="detalle-title"><AppIcon name="file" size="16" /> Detalle del Mantenimiento</div>
                     <button class="btn btn-secondary btn-sm btn-close-detail" @click="toggleRow(mant.id)">
-                      ✕ Cerrar
+                      <AppIcon name="close" size="16" /> Cerrar
                     </button>
                   </div>
                   
@@ -301,7 +301,7 @@ onMounted(() => {
         <div class="filtro-section">
           <button class="filtro-section-title" @click="e => e.target.classList.toggle('collapsed')">
             Ordenar por
-            <span class="arrow">▼</span>
+            <span class="arrow"><AppIcon name="chevron-down" size="16" /></span>
           </button>
           <div class="filtro-content">
             <label class="filtro-item">
@@ -331,7 +331,7 @@ onMounted(() => {
         <div class="filtro-section" v-if="tiposUnicos.length > 0">
           <button class="filtro-section-title" @click="e => e.target.classList.toggle('collapsed')">
             Tipo de Mantenimiento
-            <span class="arrow">▼</span>
+            <span class="arrow"><AppIcon name="chevron-down" size="16" /></span>
           </button>
           <div class="filtro-content">
             <label class="filtro-item" v-for="tipo in tiposUnicos" :key="tipo">
@@ -349,7 +349,7 @@ onMounted(() => {
         <div class="filtro-section" v-if="aniosUnicos.length > 0">
           <button class="filtro-section-title" @click="e => e.target.classList.toggle('collapsed')">
             Año
-            <span class="arrow">▼</span>
+            <span class="arrow"><AppIcon name="chevron-down" size="16" /></span>
           </button>
           <div class="filtro-content">
             <label class="filtro-item" v-for="anio in aniosUnicos" :key="anio">
@@ -367,7 +367,7 @@ onMounted(() => {
         <div class="filtro-section">
           <button class="filtro-section-title" @click="e => e.target.classList.toggle('collapsed')">
             Mes
-            <span class="arrow">▼</span>
+            <span class="arrow"><AppIcon name="chevron-down" size="16" /></span>
           </button>
           <div class="filtro-content">
             <label class="filtro-item" v-for="(mes, index) in mesesNombres" :key="index">
@@ -385,7 +385,7 @@ onMounted(() => {
         <div class="filtro-section" v-if="proveedoresUnicos.length > 0">
           <button class="filtro-section-title" @click="e => e.target.classList.toggle('collapsed')">
             Realizado Por
-            <span class="arrow">▼</span>
+            <span class="arrow"><AppIcon name="chevron-down" size="16" /></span>
           </button>
           <div class="filtro-content">
             <label class="filtro-item" v-for="proveedor in proveedoresUnicos" :key="proveedor">

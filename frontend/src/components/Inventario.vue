@@ -203,7 +203,7 @@ onMounted(() => {
         <h2 class="page-title" style="margin: 0;">Inventario de Equipos</h2>
         <div style="color: #616161; font-size: 14px; margin-top: 5px;">Inicio / Equipos / Lista</div>
       </div>
-      <button class="btn btn-primary" @click="createModal.open()">➕ Nuevo Equipo</button>
+      <button class="btn btn-primary" @click="createModal.open()"><AppIcon name="plus" size="16" /> Nuevo Equipo</button>
     </div>
 
     <!-- Card Principal -->
@@ -214,7 +214,7 @@ onMounted(() => {
           <input 
             type="text" 
             class="search-input" 
-            placeholder="🔍 Buscar por código, nombre, marca, modelo o serie..." 
+            placeholder="Buscar por código, nombre, marca, modelo o serie..." 
             v-model="filters.searchQuery.value"
           >
           <button 
@@ -223,11 +223,11 @@ onMounted(() => {
             class="clear-search-btn"
             title="Limpiar búsqueda"
           >
-            ✕
+            <AppIcon name="close" size="16" />
           </button>
         </div>
         <button class="filter-button" @click="filters.toggleFilterPanel()">
-          ☰ Filtrar y Ordenar
+          <AppIcon name="menu" size="16" /> Filtrar y Ordenar
           <span v-if="filters.filtrosActivos.value > 0" class="filter-badge">{{ filters.filtrosActivos.value }}</span>
         </button>
       </div>
@@ -313,9 +313,9 @@ onMounted(() => {
                     class="btn btn-info btn-sm btn-ver" 
                     :class="{ 'btn-ver-active': expandedEquipoId === equipo.id }"
                     @click="toggleDetalle(equipo.id)"
-                  >👁️</button>
-                  <button class="btn btn-secondary btn-sm" @click="editModal.open(equipo)">✏️</button>
-                  <button class="btn btn-danger btn-sm" @click="deleteModal.open(equipo)">🗑️</button>
+                  ><AppIcon name="eye" size="16" /></button>
+                  <button class="btn btn-secondary btn-sm" @click="editModal.open(equipo)"><AppIcon name="edit" size="16" /></button>
+                  <button class="btn btn-danger btn-sm" @click="deleteModal.open(equipo)"><AppIcon name="trash" size="16" /></button>
                 </div>
               </td>
             </tr>
@@ -330,8 +330,8 @@ onMounted(() => {
                   <div v-else-if="selectedEquipo">
                     <!-- Header del Detalle -->
                     <div class="detalle-header">
-                      <div class="detalle-title">📋 Detalle del Equipo - {{ selectedEquipo.nombre_equipo }} ({{ selectedEquipo.codigo_interno }})</div>
-                      <button class="btn btn-secondary btn-sm" @click="toggleDetalle(equipo.id)">✕ Cerrar</button>
+                      <div class="detalle-title"><AppIcon name="file" size="16" /> Detalle del Equipo - {{ selectedEquipo.nombre_equipo }} ({{ selectedEquipo.codigo_interno }})</div>
+                      <button class="btn btn-secondary btn-sm" @click="toggleDetalle(equipo.id)"><AppIcon name="close" size="16" /> Cerrar</button>
                     </div>
 
                     <!-- Tabs -->
@@ -411,35 +411,35 @@ onMounted(() => {
                         <h4 class="detalle-section-title">D. Inventario de Documentos</h4>
                         <div class="documentos-grid">
                           <div class="documento-item">
-                            <span :class="selectedEquipo.documentacion?.hoja_vida ? 'check-icon' : 'x-icon'">{{ selectedEquipo.documentacion?.hoja_vida ? '✅' : '❌' }}</span>
+                            <span :class="selectedEquipo.documentacion?.hoja_vida ? 'check-icon' : 'x-icon'">{{ selectedEquipo.documentacion?.hoja_vida ? '<AppIcon name="check" size="16" />' : '<AppIcon name="close" size="16" />' }}</span>
                             <span>Hoja de Vida</span>
                           </div>
                           <div class="documento-item">
-                            <span :class="selectedEquipo.documentacion?.registro_importacion ? 'check-icon' : 'x-icon'">{{ selectedEquipo.documentacion?.registro_importacion ? '✅' : '❌' }}</span>
+                            <span :class="selectedEquipo.documentacion?.registro_importacion ? 'check-icon' : 'x-icon'">{{ selectedEquipo.documentacion?.registro_importacion ? '<AppIcon name="check" size="16" />' : '<AppIcon name="close" size="16" />' }}</span>
                             <span>Registro Importación</span>
                           </div>
                           <div class="documento-item">
-                            <span :class="selectedEquipo.documentacion?.manual_operacion ? 'check-icon' : 'x-icon'">{{ selectedEquipo.documentacion?.manual_operacion ? '✅' : '❌' }}</span>
+                            <span :class="selectedEquipo.documentacion?.manual_operacion ? 'check-icon' : 'x-icon'">{{ selectedEquipo.documentacion?.manual_operacion ? '<AppIcon name="check" size="16" />' : '<AppIcon name="close" size="16" />' }}</span>
                             <span>Manual Operación (Esp)</span>
                           </div>
                           <div class="documento-item">
-                            <span :class="selectedEquipo.documentacion?.manual_servicio ? 'check-icon' : 'x-icon'">{{ selectedEquipo.documentacion?.manual_servicio ? '✅' : '❌' }}</span>
+                            <span :class="selectedEquipo.documentacion?.manual_servicio ? 'check-icon' : 'x-icon'">{{ selectedEquipo.documentacion?.manual_servicio ? '<AppIcon name="check" size="16" />' : '<AppIcon name="close" size="16" />' }}</span>
                             <span>Manual Servicio</span>
                           </div>
                           <div class="documento-item">
-                            <span :class="selectedEquipo.documentacion?.guia_rapida ? 'check-icon' : 'x-icon'">{{ selectedEquipo.documentacion?.guia_rapida ? '✅' : '❌' }}</span>
+                            <span :class="selectedEquipo.documentacion?.guia_rapida ? 'check-icon' : 'x-icon'">{{ selectedEquipo.documentacion?.guia_rapida ? '<AppIcon name="check" size="16" />' : '<AppIcon name="close" size="16" />' }}</span>
                             <span>Guía Rápida</span>
                           </div>
                           <div class="documento-item">
-                            <span class="x-icon">❌</span>
+                            <span class="x-icon"><AppIcon name="close" size="16" /></span>
                             <span>Instructivo Manejo</span>
                           </div>
                           <div class="documento-item">
-                            <span :class="selectedEquipo.documentacion?.protocolo_mto_preventivo ? 'check-icon' : 'x-icon'">{{ selectedEquipo.documentacion?.protocolo_mto_preventivo ? '✅' : '❌' }}</span>
+                            <span :class="selectedEquipo.documentacion?.protocolo_mto_preventivo ? 'check-icon' : 'x-icon'">{{ selectedEquipo.documentacion?.protocolo_mto_preventivo ? '<AppIcon name="check" size="16" />' : '<AppIcon name="close" size="16" />' }}</span>
                             <span>Protocolo Mto Prev</span>
                           </div>
                           <div class="documento-item">
-                            <span :class="selectedEquipo.documentacion?.frecuencia_metrologica ? 'check-icon' : 'x-icon'">{{ selectedEquipo.documentacion?.frecuencia_metrologica ? '✅' : '❌' }}</span>
+                            <span :class="selectedEquipo.documentacion?.frecuencia_metrologica ? 'check-icon' : 'x-icon'">{{ selectedEquipo.documentacion?.frecuencia_metrologica ? '<AppIcon name="check" size="16" />' : '<AppIcon name="close" size="16" />' }}</span>
                             <span>Frecuencia Metrológica</span>
                           </div>
                         </div>
@@ -451,12 +451,12 @@ onMounted(() => {
                       <div class="detalle-grid">
                         <div class="detalle-section">
                           <h4 class="detalle-section-title">E. Info Metrológica Administrativa</h4>
-                          <div class="detalle-item"><span class="detalle-label">Requiere Mantenimiento:</span><span class="detalle-value">{{ selectedEquipo.informacion_metrologica?.requiere_mantenimiento ? '✅ Sí' : 'No' }}</span></div>
+                          <div class="detalle-item"><span class="detalle-label">Requiere Mantenimiento:</span><span class="detalle-value">{{ selectedEquipo.informacion_metrologica?.requiere_mantenimiento ? '<AppIcon name="check" size="16" /> Sí' : 'No' }}</span></div>
                           <div class="detalle-item"><span class="detalle-label">Frecuencia:</span><span class="detalle-value">{{ selectedEquipo.informacion_metrologica?.frecuencia_mantenimiento }}</span></div>
                           <div class="detalle-item"><span class="detalle-label">Último Mantenimiento:</span><span class="detalle-value">{{ formatFecha(selectedEquipo.informacion_metrologica?.ultimo_mantenimiento) }}</span></div>
                           <div class="detalle-item"><span class="detalle-label">Próximo Mantenimiento:</span><span class="detalle-value">{{ formatFecha(selectedEquipo.informacion_metrologica?.fecha_proximo_mantenimiento_calculada) }}</span></div>
                           <div class="detalle-item"><span class="detalle-label">Estado Mantenimiento:</span><span class="detalle-value"><strong>{{ selectedEquipo.informacion_metrologica?.estado_mantenimiento || 'N/A' }}</strong></span></div>
-                          <div class="detalle-item"><span class="detalle-label">Requiere Calibración:</span><span class="detalle-value">{{ selectedEquipo.informacion_metrologica?.requiere_calibracion ? '✅ Sí' : 'No' }}</span></div>
+                          <div class="detalle-item"><span class="detalle-label">Requiere Calibración:</span><span class="detalle-value">{{ selectedEquipo.informacion_metrologica?.requiere_calibracion ? '<AppIcon name="check" size="16" /> Sí' : 'No' }}</span></div>
                         </div>
                         <div class="detalle-section">
                           <h4 class="detalle-section-title">F. Info Metrológica Técnica</h4>
@@ -606,7 +606,7 @@ onMounted(() => {
     <div class="filter-panel" :class="{ active: filters.showFilterPanel.value }">
       <div class="filter-panel-header">
         <h3>Filtrar y Ordenar</h3>
-        <button class="close-filter-btn" @click="filters.toggleFilterPanel()">✕</button>
+        <button class="close-filter-btn" @click="filters.toggleFilterPanel()"><AppIcon name="close" size="16" /></button>
       </div>
 
       <div class="filter-panel-content">

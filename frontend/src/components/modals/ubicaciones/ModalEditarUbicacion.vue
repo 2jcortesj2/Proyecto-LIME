@@ -3,7 +3,7 @@
     <div class="modal-content">
       <div class="modal-header">
         <h2>Editar Ubicación</h2>
-        <button class="modal-close" @click="handleClose">×</button>
+        <button class="modal-close" @click="handleClose"><AppIcon name="close" size="16" /></button>
       </div>
       
       <div class="modal-body">

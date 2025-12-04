@@ -3,7 +3,7 @@
  * Gestión de lógica de negocio para Sedes y Ubicaciones
  */
 import { ref } from 'vue'
-import { sedesAPI, ubicacionesAPI, responsablesAPI } from '../services/api'
+import apiClient, { sedesAPI, ubicacionesAPI, responsablesAPI } from '../services/api'
 
 export function useSedesUbicaciones() {
     const sedes = ref([])
@@ -171,6 +171,22 @@ export function useSedesUbicaciones() {
         }
     }
 
+    /**
+     * Obtiene los equipos de una ubicación específica
+     */
+    async function fetchEquiposByUbicacion(ubicacionId) {
+        try {
+            // No usamos loading global para no bloquear toda la UI
+            const response = await apiClient.get('/equipos/', {
+                params: { ubicacion: ubicacionId }
+            })
+            return response.data
+        } catch (err) {
+            console.error('Error al cargar equipos de la ubicación:', err)
+            throw err
+        }
+    }
+
     return {
         // State
         sedes,
@@ -190,6 +206,7 @@ export function useSedesUbicaciones() {
         createUbicacion,
         updateUbicacion,
         deleteUbicacion,
+        fetchEquiposByUbicacion,
 
         // Other
         fetchResponsables

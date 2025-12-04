@@ -2,8 +2,8 @@
   <div class="modal-overlay" @click.self="$emit('close')">
     <div class="modal-container">
       <div class="modal-header">
-        <h3>✏️ Editar Mantenimiento</h3>
-        <button class="btn-close" @click="$emit('close')">✕</button>
+        <h3><AppIcon name="edit" size="16" /> Editar Mantenimiento</h3>
+        <button class="btn-close" @click="$emit('close')"><AppIcon name="close" size="16" /></button>
       </div>
 
       <div class="modal-body">

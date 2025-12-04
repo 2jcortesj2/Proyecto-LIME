@@ -2,7 +2,7 @@
   <div class="modal" :class="{ active: show }">
     <div class="modal-content">
       <div class="modal-header">
-        <div class="modal-title">{{ isEdit ? '✏️ Editar Equipo' : '➕ Crear Nuevo Equipo' }}</div>
+        <div class="modal-title">{{ isEdit ? '<AppIcon name="edit" size="16" /> Editar Equipo' : '<AppIcon name="plus" size="16" /> Crear Nuevo Equipo' }}</div>
         <button class="close-btn" @click="handleClose">&times;</button>
       </div>
       <div class="modal-body">
@@ -17,7 +17,7 @@
 
         <!-- TAB 1: INFO GENERAL -->
         <div v-show="activeTab === 1" class="tab-content active">
-          <h4 class="section-title">📝 A. Información General</h4>
+          <h4 class="section-title"><AppIcon name="file" size="16" /> A. Información General</h4>
           <div class="form-grid">
             <div class="form-group">
               <label class="form-label required">Sede</label>
@@ -71,7 +71,7 @@
 
         <!-- TAB 2: DATOS DEL EQUIPO -->
         <div v-show="activeTab === 2" class="tab-content active">
-          <h4 class="section-title">🔧 B. Información del Equipo</h4>
+          <h4 class="section-title"><AppIcon name="maintenance" size="16" /> B. Información del Equipo</h4>
           <div class="form-grid">
             <div class="form-group">
               <label class="form-label required">Marca</label>
@@ -143,7 +143,7 @@
 
         <!-- TAB 3: REGISTRO HISTÓRICO -->
         <div v-show="activeTab === 3" class="tab-content active">
-          <h4 class="section-title">📅 C. Registro Histórico</h4>
+          <h4 class="section-title"><AppIcon name="calendar" size="16" /> C. Registro Histórico</h4>
           <div class="form-grid">
             <div class="form-group">
               <label class="form-label">Tiempo de Vida Útil</label>
@@ -206,7 +206,7 @@
 
         <!-- TAB 4: DOCUMENTOS -->
         <div v-show="activeTab === 4" class="tab-content active">
-          <h4 class="section-title">📄 D. Inventario de Documentos</h4>
+          <h4 class="section-title"><AppIcon name="file" size="16" /> D. Inventario de Documentos</h4>
           <p style="color: #616161; margin-bottom: 20px; font-size: 14px;">Marque los documentos que posee el equipo:</p>
           <div class="form-grid">
             <div class="form-group">
@@ -275,7 +275,7 @@
 
         <!-- TAB 5: METROLOGÍA -->
         <div v-show="activeTab === 5" class="tab-content active">
-          <h4 class="section-title">🔬 E & F. Información Metrológica</h4>
+          <h4 class="section-title"><AppIcon name="package" size="16" /> E & F. Información Metrológica</h4>
           <div class="info-box">
             <div class="info-box-title">Información Metrológica Administrativa</div>
             <p style="font-size: 13px; color: #616161;">Configure los parámetros de mantenimiento y calibración del equipo.</p>
@@ -339,7 +339,7 @@
 
         <!-- TAB 6: CONDICIONES -->
         <div v-show="activeTab === 6" class="tab-content active">
-          <h4 class="section-title">⚙️ G. Condiciones de Funcionamiento</h4>
+          <h4 class="section-title"><AppIcon name="settings" size="16" /> G. Condiciones de Funcionamiento</h4>
           <div class="form-grid">
             <div class="form-group">
               <label class="form-label">Voltaje</label>
@@ -383,7 +383,7 @@
         <button class="btn btn-secondary" @click="handleClose" :disabled="loading">Cancelar</button>
         <button class="btn btn-primary" @click="handleSave" :disabled="loading">
           <span v-if="loading">Guardando...</span>
-          <span v-else>💾 {{ isEdit ? 'Actualizar' : 'Guardar' }} Equipo</span>
+          <span v-else><AppIcon name="save" size="16" /> {{ isEdit ? 'Actualizar' : 'Guardar' }} Equipo</span>
         </button>
       </div>
     </div>

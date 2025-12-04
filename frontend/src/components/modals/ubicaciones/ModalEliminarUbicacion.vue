@@ -3,7 +3,7 @@
     <div class="modal-content">
       <div class="modal-header">
         <h2>Eliminar Ubicación</h2>
-        <button class="modal-close" @click="handleClose">×</button>
+        <button class="modal-close" @click="handleClose"><AppIcon name="close" size="16" /></button>
       </div>
       
       <div class="modal-body">
@@ -11,7 +11,7 @@
         
         <!-- Advertencia si tiene equipos -->
         <div v-if="ubicacion && ubicacion.num_equipos > 0" class="error-message">
-          ❌ <strong>No se puede eliminar esta ubicación</strong><br>
+          <AppIcon name="close" size="16" /> <strong>No se puede eliminar esta ubicación</strong><br>
           Esta ubicación tiene {{ ubicacion.num_equipos }} equipo(s) asignado(s).
           <br><br>
           Debe trasladar o reasignar los equipos antes de eliminar la ubicación.
@@ -20,7 +20,7 @@
         <!-- Confirmación si está vacía -->
         <div v-else>
           <div class="warning-message">
-            ⚠️ Esta acción eliminará permanentemente la ubicación y no se puede deshacer.
+            <AppIcon name="alert" size="16" /> Esta acción eliminará permanentemente la ubicación y no se puede deshacer.
           </div>
 
           <div class="info-section">

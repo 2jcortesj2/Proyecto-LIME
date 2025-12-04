@@ -2,12 +2,12 @@
   <div class="modal-overlay" @click.self="$emit('close')">
     <div class="modal-container">
       <div class="modal-header">
-        <h3>🗑️ Eliminar Mantenimiento</h3>
-        <button class="btn-close" @click="$emit('close')">✕</button>
+        <h3><AppIcon name="trash" size="16" /> Eliminar Mantenimiento</h3>
+        <button class="btn-close" @click="$emit('close')"><AppIcon name="close" size="16" /></button>
       </div>
 
       <div class="modal-body">
-        <div class="warning-icon">⚠️</div>
+        <div class="warning-icon"><AppIcon name="alert" size="16" /></div>
         <p class="confirmation-text">
           ¿Estás seguro de que deseas eliminar este registro de mantenimiento?
         </p>

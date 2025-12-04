@@ -58,7 +58,7 @@ async function fetchTraslados() {
   } catch (err) {
     error.value = err.message || 'Error al cargar traslados'
     console.error('Error fetching traslados:', err)
-    notifications.error('❌ Error al cargar traslados')
+    notifications.error('<AppIcon name="close" size="16" /> Error al cargar traslados')
   } finally {
     loading.value = false
   }
@@ -70,10 +70,10 @@ async function handleCreateTraslado(trasladoData) {
     await trasladosService.create(trasladoData)
     await fetchTraslados()
     createModal.close()
-    notifications.success('✅ Traslado creado exitosamente')
+    notifications.success('<AppIcon name="check" size="16" /> Traslado creado exitosamente')
   } catch (err) {
     console.error('Error creating traslado:', err)
-    notifications.error('❌ Error al crear el traslado: ' + (err.message || 'Error desconocido'))
+    notifications.error('<AppIcon name="close" size="16" /> Error al crear el traslado: ' + (err.message || 'Error desconocido'))
     throw err
   }
 }
@@ -83,10 +83,10 @@ async function handleEditTraslado(trasladoData) {
     await trasladosService.update(trasladoData.id, trasladoData)
     await fetchTraslados()
     editModal.close()
-    notifications.success('✅ Traslado actualizado exitosamente')
+    notifications.success('<AppIcon name="check" size="16" /> Traslado actualizado exitosamente')
   } catch (err) {
     console.error('Error updating traslado:', err)
-    notifications.error('❌ Error al actualizar el traslado: ' + (err.message || 'Error desconocido'))
+    notifications.error('<AppIcon name="close" size="16" /> Error al actualizar el traslado: ' + (err.message || 'Error desconocido'))
     throw err
   }
 }
@@ -97,10 +97,10 @@ async function handleDeleteTraslado() {
     await trasladosService.delete(trasladoId)
     await fetchTraslados()
     deleteModal.close()
-    notifications.success('✅ Traslado eliminado exitosamente')
+    notifications.success('<AppIcon name="check" size="16" /> Traslado eliminado exitosamente')
   } catch (err) {
     console.error('Error deleting traslado:', err)
-    notifications.error('❌ Error al eliminar el traslado: ' + (err.message || 'Error desconocido'))
+    notifications.error('<AppIcon name="close" size="16" /> Error al eliminar el traslado: ' + (err.message || 'Error desconocido'))
     throw err
   }
 }
@@ -162,7 +162,7 @@ onMounted(() => {
         <h2 class="page-title" style="margin: 0;">Historial de Traslados</h2>
         <div style="color: #616161; font-size: 14px; margin-top: 5px;">Inicio / Traslados / Historial</div>
       </div>
-      <button class="btn btn-primary" @click="createModal.open()">➕ Nuevo Traslado</button>
+      <button class="btn btn-primary" @click="createModal.open()"><AppIcon name="plus" size="16" /> Nuevo Traslado</button>
     </div>
 
     <!-- Card Principal -->
@@ -173,7 +173,7 @@ onMounted(() => {
           <input 
             type="text" 
             class="search-input" 
-            placeholder="🔍 Buscar por código, nombre, marca o modelo..." 
+            placeholder="Buscar por código, nombre, marca o modelo..." 
             v-model="filters.searchQuery.value"
           >
           <button 
@@ -182,11 +182,11 @@ onMounted(() => {
             class="clear-search-btn"
             title="Limpiar búsqueda"
           >
-            ✕
+            <AppIcon name="close" size="16" />
           </button>
         </div>
         <button class="filter-button" @click="filters.toggleFilterPanel()">
-          ☰ Filtrar y Ordenar
+          <AppIcon name="menu" size="16" /> Filtrar y Ordenar
           <span v-if="filters.filtrosActivos.value > 0" class="filter-badge">{{ filters.filtrosActivos.value }}</span>
         </button>
       </div>
@@ -266,8 +266,8 @@ onMounted(() => {
             </td>
             <td>
               <div class="actions-container">
-                <button class="btn btn-secondary btn-sm" title="Editar" @click="editModal.open(traslado)">✏️</button>
-                <button class="btn btn-danger btn-sm" title="Eliminar" @click="deleteModal.open(traslado)">🗑️</button>
+                <button class="btn btn-secondary btn-sm" title="Editar" @click="editModal.open(traslado)"><AppIcon name="edit" size="16" /></button>
+                <button class="btn btn-danger btn-sm" title="Eliminar" @click="deleteModal.open(traslado)"><AppIcon name="trash" size="16" /></button>
               </div>
             </td>
           </tr>
@@ -326,7 +326,7 @@ onMounted(() => {
     <div class="filter-panel" :class="{ active: filters.showFilterPanel.value }">
       <div class="filter-panel-header">
         <h3>Filtrar y Ordenar</h3>
-        <button class="close-filter-btn" @click="filters.toggleFilterPanel()">✕</button>
+        <button class="close-filter-btn" @click="filters.toggleFilterPanel()"><AppIcon name="close" size="16" /></button>
       </div>
 
       <div class="filter-panel-content">

@@ -1,8 +1,11 @@
 <script setup>
+import { ref } from 'vue'
 import { onMounted } from 'vue'
 import { useSedesUbicaciones } from '../composables/useSedesUbicaciones'
 import { useAccordion } from '../composables/useAccordion'
 import { useModal } from '../composables/useModal'
+import { useNotifications } from '../composables/useNotifications'
+import { trasladosAPI } from '../services/api'
 
 // Importar modales
 import ModalCrearSede from './modals/sedes/ModalCrearSede.vue'
@@ -11,10 +14,40 @@ import ModalEliminarSede from './modals/sedes/ModalEliminarSede.vue'
 import ModalCrearUbicacion from './modals/ubicaciones/ModalCrearUbicacion.vue'
 import ModalEditarUbicacion from './modals/ubicaciones/ModalEditarUbicacion.vue'
 import ModalEliminarUbicacion from './modals/ubicaciones/ModalEliminarUbicacion.vue'
+import ModalCrearTraslado from './modals/traslados/ModalCrearTraslado.vue'
 
 // Composables
-const { sedes, loading, error, fetchSedes } = useSedesUbicaciones()
+const { 
+  sedes, 
+  ubicaciones, 
+  responsables, 
+  loading, 
+  error, 
+  fetchSedes, 
+  fetchUbicaciones,
+  fetchResponsables,
+  fetchEquiposByUbicacion 
+} = useSedesUbicaciones()
+
 const { toggleRow: toggleSede, isExpanded } = useAccordion()
+const { showSuccess, showError } = useNotifications()
+
+// Estado local para expansión de ubicaciones (para evitar conflictos con useAccordion)
+const expandedUbicaciones = ref(new Set())
+
+function toggleUbicacion(id) {
+  const newSet = new Set(expandedUbicaciones.value)
+  if (newSet.has(id)) {
+    newSet.delete(id)
+  } else {
+    newSet.add(id)
+  }
+  expandedUbicaciones.value = newSet
+}
+
+function isUbicacionExpanded(id) {
+  return expandedUbicaciones.value.has(id)
+}
 
 // Modales de Sedes
 const modalCrearSede = useModal()
@@ -26,8 +59,18 @@ const modalCrearUbicacion = useModal()
 const modalEditarUbicacion = useModal()
 const modalEliminarUbicacion = useModal()
 
-onMounted(() => {
-  fetchSedes()
+// Modal Traslado
+const modalCrearTraslado = useModal()
+
+// Estado para equipos por ubicación
+const equiposPorUbicacion = ref({})
+const loadingEquipos = ref({})
+
+onMounted(async () => {
+  await fetchSedes()
+  // Cargar datos necesarios para el modal de traslados
+  fetchUbicaciones()
+  fetchResponsables()
 })
 
 // Handlers para Sedes
@@ -54,6 +97,49 @@ function handleEditarUbicacion(ubicacion) {
 
 function handleEliminarUbicacion(ubicacion) {
   modalEliminarUbicacion.open(ubicacion)
+}
+
+// Handlers para Equipos y Traslados
+async function handleToggleUbicacion(ubicacionId) {
+  toggleUbicacion(ubicacionId)
+  
+  // Si se expande y no hay datos cargados, obtenerlos
+  if (isUbicacionExpanded(ubicacionId) && !equiposPorUbicacion.value[ubicacionId]) {
+    try {
+      loadingEquipos.value[ubicacionId] = true
+      const equipos = await fetchEquiposByUbicacion(ubicacionId)
+      equiposPorUbicacion.value[ubicacionId] = equipos
+    } catch (err) {
+      console.error('Error cargando equipos:', err)
+      showError('Error al cargar los equipos de la ubicación')
+    } finally {
+      loadingEquipos.value[ubicacionId] = false
+    }
+  }
+}
+
+function handleTrasladarEquipo(equipo) {
+  modalCrearTraslado.open({ equipo })
+}
+
+async function handleSaveTraslado(formData) {
+  try {
+    await trasladosAPI.create(formData)
+    showSuccess('Traslado registrado exitosamente')
+    modalCrearTraslado.close()
+    
+    // Recargar equipos de la ubicación origen
+    if (formData.ubicacion_origen) {
+      const equipos = await fetchEquiposByUbicacion(formData.ubicacion_origen)
+      equiposPorUbicacion.value[formData.ubicacion_origen] = equipos
+    }
+    
+    // Recargar sedes para actualizar contadores
+    fetchSedes()
+  } catch (error) {
+    console.error('Error al guardar traslado:', error)
+    showError('Error al registrar el traslado')
+  }
 }
 
 // Get computed sedeId from modal data
@@ -94,7 +180,7 @@ function getSedeIdFromModal() {
         <div class="sede-header" @click="toggleSede(sede.id)">
           <div class="sede-header-content">
             <div class="header-left">
-              <span class="chevron" :class="{ rotated: isExpanded(sede.id) }">▼</span>
+              <span class="chevron" :class="{ rotated: isExpanded(sede.id) }"><AppIcon name="chevron-down" size="16" /></span>
               <div class="sede-title-section">
                 <h2 class="sede-title">
                   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: #006633; width: 24px; height: 24px;"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect><path d="M9 22v-4h6v4"></path><path d="M8 6h.01"></path><path d="M16 6h.01"></path><path d="M8 10h.01"></path><path d="M16 10h.01"></path><path d="M8 14h.01"></path><path d="M16 14h.01"></path></svg>
@@ -142,30 +228,77 @@ function getSedeIdFromModal() {
             </h3>
             
             <div class="ubicaciones-list">
-              <div v-for="ubicacion in sede.ubicaciones" :key="ubicacion.id" class="ubicacion-row">
-                <div class="ubicacion-info">
-                  <h4 class="ubicacion-name">{{ ubicacion.nombre }}</h4>
-                  <div class="ubicacion-meta">
-                    <div class="meta-item">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="meta-icon"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg>
-                      <span>{{ ubicacion.num_equipos }} equipos</span>
+              <div v-for="ubicacion in sede.ubicaciones" :key="ubicacion.id" class="ubicacion-container">
+                <div class="ubicacion-row" @click="handleToggleUbicacion(ubicacion.id)" :class="{ 'expanded': isUbicacionExpanded(ubicacion.id) }">
+                  <div class="ubicacion-info">
+                    <div class="ubicacion-header-main">
+                      <span class="chevron-sm" :class="{ rotated: isUbicacionExpanded(ubicacion.id) }"><AppIcon name="chevron-right" size="16" /></span>
+                      <h4 class="ubicacion-name">{{ ubicacion.nombre }}</h4>
                     </div>
-                    <span class="separator">•</span>
-                    <div class="meta-item">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="meta-icon"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-                      <span>{{ ubicacion.responsable || 'Sin responsable' }}</span>
+                    <div class="ubicacion-meta">
+                      <div class="meta-item">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="meta-icon"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg>
+                        <span>{{ ubicacion.num_equipos }} equipos</span>
+                      </div>
+                      <span class="separator">•</span>
+                      <div class="meta-item">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="meta-icon"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                        <span>{{ ubicacion.responsable || 'Sin responsable' }}</span>
+                      </div>
                     </div>
                   </div>
+                  <div class="ubicacion-actions">
+                    <button class="btn btn-secondary btn-sm" @click.stop="handleEditarUbicacion(ubicacion)">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                      Editar
+                    </button>
+                    <button class="btn btn-danger btn-sm" @click.stop="handleEliminarUbicacion(ubicacion)" :disabled="ubicacion.num_equipos > 0">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                      Eliminar
+                    </button>
+                  </div>
                 </div>
-                <div class="ubicacion-actions">
-                  <button class="btn btn-secondary btn-sm" @click="handleEditarUbicacion(ubicacion)">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
-                    Editar
-                  </button>
-                  <button class="btn btn-danger btn-sm" @click="handleEliminarUbicacion(ubicacion)" :disabled="ubicacion.num_equipos > 0">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
-                    Eliminar
-                  </button>
+
+                <!-- Lista de Equipos (Expandible) -->
+                <div v-show="isUbicacionExpanded(ubicacion.id)" class="equipos-list-container">
+                  <div v-if="loadingEquipos[ubicacion.id]" class="loading-equipos">
+                    <div class="spinner-sm"></div> Cargando equipos...
+                  </div>
+                  <div v-else-if="!equiposPorUbicacion[ubicacion.id] || equiposPorUbicacion[ubicacion.id].length === 0" class="no-equipos">
+                    No hay equipos registrados en esta ubicación.
+                  </div>
+                  <div v-else class="table-responsive">
+                    <table class="equipos-table">
+                      <thead>
+                        <tr>
+                          <th>Código</th>
+                          <th>Equipo</th>
+                          <th>Registro Invima</th>
+                          <th>Encargado</th>
+                          <th>Acciones</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr v-for="equipo in equiposPorUbicacion[ubicacion.id]" :key="equipo.id">
+                          <td class="font-mono">{{ equipo.codigo_interno }}</td>
+                          <td>
+                            <div class="equipo-name-cell">
+                              <span class="equipo-name">{{ equipo.nombre_equipo }}</span>
+                              <span class="equipo-brand">{{ equipo.marca }} {{ equipo.modelo }}</span>
+                            </div>
+                          </td>
+                          <td>{{ equipo.registro_invima || 'N/A' }}</td>
+                          <td>{{ equipo.responsable_nombre || 'Sin asignar' }}</td>
+                          <td>
+                            <button class="btn btn-tertiary btn-xs" @click="handleTrasladarEquipo(equipo)">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 14 4 9 9 4"></polyline><path d="M20 20v-7a4 4 0 0 0-4-4H4"></path></svg>
+                              Trasladar
+                            </button>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               </div>
               
@@ -219,6 +352,17 @@ function getSedeIdFromModal() {
       :ubicacion="modalEliminarUbicacion.data.value"
       @close="modalEliminarUbicacion.close()" 
       @deleted="modalEliminarUbicacion.close()"
+    />
+
+    <!-- Modal Traslado -->
+    <ModalCrearTraslado
+      :show="modalCrearTraslado.isOpen.value"
+      :initial-equipo="modalCrearTraslado.data.value?.equipo"
+      :sedes="sedes"
+      :ubicaciones="ubicaciones"
+      :responsables="responsables"
+      @close="modalCrearTraslado.close()"
+      @save="handleSaveTraslado"
     />
   </div>
 </template>
@@ -479,5 +623,129 @@ function getSedeIdFromModal() {
   background: #f9f9f9;
   border-radius: 8px;
   border: 1px dashed #ddd;
+}
+
+/* Estilos para lista de equipos */
+.ubicacion-container {
+  margin-bottom: 10px;
+}
+
+.ubicacion-row {
+  cursor: pointer;
+}
+
+.ubicacion-row.expanded {
+  background: #e8f5e9;
+  border-color: #c8e6c9;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.ubicacion-header-main {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 5px;
+}
+
+.chevron-sm {
+  font-size: 10px;
+  color: #666;
+  transition: transform 0.2s;
+  display: inline-block;
+}
+
+.chevron-sm.rotated {
+  transform: rotate(90deg);
+}
+
+.equipos-list-container {
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-top: none;
+  border-bottom-left-radius: 8px;
+  border-bottom-right-radius: 8px;
+  padding: 15px;
+  animation: slideDown 0.2s ease-out;
+}
+
+.loading-equipos {
+  text-align: center;
+  padding: 20px;
+  color: #666;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.spinner-sm {
+  width: 16px;
+  height: 16px;
+  border: 2px solid #f3f3f3;
+  border-top: 2px solid #006633;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.no-equipos {
+  text-align: center;
+  padding: 20px;
+  color: #888;
+  font-size: 13px;
+  font-style: italic;
+}
+
+/* Tabla de equipos */
+.table-responsive {
+  overflow-x: auto;
+}
+
+.equipos-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.equipos-table th {
+  text-align: left;
+  padding: 10px;
+  background: #f9f9f9;
+  color: #666;
+  font-weight: 600;
+  border-bottom: 2px solid #eee;
+}
+
+.equipos-table td {
+  padding: 10px;
+  border-bottom: 1px solid #eee;
+  color: #333;
+  vertical-align: middle;
+}
+
+.equipos-table tr:last-child td {
+  border-bottom: none;
+}
+
+.font-mono {
+  font-family: monospace;
+  color: #555;
+  font-weight: 600;
+}
+
+.equipo-name-cell {
+  display: flex;
+  flex-direction: column;
+}
+
+.equipo-name {
+  font-weight: 600;
+  color: #006633;
+}
+
+.equipo-brand {
+  font-size: 11px;
+  color: #888;
 }
 </style>

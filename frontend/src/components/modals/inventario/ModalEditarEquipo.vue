@@ -2,7 +2,7 @@
   <div class="modal" :class="{ active: show }">
     <div class="modal-content">
       <div class="modal-header">
-        <div class="modal-title">✏️ Editar Equipo - {{ equipo?.nombre_equipo }} ({{ equipo?.codigo_interno }})</div>
+        <div class="modal-title"><AppIcon name="edit" size="16" /> Editar Equipo - {{ equipo?.nombre_equipo }} ({{ equipo?.codigo_interno }})</div>
         <button class="close-btn" @click="close">&times;</button>
       </div>
       <div class="modal-body">
@@ -21,7 +21,7 @@
 
         <!-- TAB 1: INFO GENERAL -->
         <div v-show="activeTab === 1" class="tab-content active">
-          <h4 class="section-title">📝 A. Información General</h4>
+          <h4 class="section-title"><AppIcon name="file" size="16" /> A. Información General</h4>
           <div class="form-grid">
             <div class="form-group">
               <label class="form-label required">Sede</label>
@@ -69,7 +69,7 @@
 
         <!-- TAB 2: DATOS DEL EQUIPO -->
         <div v-show="activeTab === 2" class="tab-content active">
-          <h4 class="section-title">🔧 B. Información del Equipo</h4>
+          <h4 class="section-title"><AppIcon name="maintenance" size="16" /> B. Información del Equipo</h4>
           <div class="form-grid">
             <div class="form-group">
               <label class="form-label required">Marca</label>
@@ -138,7 +138,7 @@
 
         <!-- TAB 3: REGISTRO HISTÓRICO -->
         <div v-show="activeTab === 3" class="tab-content active">
-          <h4 class="section-title">📅 C. Registro Histórico</h4>
+          <h4 class="section-title"><AppIcon name="calendar" size="16" /> C. Registro Histórico</h4>
           <div class="form-grid">
             <div class="form-group">
               <label class="form-label">Tiempo de Vida Útil</label>
@@ -201,7 +201,7 @@
 
         <!-- TAB 4: DOCUMENTOS -->
         <div v-show="activeTab === 4" class="tab-content active">
-          <h4 class="section-title">📄 D. Inventario de Documentos</h4>
+          <h4 class="section-title"><AppIcon name="file" size="16" /> D. Inventario de Documentos</h4>
           <p style="color: #616161; margin-bottom: 20px; font-size: 14px;">Marque los documentos que posee el equipo:</p>
           <div class="form-grid">
             <div class="form-group">
@@ -264,7 +264,7 @@
 
         <!-- TAB 5: METROLOGÍA -->
         <div v-show="activeTab === 5" class="tab-content active">
-          <h4 class="section-title">🔬 E & F. Información Metrológica</h4>
+          <h4 class="section-title"><AppIcon name="package" size="16" /> E & F. Información Metrológica</h4>
           <div class="info-box">
             <div class="info-box-title">Información Metrológica Administrativa</div>
             <p style="font-size: 13px; color: #616161;">Configure los parámetros de mantenimiento y calibración.</p>
@@ -326,7 +326,7 @@
 
         <!-- TAB 6: CONDICIONES -->
         <div v-show="activeTab === 6" class="tab-content active">
-          <h4 class="section-title">⚙️ G. Condiciones de Funcionamiento</h4>
+          <h4 class="section-title"><AppIcon name="settings" size="16" /> G. Condiciones de Funcionamiento</h4>
           <div class="form-grid">
             <div class="form-group">
               <label class="form-label">Voltaje</label>
@@ -364,7 +364,7 @@
       <div class="modal-footer">
         <button class="btn btn-secondary" @click="close" :disabled="loading">Cancelar</button>
         <button class="btn btn-primary" @click="save" :disabled="loading">
-          {{ loading ? 'Guardando...' : '💾 Guardar Cambios' }}
+          {{ loading ? 'Guardando...' : '<AppIcon name="save" size="16" /> Guardar Cambios' }}
         </button>
       </div>
     </div>

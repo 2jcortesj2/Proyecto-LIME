@@ -2,8 +2,8 @@
   <div class="modal" :class="{ active: show }">
     <div class="modal-content" style="max-width: 600px;">
       <div class="modal-header">
-        <h3 class="modal-title">➕ Registrar Nuevo Mantenimiento</h3>
-        <button class="close-btn" @click="$emit('close')">×</button>
+        <h3 class="modal-title"><AppIcon name="plus" size="16" /> Registrar Nuevo Mantenimiento</h3>
+        <button class="close-btn" @click="$emit('close')"><AppIcon name="close" size="16" /></button>
       </div>
       <div class="modal-body">
         <form @submit.prevent="$emit('submit')">
