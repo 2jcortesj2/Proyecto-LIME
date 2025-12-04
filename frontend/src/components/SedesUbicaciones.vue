@@ -126,7 +126,9 @@ async function handleToggleUbicacion(ubicacionId) {
 }
 
 function handleTrasladarEquipo(equipo) {
+  console.log('🔄 handleTrasladarEquipo llamado con:', equipo)
   modalCrearTraslado.open({ equipo })
+  console.log('🔄 Modal isOpen:', modalCrearTraslado.isOpen.value)
 }
 
 async function handleSaveTraslado(formData) {
@@ -314,7 +316,7 @@ function getSedeIdFromModal() {
                           </td>
                           <td style="font-size: 14px;">{{ equipo.responsable_nombre || 'Sin asignar' }}</td>
                           <td style="text-align: center;">
-                            <button class="btn btn-tertiary btn-sm" @click.stop="handleTrasladarEquipo(equipo)" style="font-size: 13px;">
+                            <button class="btn btn-tertiary btn-sm" @click="handleTrasladarEquipo(equipo)" style="font-size: 13px;">
                               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 14 4 9 9 4"></polyline><path d="M20 20v-7a4 4 0 0 0-4-4H4"></path></svg>
                               Trasladar
                             </button>

@@ -33,8 +33,11 @@
             </div>
             <div class="form-group">
               <label class="form-label required">Ubicación Física</label>
-              <input type="text" class="form-input" v-model="form.ubicacion_fisica" placeholder="Ej: Procesamiento Sección C">
-              <span v-if="errors.ubicacion_fisica" class="error-message">{{ errors.ubicacion_fisica }}</span>
+              <select class="form-select" v-model="form.ubicacion">
+                <option value="">Seleccione una ubicación</option>
+                <option v-for="ub in ubicacionesFiltradas" :key="ub.id" :value="ub.id">{{ ub.nombre }}</option>
+              </select>
+              <span v-if="errors.ubicacion" class="error-message">{{ errors.ubicacion }}</span>
             </div>
             <div class="form-group">
               <label class="form-label required">Fecha de Ingreso</label>

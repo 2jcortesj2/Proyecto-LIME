@@ -451,10 +451,13 @@ watch(() => form.value.sede_destino, () => {
 
 // Inicializar listas cuando se abre el modal
 watch(() => props.show, (newVal) => {
+  console.log('🔵 Modal show cambió a:', newVal, 'initialEquipo:', props.initialEquipo)
   if (newVal) {
     if (props.initialEquipo) {
+      console.log('🔵 Llamando selectEquipo con:', props.initialEquipo)
       selectEquipo(props.initialEquipo)
     } else {
+      console.log('🔵 No hay initialEquipo, llamando resetForm')
       resetForm()
     }
   } else {
