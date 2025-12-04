@@ -2,7 +2,10 @@
   <div class="modal" :class="{ active: show }">
     <div class="modal-content">
       <div class="modal-header">
-        <div class="modal-title">{{ isEdit ? '<AppIcon name="edit" size="16" /> Editar Equipo' : '<AppIcon name="plus" size="16" /> Crear Nuevo Equipo' }}</div>
+        <div class="modal-title">
+          <AppIcon :name="isEdit ? 'edit' : 'plus'" size="16" />
+          {{ isEdit ? ' Editar Equipo' : ' Crear Nuevo Equipo' }}
+        </div>
         <button class="close-btn" @click="handleClose">&times;</button>
       </div>
       <div class="modal-body">
@@ -29,12 +32,9 @@
               <span v-if="errors.sede" class="error-message">{{ errors.sede }}</span>
             </div>
             <div class="form-group">
-              <label class="form-label required">Proceso</label>
-              <select class="form-select" v-model="form.ubicacion">
-                <option value="">Seleccione una ubicación</option>
-                <option v-for="ub in ubicacionesFiltradas" :key="ub.id" :value="ub.id">{{ ub.nombre }}</option>
-              </select>
-              <span v-if="errors.ubicacion" class="error-message">{{ errors.ubicacion }}</span>
+              <label class="form-label required">Ubicación Física</label>
+              <input type="text" class="form-input" v-model="form.ubicacion_fisica" placeholder="Ej: Procesamiento Sección C">
+              <span v-if="errors.ubicacion_fisica" class="error-message">{{ errors.ubicacion_fisica }}</span>
             </div>
             <div class="form-group">
               <label class="form-label required">Nombre del Equipo</label>
@@ -62,11 +62,7 @@
               </select>
               <span v-if="errors.responsable" class="error-message">{{ errors.responsable }}</span>
             </div>
-            <div class="form-group full-width">
-              <label class="form-label required">Ubicación Física</label>
-              <input type="text" class="form-input" v-model="form.ubicacion_fisica" placeholder="Ej: Procesamiento Sección C">
-              <span v-if="errors.ubicacion_fisica" class="error-message">{{ errors.ubicacion_fisica }}</span>
-            </div>
+
           </div>
         </div>
 
@@ -302,6 +298,14 @@
               <label class="form-label">Frecuencia Anual Calibración</label>
               <input type="number" class="form-input" v-model="form.frecuencia_calibracion" placeholder="Ej: 1, 2, 4" min="0">
             </div>
+            <div class="form-group" v-if="form.requiere_calibracion">
+              <label class="form-label">Última Calibración</label>
+              <input type="date" class="form-input" v-model="form.ultima_calibracion">
+            </div>
+            <div class="form-group" v-if="form.requiere_calibracion">
+              <label class="form-label">Próxima Calibración</label>
+              <input type="date" class="form-input" v-model="form.proxima_calibracion">
+            </div>
             <div class="form-group">
               <div class="checkbox-group">
                 <input type="checkbox" class="checkbox-input" id="reqCalif" v-model="form.requiere_calificacion">
@@ -312,10 +316,15 @@
               <label class="form-label">Frecuencia Anual Calificación</label>
               <input type="number" class="form-input" v-model="form.frecuencia_calificacion" placeholder="Ej: 1, 2, 4" min="0">
             </div>
-            <div class="form-group" v-if="form.requiere_calibracion">
-              <label class="form-label">Tipo de Calibración</label>
-              <input type="text" class="form-input" v-model="form.tipo_calibracion" placeholder="Ej: Calificación, Verificación">
+            <div class="form-group" v-if="form.requiere_calificacion">
+              <label class="form-label">Última Calificación</label>
+              <input type="date" class="form-input" v-model="form.ultima_calificacion">
             </div>
+            <div class="form-group" v-if="form.requiere_calificacion">
+              <label class="form-label">Próxima Calificación</label>
+              <input type="date" class="form-input" v-model="form.proxima_calificacion">
+            </div>
+
           </div>
 
           <div class="section-divider"></div>
@@ -504,7 +513,11 @@ const createEmptyForm = () => ({
   frecuencia_calibracion: null,
   requiere_calificacion: false,
   frecuencia_calificacion: null,
-  tipo_calibracion: '',
+  ultima_calibracion: null,
+  proxima_calibracion: null,
+  ultima_calificacion: null,
+  proxima_calificacion: null,
+
   magnitud: '',
   rango_equipo: '',
   resolucion: '',

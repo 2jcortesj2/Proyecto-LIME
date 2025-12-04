@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { equiposAPI } from '../services/api'
+import { mantenimientosService } from '../services/mantenimientos.service'
 import { filterEquiposBySearch } from '../utils/searchUtils'
 import { useFormatting } from '../composables/useFormatting'
 import { useModal } from '../composables/useModal'
@@ -100,8 +101,7 @@ async function handleReprogramarSubmit({ equipoId, nuevaFecha }) {
 
 async function handleCompletarSubmit(data) {
   try {
-    const { mantenimientosAPI } = await import('../services/api')
-    await mantenimientosAPI.create(data)
+    await mantenimientosService.create(data)
     completarModal.close()
     await fetchEquipos()
     success('Mantenimiento registrado exitosamente')

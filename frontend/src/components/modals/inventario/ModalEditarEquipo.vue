@@ -32,11 +32,11 @@
               </select>
             </div>
             <div class="form-group">
-              <label class="form-label required">Proceso</label>
-              <select class="form-select" v-model="formData.ubicacion">
-                <option value="">Seleccione una ubicación</option>
-                <option v-for="ub in ubicacionesFiltradas" :key="ub.id" :value="ub.id">{{ ub.nombre }}</option>
-              </select>
+              <label class="form-label required">Ubicación Física</label>
+              <input type="text" class="form-input" v-model="formData.ubicacion_fisica">
+
+
+
             </div>
             <div class="form-group">
               <label class="form-label required">Nombre del Equipo</label>
@@ -61,10 +61,10 @@
                 <option v-for="resp in responsables" :key="resp.id" :value="resp.id">{{ resp.nombre_completo }}</option>
               </select>
             </div>
-            <div class="form-group full-width">
-              <label class="form-label required">Ubicación Física</label>
-              <input type="text" class="form-input" v-model="formData.ubicacion_fisica">
-            </div>
+
+
+
+
           </div>
         </div>
 
@@ -291,6 +291,14 @@
               <label class="form-label">Frecuencia Anual Calibración</label>
               <input type="number" class="form-input" v-model="formData.frecuencia_calibracion" min="0">
             </div>
+            <div class="form-group" v-if="formData.requiere_calibracion">
+              <label class="form-label">Última Calibración</label>
+              <input type="date" class="form-input" v-model="formData.ultima_calibracion">
+            </div>
+            <div class="form-group" v-if="formData.requiere_calibracion">
+              <label class="form-label">Próxima Calibración</label>
+              <input type="date" class="form-input" v-model="formData.proxima_calibracion">
+            </div>
             <div class="form-group">
               <div class="checkbox-group">
                 <input type="checkbox" class="checkbox-input" id="edit-reqCalif" v-model="formData.requiere_calificacion">
@@ -301,9 +309,17 @@
               <label class="form-label">Frecuencia Anual Calificación</label>
               <input type="number" class="form-input" v-model="formData.frecuencia_calificacion" min="0">
             </div>
+            <div class="form-group" v-if="formData.requiere_calificacion">
+              <label class="form-label">Última Calificación</label>
+              <input type="date" class="form-input" v-model="formData.ultima_calificacion">
+            </div>
+            <div class="form-group" v-if="formData.requiere_calificacion">
+              <label class="form-label">Próxima Calificación</label>
+              <input type="date" class="form-input" v-model="formData.proxima_calificacion">
+            </div>
             <div class="form-group" v-if="formData.requiere_calibracion">
-              <label class="form-label">Tipo de Calibración</label>
-              <input type="text" class="form-input" v-model="formData.tipo_calibracion">
+
+
             </div>
           </div>
           <div class="section-divider"></div>
@@ -386,7 +402,8 @@
       <div class="modal-footer">
         <button class="btn btn-secondary" @click="close" :disabled="loading">Cancelar</button>
         <button class="btn btn-primary" @click="save" :disabled="loading">
-          {{ loading ? 'Guardando...' : '<AppIcon name="save" size="16" /> Guardar Cambios' }}
+          <span v-if="loading">Guardando...</span>
+          <span v-else><AppIcon name="save" size="16" /> Guardar Cambios</span>
         </button>
       </div>
     </div>
@@ -479,7 +496,11 @@ watch(() => props.equipo, (equipo) => {
       frecuencia_calibracion: equipo.informacion_metrologica?.frecuencia_calibracion || null,
       requiere_calificacion: equipo.informacion_metrologica?.requiere_calificacion || false,
       frecuencia_calificacion: equipo.informacion_metrologica?.frecuencia_calificacion || null,
-      tipo_calibracion: equipo.informacion_metrologica?.tipo_calibracion || '',
+
+      ultima_calibracion: equipo.informacion_metrologica?.ultima_calibracion || null,
+      proxima_calibracion: equipo.informacion_metrologica?.proxima_calibracion || null,
+      ultima_calificacion: equipo.informacion_metrologica?.ultima_calificacion || null,
+      proxima_calificacion: equipo.informacion_metrologica?.proxima_calificacion || null,
       magnitud: equipo.informacion_metrologica?.magnitud || '',
       rango_equipo: equipo.informacion_metrologica?.rango_equipo || '',
       resolucion: equipo.informacion_metrologica?.resolucion || '',
