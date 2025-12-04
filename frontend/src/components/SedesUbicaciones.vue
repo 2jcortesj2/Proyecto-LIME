@@ -268,30 +268,33 @@ function getSedeIdFromModal() {
                     No hay equipos registrados en esta ubicación.
                   </div>
                   <div v-else class="table-responsive">
-                    <table class="equipos-table">
+                    <table class="tabla-equipos">
                       <thead>
                         <tr>
-                          <th>Código</th>
-                          <th>Equipo</th>
-                          <th>Registro Invima</th>
-                          <th>Encargado</th>
-                          <th>Acciones</th>
+                          <th style="width: 12%; text-align: center;">Código</th>
+                          <th style="width: 35%;">Equipo</th>
+                          <th style="width: 20%; text-align: center;">Registro Invima</th>
+                          <th style="width: 20%;">Encargado</th>
+                          <th style="width: 13%; text-align: center;">Acciones</th>
                         </tr>
                       </thead>
                       <tbody>
                         <tr v-for="equipo in equiposPorUbicacion[ubicacion.id]" :key="equipo.id">
-                          <td class="font-mono">{{ equipo.codigo_interno }}</td>
+                          <td style="text-align: center;"><strong style="font-family: monospace; font-size: 14px;">{{ equipo.codigo_interno }}</strong></td>
                           <td>
                             <div class="equipo-name-cell">
-                              <span class="equipo-name">{{ equipo.nombre_equipo }}</span>
-                              <span class="equipo-brand">{{ equipo.marca }} {{ equipo.modelo }}</span>
+                              <span class="equipo-name" style="font-size: 14px;">{{ equipo.nombre_equipo }}</span>
+                              <span class="equipo-brand" style="font-size: 12px;">{{ equipo.marca }} {{ equipo.modelo }}</span>
                             </div>
                           </td>
-                          <td>{{ equipo.registro_invima || 'N/A' }}</td>
-                          <td>{{ equipo.responsable_nombre || 'Sin asignar' }}</td>
-                          <td>
-                            <button class="btn btn-tertiary btn-xs" @click="handleTrasladarEquipo(equipo)">
-                              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 14 4 9 9 4"></polyline><path d="M20 20v-7a4 4 0 0 0-4-4H4"></path></svg>
+                          <td style="text-align: center;">
+                            <span v-if="equipo.registro_invima" class="invima-badge" style="font-size: 12px;">{{ equipo.registro_invima }}</span>
+                            <span v-else class="invima-badge" style="background: rgba(158, 158, 158, 0.1); color: #9e9e9e; font-size: 12px;">N/A</span>
+                          </td>
+                          <td style="font-size: 14px;">{{ equipo.responsable_nombre || 'Sin asignar' }}</td>
+                          <td style="text-align: center;">
+                            <button class="btn btn-tertiary btn-sm" @click.stop="handleTrasladarEquipo(equipo)" style="font-size: 13px;">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 14 4 9 9 4"></polyline><path d="M20 20v-7a4 4 0 0 0-4-4H4"></path></svg>
                               Trasladar
                             </button>
                           </td>
@@ -697,43 +700,7 @@ function getSedeIdFromModal() {
   font-style: italic;
 }
 
-/* Tabla de equipos */
-.table-responsive {
-  overflow-x: auto;
-}
-
-.equipos-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13px;
-}
-
-.equipos-table th {
-  text-align: left;
-  padding: 10px;
-  background: #f9f9f9;
-  color: #666;
-  font-weight: 600;
-  border-bottom: 2px solid #eee;
-}
-
-.equipos-table td {
-  padding: 10px;
-  border-bottom: 1px solid #eee;
-  color: #333;
-  vertical-align: middle;
-}
-
-.equipos-table tr:last-child td {
-  border-bottom: none;
-}
-
-.font-mono {
-  font-family: monospace;
-  color: #555;
-  font-weight: 600;
-}
-
+/* Estilos específicos para celdas de equipos */
 .equipo-name-cell {
   display: flex;
   flex-direction: column;

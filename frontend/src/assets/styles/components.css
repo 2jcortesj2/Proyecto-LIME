@@ -667,6 +667,49 @@ tbody tr[data-equipo] {
     background: rgba(0, 102, 51, 0.08);
 }
 
+/* Tabla Equipos (Usada en Responsables y SedesUbicaciones) */
+.tabla-equipos {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+}
+
+.tabla-equipos thead {
+    background-color: #006633 !important;
+}
+
+.tabla-equipos thead tr {
+    background-color: #006633 !important;
+}
+
+.tabla-equipos thead tr:hover {
+    background-color: #006633 !important;
+}
+
+.tabla-equipos th {
+    padding: 12px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 13px;
+    color: white !important;
+    border-bottom: 2px solid #004d26;
+    background-color: #006633 !important;
+}
+
+.tabla-equipos td {
+    padding: 12px;
+    border-bottom: 1px solid #f0f0f0;
+    font-size: 13px;
+}
+
+.tabla-equipos tbody tr {
+    background-color: white;
+}
+
+.tabla-equipos tbody tr:hover {
+    background-color: #fafafa;
+}
+
 /* Filter Panel */
 .filter-badge {
     background: #006633;
@@ -902,9 +945,7 @@ tbody tr[data-equipo] {
 }
 
 .btn-completar:hover {
-    background: #45a049;
-    transform: translateY(-1px);
-    box-shadow: 0 2px 4px rgba(76, 175, 80, 0.3);
+    background: #388e3c;
 }
 
 .btn-reprogramar {
@@ -914,403 +955,252 @@ tbody tr[data-equipo] {
 
 .btn-reprogramar:hover {
     background: #f57c00;
-    transform: translateY(-1px);
-    box-shadow: 0 2px 4px rgba(255, 152, 0, 0.3);
 }
 
-/* Filter Controls */
-.filter-controls {
-    display: flex;
-    gap: 15px;
-    margin-bottom: 20px;
-    align-items: center;
-    flex-wrap: wrap;
-}
-
-.month-filter {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.month-filter label {
-    font-weight: 600;
-    font-size: 14px;
-    color: #212121;
-    white-space: nowrap;
-}
-
-.search-container-inline {
-    flex: 1;
-    min-width: 300px;
-}
-
-/* Empty State */
+/* Empty state */
 .empty-state {
     text-align: center;
     padding: 60px 20px;
+    color: #757575;
 }
 
-.empty-state-content {
-    max-width: 500px;
-    margin: 0 auto;
-}
-
-.empty-icon {
+.empty-state .icon {
     font-size: 64px;
     margin-bottom: 20px;
+    opacity: 0.3;
 }
 
 .empty-state h3 {
-    color: #212121;
+    font-size: 20px;
+    font-weight: 600;
     margin-bottom: 10px;
+    color: #616161;
 }
 
 .empty-state p {
-    color: #616161;
     font-size: 14px;
-    margin-bottom: 8px;
-}
-
-.empty-hint {
-    font-style: italic;
     color: #9e9e9e;
 }
 
-/* Riesgo Badge variants */
-.riesgo-badge {
-    padding: 4px 10px;
-    border-radius: 12px;
-    font-size: 11px;
-    font-weight: 600;
-    text-align: center;
-    display: inline-block;
+/* Detalle del mantenimiento específico */
+.detalle-mantenimiento {
+    background: white;
+    border-radius: 8px;
+    padding: 20px;
+    border-left: 4px solid #006633;
 }
 
-.riesgo-I {
-    background: rgba(76, 175, 80, 0.1);
-    color: #4CAF50;
+.detalle-mantenimiento h4 {
+    color: #006633;
+    margin-bottom: 15px;
+    text-transform: uppercase;
+    font-size: 14px;
+    letter-spacing: 0.5px;
 }
 
-.riesgo-IIa {
-    background: rgba(255, 152, 0, 0.1);
-    color: #ff9800;
-}
-
-.riesgo-IIb {
-    background: rgba(244, 67, 54, 0.1);
-    color: #f44336;
-}
-
-.riesgo-III {
-    background: rgba(211, 47, 47, 0.15);
-    color: #c62828;
-}
-
-.riesgo-na {
-    background: rgba(158, 158, 158, 0.1);
-    color: #666;
-}
-
-/* ===== ESTILOS DE TABLA UNIFICADOS ===== */
-.equipos-vencidos-container table,
-.equipos-proximos-container table {
-    table-layout: fixed;
-    width: 100%;
-}
-
-/* Anchos de columnas ajustados */
-.equipos-vencidos-container th:nth-child(1),
-.equipos-proximos-container th:nth-child(1) {
-    width: 8%;
-}
-
-/* Código */
-.equipos-vencidos-container th:nth-child(2),
-.equipos-proximos-container th:nth-child(2) {
-    width: 14%;
-}
-
-/* Equipo - Reducido */
-.equipos-vencidos-container th:nth-child(3),
-.equipos-proximos-container th:nth-child(3) {
-    width: 16%;
-}
-
-/* INVIMA - Aumentado */
-.equipos-vencidos-container th:nth-child(4),
-.equipos-proximos-container th:nth-child(4) {
-    width: 8%;
-    text-align: center;
-}
-
-/* Riesgo - Centrado */
-.equipos-vencidos-container th:nth-child(5),
-.equipos-proximos-container th:nth-child(5) {
-    width: 15%;
-}
-
-/* Sede/Ubicación */
-.equipos-vencidos-container th:nth-child(6),
-.equipos-proximos-container th:nth-child(6) {
-    width: 10%;
-}
-
-/* Último Mant */
-.equipos-vencidos-container th:nth-child(7),
-.equipos-proximos-container th:nth-child(7) {
-    width: 10%;
-}
-
-/* Próximo Mant */
-.equipos-vencidos-container th:nth-child(8),
-.equipos-proximos-container th:nth-child(8) {
-    width: 20%;
-}
-
-/* Acciones */
-
-/* Centrado de contenido de columnas específicas */
-.equipos-vencidos-container td:nth-child(4),
-.equipos-proximos-container td:nth-child(4) {
-    text-align: center;
-    padding: 8px 4px;
-}
-
-.equipos-vencidos-container td:nth-child(8),
-.equipos-proximos-container td:nth-child(8) {
-    text-align: center;
-}
-
-.equipos-vencidos-container td:nth-child(8)>div,
-.equipos-proximos-container td:nth-child(8)>div {
-    cursor: pointer;
-    font-weight: 600;
-    font-size: 11px;
-    transition: all 0.2s;
-    white-space: nowrap;
-}
-
-.btn-completar {
-    background: #4CAF50;
-    color: white;
-}
-
-.btn-completar:hover {
-    background: #45a049;
-    transform: translateY(-1px);
-    box-shadow: 0 2px 4px rgba(76, 175, 80, 0.3);
-}
-
-.btn-reprogramar {
-    background: #ff9800;
-    color: white;
-}
-
-.btn-reprogramar:hover {
-    background: #f57c00;
-    transform: translateY(-1px);
-    box-shadow: 0 2px 4px rgba(255, 152, 0, 0.3);
-}
-
-/* Filter Controls */
-.filter-controls {
-    display: flex;
+.maintenance-details {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
     gap: 15px;
-    margin-bottom: 20px;
-    align-items: center;
-    flex-wrap: wrap;
 }
 
-.month-filter {
+.maintenance-detail-item {
     display: flex;
-    align-items: center;
-    gap: 10px;
+    flex-direction: column;
+    padding: 10px;
+    background: #f9f9f9;
+    border-radius: 4px;
 }
 
-.month-filter label {
-    font-weight: 600;
-    font-size: 14px;
-    color: #212121;
-    white-space: nowrap;
-}
-
-.search-container-inline {
-    flex: 1;
-    min-width: 300px;
-}
-
-/* Empty State */
-.empty-state {
-    text-align: center;
-    padding: 60px 20px;
-}
-
-.empty-state-content {
-    max-width: 500px;
-    margin: 0 auto;
-}
-
-.empty-icon {
-    font-size: 64px;
-    margin-bottom: 20px;
-}
-
-.empty-state h3 {
-    color: #212121;
-    margin-bottom: 10px;
-}
-
-.empty-state p {
+.maintenance-detail-label {
+    font-size: 12px;
     color: #616161;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 5px;
+}
+
+.maintenance-detail-value {
     font-size: 14px;
-    margin-bottom: 8px;
-}
-
-.empty-hint {
-    font-style: italic;
-    color: #9e9e9e;
-}
-
-/* Riesgo Badge variants */
-.riesgo-badge {
-    padding: 4px 10px;
-    border-radius: 12px;
-    font-size: 11px;
+    color: #212121;
     font-weight: 600;
-    text-align: center;
+}
+
+/* Estado badges específicos de mantenimiento */
+.estado-mantenimiento-badge {
     display: inline-block;
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    text-align: center;
 }
 
-.riesgo-I {
+.estado-pendiente {
+    background: rgba(255, 193, 7, 0.2);
+    color: #f57f17;
+}
+
+.estado-completado {
+    background: rgba(76, 175, 80, 0.2);
+    color: #2e7d32;
+}
+
+.estado-reprogramado {
+    background: rgba(33, 150, 243, 0.2);
+    color: #1565c0;
+}
+
+/* Estado Row - Hover states */
+tbody tr.estado-pendiente:hover {
+    background: rgba(255, 193, 7, 0.05) !important;
+}
+
+tbody tr.estado-completado:hover {
+    background: rgba(76, 175, 80, 0.05) !important;
+}
+
+tbody tr.estado-reprogramado:hover {
+    background: rgba(33, 150, 243, 0.05) !important;
+}
+
+/* Maintenance Form Styles */
+.maintenance-form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.maintenance-form-full {
+    grid-column: span 2;
+}
+
+/* Calendar Highlighting (for fecha_programada) */
+.calendar-highlight {
+    background: rgba(0, 102, 51, 0.1);
+    border: 2px solid #006633;
+    border-radius: 4px;
+    padding: 2px;
+}
+
+/* Stats Cards */
+.stats-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.stat-card {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    border-left: 4px solid;
+}
+
+.stat-card.stat-vencidos {
+    border-left-color: #f44336;
+}
+
+.stat-card.stat-proximos {
+    border-left-color: #ff9800;
+}
+
+.stat-card.stat-completados {
+    border-left-color: #4caf50;
+}
+
+.stat-card.stat-total {
+    border-left-color: #006633;
+}
+
+.stat-value {
+    font-size: 36px;
+    font-weight: 700;
+    margin-bottom: 5px;
+}
+
+.stat-label {
+    font-size: 14px;
+    color: #616161;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Success Messages */
+.success-message {
     background: rgba(76, 175, 80, 0.1);
-    color: #4CAF50;
+    color: #2e7d32;
+    padding: 12px 20px;
+    border-radius: 6px;
+    border-left: 4px solid #4caf50;
+    margin-bottom: 20px;
+    font-weight: 500;
 }
 
-.riesgo-IIa {
-    background: rgba(255, 152, 0, 0.1);
-    color: #ff9800;
-}
-
-.riesgo-IIb {
-    background: rgba(244, 67, 54, 0.1);
-    color: #f44336;
-}
-
-.riesgo-III {
-    background: rgba(211, 47, 47, 0.15);
-    color: #c62828;
-}
-
-.riesgo-na {
-    background: rgba(158, 158, 158, 0.1);
-    color: #666;
-}
-
-/* ===== ESTILOS DE TABLA UNIFICADOS ===== */
-.equipos-vencidos-container table,
-.equipos-proximos-container table {
-    table-layout: fixed;
-    width: 100%;
-}
-
-/* Anchos de columnas ajustados */
-.equipos-vencidos-container th:nth-child(1),
-.equipos-proximos-container th:nth-child(1) {
-    width: 8%;
-}
-
-/* Código */
-.equipos-vencidos-container th:nth-child(2),
-.equipos-proximos-container th:nth-child(2) {
-    width: 14%;
-}
-
-/* Equipo - Reducido */
-.equipos-vencidos-container th:nth-child(3),
-.equipos-proximos-container th:nth-child(3) {
-    width: 16%;
-}
-
-/* INVIMA - Aumentado */
-.equipos-vencidos-container th:nth-child(4),
-.equipos-proximos-container th:nth-child(4) {
-    width: 8%;
+/* Loading Spinner for Table */
+.table-loading {
     text-align: center;
+    padding: 40px;
+    color: #757575;
 }
 
-/* Riesgo - Centrado */
-.equipos-vencidos-container th:nth-child(5),
-.equipos-proximos-container th:nth-child(5) {
-    width: 15%;
+.table-loading .spinner {
+    display: inline-block;
+    width: 40px;
+    height: 40px;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #006633;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
 }
 
-/* Sede/Ubicación */
-.equipos-vencidos-container th:nth-child(6),
-.equipos-proximos-container th:nth-child(6) {
-    width: 10%;
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
 }
 
-/* Último Mant */
-.equipos-vencidos-container th:nth-child(7),
-.equipos-proximos-container th:nth-child(7) {
-    width: 10%;
+/* Responsiveness para tablas en pantallas pequeñas */
+@media (max-width: 1200px) {
+    .maintenance-details {
+        grid-template-columns: 1fr;
+    }
+
+    .stats-container {
+        grid-template-columns: repeat(2, 1fr);
+    }
 }
 
-/* Próximo Mant */
-.equipos-vencidos-container th:nth-child(8),
-.equipos-proximos-container th:nth-child(8) {
-    width: 20%;
-}
+@media (max-width: 768px) {
+    .stats-container {
+        grid-template-columns: 1fr;
+    }
 
-/* Acciones */
+    .maintenance-form-grid {
+        grid-template-columns: 1fr;
+    }
 
-/* Centrado de contenido de columnas específicas */
-.equipos-vencidos-container td:nth-child(4),
-.equipos-proximos-container td:nth-child(4) {
-    text-align: center;
-    padding: 8px 4px;
-}
+    .maintenance-form-full {
+        grid-column: span 1;
+    }
 
-.equipos-vencidos-container td:nth-child(8),
-.equipos-proximos-container td:nth-child(8) {
-    text-align: center;
-}
+    table {
+        font-size: 12px;
+    }
 
-.equipos-vencidos-container td:nth-child(8)>div,
-.equipos-proximos-container td:nth-child(8)>div {
-    justify-content: center;
-    display: flex;
-    gap: 10px;
-}
+    th,
+    td {
+        padding: 10px;
+    }
 
-/* ===== COLUMNAS DE MANTENIMIENTOS (Globalizadas) ===== */
-.col-codigo {
-    width: 10%;
-}
-
-.col-equipo {
-    width: 16%;
-}
-
-.col-tipo {
-    width: 12%;
-    text-align: center !important;
-}
-
-.col-fecha {
-    width: 12%;
-}
-
-.col-proveedor {
-    width: 14%;
-}
-
-.col-costo {
-    width: 12%;
-}
-
-.col-acciones {
-    width: 24%;
-    text-align: center;
+    .detalle-grid {
+        grid-template-columns: 1fr;
+    }
 }

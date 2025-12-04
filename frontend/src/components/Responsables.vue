@@ -785,48 +785,7 @@ onMounted(() => {
   background-color: rgba(0, 102, 51, 0.05); /* Green tint */
 }
 
-/* Equipment table uses global styles from components.css */
-.tabla-equipos {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 10px;
-}
-
-.tabla-equipos thead {
-  background-color: #006633 !important;
-}
-
-.tabla-equipos thead tr {
-  background-color: #006633 !important;
-}
-
-.tabla-equipos thead tr:hover {
-  background-color: #006633 !important;
-}
-
-.tabla-equipos th {
-  padding: 12px;
-  text-align: left;
-  font-weight: 600;
-  font-size: 13px;
-  color: white !important;
-  border-bottom: 2px solid #004d26;
-  background-color: #006633 !important;
-}
-
-.tabla-equipos td {
-  padding: 12px;
-  border-bottom: 1px solid #f0f0f0;
-  font-size: 13px;
-}
-
-.tabla-equipos tbody tr {
-  background-color: white;
-}
-
-.tabla-equipos tbody tr:hover {
-  background-color: #fafafa;
-}
+/* Equipment table uses global styles from components.css (.tabla-equipos) */
 
 .no-equipment {
   text-align: center;
