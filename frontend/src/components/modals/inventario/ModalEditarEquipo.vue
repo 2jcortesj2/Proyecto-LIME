@@ -33,10 +33,14 @@
             </div>
             <div class="form-group">
               <label class="form-label required">Ubicación Física</label>
-              <input type="text" class="form-input" v-model="formData.ubicacion_fisica">
+              <input type="text" class="form-input" v-model="formData.ubicacion_fisica" placeholder="Ej: Procesamiento Sección C">
 
 
 
+            </div>
+            <div class="form-group">
+              <label class="form-label required">Fecha de Ingreso <span class="lock-icon">🔒</span></label>
+              <input type="date" class="form-input locked" v-model="formData.fecha_adquisicion" @click="openProtectedField('fecha_adquisicion')" readonly>
             </div>
             <div class="form-group">
               <label class="form-label required">Nombre del Equipo</label>

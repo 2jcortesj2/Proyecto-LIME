@@ -37,6 +37,11 @@
               <span v-if="errors.ubicacion_fisica" class="error-message">{{ errors.ubicacion_fisica }}</span>
             </div>
             <div class="form-group">
+              <label class="form-label required">Fecha de Ingreso</label>
+              <input type="date" class="form-input" v-model="form.fecha_adquisicion">
+              <span v-if="errors.fecha_adquisicion" class="error-message">{{ errors.fecha_adquisicion }}</span>
+            </div>
+            <div class="form-group">
               <label class="form-label required">Nombre del Equipo</label>
               <input type="text" class="form-input" v-model="form.nombre_equipo" placeholder="Ej: Congelador, Agregómetro">
               <span v-if="errors.nombre_equipo" class="error-message">{{ errors.nombre_equipo }}</span>
