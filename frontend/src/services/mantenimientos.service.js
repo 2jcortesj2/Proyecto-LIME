@@ -31,7 +31,8 @@ export const mantenimientosService = {
      */
     async getByEquipo(equipoId) {
         const response = await mantenimientosAPI.getByEquipo(equipoId)
-        return response.data
+        // La respuesta del backend está paginada, accedemos a 'results'
+        return response.data.results || response.data
     },
 
     /**

@@ -58,7 +58,7 @@ async function fetchTraslados() {
   } catch (err) {
     error.value = err.message || 'Error al cargar traslados'
     console.error('Error fetching traslados:', err)
-    notifications.error('<AppIcon name="close" size="16" /> Error al cargar traslados')
+    notifications.error('Error al cargar traslados')
   } finally {
     loading.value = false
   }
@@ -70,10 +70,10 @@ async function handleCreateTraslado(trasladoData) {
     await trasladosService.create(trasladoData)
     await fetchTraslados()
     createModal.close()
-    notifications.success('<AppIcon name="check" size="16" /> Traslado creado exitosamente')
+    notifications.success('Traslado creado exitosamente')
   } catch (err) {
     console.error('Error creating traslado:', err)
-    notifications.error('<AppIcon name="close" size="16" /> Error al crear el traslado: ' + (err.message || 'Error desconocido'))
+    notifications.error('Error al crear el traslado: ' + (err.message || 'Error desconocido'))
     throw err
   }
 }
@@ -83,10 +83,10 @@ async function handleEditTraslado(trasladoData) {
     await trasladosService.update(trasladoData.id, trasladoData)
     await fetchTraslados()
     editModal.close()
-    notifications.success('<AppIcon name="check" size="16" /> Traslado actualizado exitosamente')
+    notifications.success('Traslado actualizado exitosamente')
   } catch (err) {
     console.error('Error updating traslado:', err)
-    notifications.error('<AppIcon name="close" size="16" /> Error al actualizar el traslado: ' + (err.message || 'Error desconocido'))
+    notifications.error('Error al actualizar el traslado: ' + (err.message || 'Error desconocido'))
     throw err
   }
 }
@@ -97,10 +97,10 @@ async function handleDeleteTraslado() {
     await trasladosService.delete(trasladoId)
     await fetchTraslados()
     deleteModal.close()
-    notifications.success('<AppIcon name="check" size="16" /> Traslado eliminado exitosamente')
+    notifications.success('Traslado eliminado exitosamente')
   } catch (err) {
     console.error('Error deleting traslado:', err)
-    notifications.error('<AppIcon name="close" size="16" /> Error al eliminar el traslado: ' + (err.message || 'Error desconocido'))
+    notifications.error('Error al eliminar el traslado: ' + (err.message || 'Error desconocido'))
     throw err
   }
 }

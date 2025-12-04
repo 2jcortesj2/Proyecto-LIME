@@ -211,11 +211,11 @@ const resetCreateForm = () => {
 const submitCreateForm = async () => {
   const success = await createResponsable(createForm.value)
   if (success) {
-    notifications.success('<AppIcon name="check" size="16" /> Responsable creado exitosamente')
+    notifications.success('Responsable creado exitosamente')
     closeCreateModal()
     resetCreateForm()
   } else {
-    notifications.error('<AppIcon name="close" size="16" /> Error al crear el responsable')
+    notifications.error('Error al crear el responsable')
   }
 }
 
@@ -234,10 +234,10 @@ const loadResponsableDataIntoEditForm = (responsable) => {
 const submitEditForm = async () => {
   const success = await updateResponsable(editForm.value.id, editForm.value)
   if (success) {
-    notifications.success('<AppIcon name="check" size="16" /> Responsable actualizado exitosamente')
+    notifications.success('Responsable actualizado exitosamente')
     closeEditModal()
   } else {
-    notifications.error('<AppIcon name="close" size="16" /> Error al actualizar el responsable')
+    notifications.error('Error al actualizar el responsable')
   }
 }
 
@@ -245,7 +245,7 @@ const submitEditForm = async () => {
 const handleDeleteClick = (responsable) => {
   if (responsable.equipos_asignados_count > 0) {
     notifications.warning(
-      `<AppIcon name="alert" size="16" /> No se puede eliminar a ${responsable.nombre_completo}. Tiene ${responsable.equipos_asignados_count} equipo(s) asignado(s). Por favor, reasigne los equipos primero.`,
+      `No se puede eliminar a ${responsable.nombre_completo}. Tiene ${responsable.equipos_asignados_count} equipo(s) asignado(s). Por favor, reasigne los equipos primero.`,
       5000
     )
     return
@@ -259,10 +259,10 @@ const confirmDelete = async () => {
   
   const result = await deleteResponsable(selectedResponsable.value)
   if (result.success) {
-    notifications.success('<AppIcon name="check" size="16" /> Responsable eliminado exitosamente')
+    notifications.success('Responsable eliminado exitosamente')
     closeDeleteModal()
   } else {
-    notifications.error(result.message || '<AppIcon name="close" size="16" /> Error al eliminar el responsable')
+    notifications.error(result.message || 'Error al eliminar el responsable')
   }
 }
 

@@ -17,6 +17,7 @@
           <div class="tab" :class="{ active: activeTab === 4 }" @click="activeTab = 4">4. Documentos</div>
           <div class="tab" :class="{ active: activeTab === 5 }" @click="activeTab = 5">5. Metrología</div>
           <div class="tab" :class="{ active: activeTab === 6 }" @click="activeTab = 6">6. Condiciones</div>
+          <div class="tab" :class="{ active: activeTab === 7 }" @click="activeTab = 7">7. Anotaciones</div>
         </div>
 
         <!-- TAB 1: INFO GENERAL -->
@@ -290,6 +291,16 @@
               <label class="form-label">Frecuencia Anual Calibración</label>
               <input type="number" class="form-input" v-model="formData.frecuencia_calibracion" min="0">
             </div>
+            <div class="form-group">
+              <div class="checkbox-group">
+                <input type="checkbox" class="checkbox-input" id="edit-reqCalif" v-model="formData.requiere_calificacion">
+                <label for="edit-reqCalif" class="form-label" style="margin: 0;">Requiere Calificación</label>
+              </div>
+            </div>
+            <div class="form-group" v-if="formData.requiere_calificacion">
+              <label class="form-label">Frecuencia Anual Calificación</label>
+              <input type="number" class="form-input" v-model="formData.frecuencia_calificacion" min="0">
+            </div>
             <div class="form-group" v-if="formData.requiere_calibracion">
               <label class="form-label">Tipo de Calibración</label>
               <input type="text" class="form-input" v-model="formData.tipo_calibracion">
@@ -355,6 +366,17 @@
             <div class="form-group full-width">
               <label class="form-label">Otras Condiciones</label>
               <textarea class="form-textarea" v-model="formData.otros"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 7: ANOTACIONES -->
+        <div v-show="activeTab === 7" class="tab-content active">
+          <h4 class="section-title"><AppIcon name="file-text" size="16" /> H. Anotaciones y Observaciones</h4>
+          <div class="form-grid">
+            <div class="form-group full-width">
+              <label class="form-label">Anotaciones Generales</label>
+              <textarea class="form-textarea" v-model="formData.anotaciones" style="min-height: 150px;"></textarea>
             </div>
           </div>
         </div>
@@ -455,6 +477,8 @@ watch(() => props.equipo, (equipo) => {
       frecuencia_mantenimiento: equipo.informacion_metrologica?.frecuencia_mantenimiento || null,
       requiere_calibracion: equipo.informacion_metrologica?.requiere_calibracion || false,
       frecuencia_calibracion: equipo.informacion_metrologica?.frecuencia_calibracion || null,
+      requiere_calificacion: equipo.informacion_metrologica?.requiere_calificacion || false,
+      frecuencia_calificacion: equipo.informacion_metrologica?.frecuencia_calificacion || null,
       tipo_calibracion: equipo.informacion_metrologica?.tipo_calibracion || '',
       magnitud: equipo.informacion_metrologica?.magnitud || '',
       rango_equipo: equipo.informacion_metrologica?.rango_equipo || '',
@@ -467,7 +491,8 @@ watch(() => props.equipo, (equipo) => {
       temperatura: equipo.condiciones_funcionamiento?.temperatura || '',
       dimensiones: equipo.condiciones_funcionamiento?.dimensiones || '',
       peso: equipo.condiciones_funcionamiento?.peso || '',
-      otros: equipo.condiciones_funcionamiento?.otros || ''
+      otros: equipo.condiciones_funcionamiento?.otros || '',
+      anotaciones: equipo.anotaciones || ''
     }
   }
 }, { immediate: true })
@@ -537,6 +562,7 @@ watch(() => props.show, (show) => {
   background: #fff9e6 !important;
   border-color: #ffc107 !important;
   cursor: pointer !important;
+  font-family: inherit;
 }
 
 .lock-icon {

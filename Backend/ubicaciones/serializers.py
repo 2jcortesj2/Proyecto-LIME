@@ -8,6 +8,9 @@ class UbicacionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Ubicacion
         fields = ['id', 'nombre', 'sede', 'sede_nombre', 'responsable', 'estado']
+        extra_kwargs = {
+            'responsable': {'required': False, 'allow_null': True}
+        }
         
 class UbicacionDetailSerializer(serializers.ModelSerializer):
     sede = serializers.SerializerMethodField()

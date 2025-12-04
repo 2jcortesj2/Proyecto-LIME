@@ -93,14 +93,24 @@ async function fetchMantenimientos(equipoId) {
 }
 
 // ===== DETALLE FUNCTIONS =====
-function toggleDetalle(id) {
+async function toggleDetalle(id) {
   if (expandedEquipoId.value === id) {
     expandedEquipoId.value = null
     selectedEquipo.value = null
   } else {
     expandedEquipoId.value = id
     activeTab.value = 'info'
-    selectedEquipo.value = equipos.value.find(e => e.id === id)
+    detailLoading.value = true
+    try {
+      // Fetch full details from API
+      selectedEquipo.value = await equiposService.getById(id)
+    } catch (err) {
+      console.error('Error fetching equipo details:', err)
+      // Fallback to local data if fetch fails
+      selectedEquipo.value = equipos.value.find(e => e.id === id)
+    } finally {
+      detailLoading.value = false
+    }
   }
 }
 
@@ -361,6 +371,11 @@ onMounted(() => {
                         :class="{ active: activeTab === 'mantenimientos' }"
                         @click="setActiveTab('mantenimientos')"
                       >Mantenimientos</div>
+                      <div 
+                        class="detalle-tab" 
+                        :class="{ active: activeTab === 'anotaciones' }"
+                        @click="setActiveTab('anotaciones')"
+                      >Anotaciones</div>
                     </div>
 
                     <!-- Tab Content: Información General -->
@@ -368,13 +383,13 @@ onMounted(() => {
                       <div class="detalle-grid">
                         <div class="detalle-section">
                           <h4 class="detalle-section-title">A. Información General</h4>
-                          <div class="detalle-item"><span class="detalle-label">Proceso:</span><span class="detalle-value">LIME</span></div>
+                          <div class="detalle-item"><span class="detalle-label">Proceso:</span><span class="detalle-value">{{ selectedEquipo.proceso || 'N/A' }}</span></div>
                           <div class="detalle-item"><span class="detalle-label">Código Interno:</span><span class="detalle-value"><strong>{{ selectedEquipo.codigo_interno }}</strong></span></div>
                           <div class="detalle-item"><span class="detalle-label">Código IPS:</span><span class="detalle-value">{{ selectedEquipo.codigo_ips || 'Pendiente' }}</span></div>
+                          <div class="detalle-item"><span class="detalle-label">Código ECRI:</span><span class="detalle-value">{{ selectedEquipo.codigo_ecri || 'N/A' }}</span></div>
                           <div class="detalle-item"><span class="detalle-label">Responsable:</span><span class="detalle-value">{{ selectedEquipo.responsable_nombre || 'N/A' }}</span></div>
-                          <div class="detalle-item"><span class="detalle-label">Ubicación:</span><span class="detalle-value">{{ selectedEquipo.ubicacion_fisica }}</span></div>
-                          <div class="detalle-item"><span class="detalle-label">Sede:</span><span class="detalle-value">{{ selectedEquipo.sede?.nombre }}</span></div>
-                          <div class="detalle-item"><span class="detalle-label">Proceso:</span><span class="detalle-value">{{ selectedEquipo.ubicacion?.nombre }}</span></div>
+                          <div class="detalle-item"><span class="detalle-label">Sede:</span><span class="detalle-value">{{ selectedEquipo.sede?.nombre || selectedEquipo.sede_info?.nombre || 'N/A' }}</span></div>
+                          <div class="detalle-item"><span class="detalle-label">Ubicación:</span><span class="detalle-value">{{ formatUbicacion(selectedEquipo.ubicacion?.nombre || selectedEquipo.ubicacion_info?.nombre) }}</span></div>
                         </div>
                         <div class="detalle-section">
                           <h4 class="detalle-section-title">B. Información del Equipo</h4>
@@ -382,7 +397,9 @@ onMounted(() => {
                           <div class="detalle-item"><span class="detalle-label">Marca:</span><span class="detalle-value">{{ selectedEquipo.marca }}</span></div>
                           <div class="detalle-item"><span class="detalle-label">Modelo:</span><span class="detalle-value">{{ selectedEquipo.modelo }}</span></div>
                           <div class="detalle-item"><span class="detalle-label">Serie:</span><span class="detalle-value">{{ selectedEquipo.serie }}</span></div>
+                          <div class="detalle-item"><span class="detalle-label">Clasif. Misional:</span><span class="detalle-value">{{ Array.isArray(selectedEquipo.clasificacion_misional) ? selectedEquipo.clasificacion_misional.join(', ') : selectedEquipo.clasificacion_misional || 'N/A' }}</span></div>
                           <div class="detalle-item"><span class="detalle-label">Clasif. IPS:</span><span class="detalle-value">{{ selectedEquipo.clasificacion_ips }}</span></div>
+                          <div class="detalle-item"><span class="detalle-label">Vida Útil:</span><span class="detalle-value">{{ selectedEquipo.tiempo_vida_util ? selectedEquipo.tiempo_vida_util + ' años' : 'N/A' }}</span></div>
                           <div class="detalle-item">
                             <span class="detalle-label">Registro INVIMA:</span>
                             <span class="detalle-value">
@@ -391,6 +408,8 @@ onMounted(() => {
                             </span>
                           </div>
                         </div>
+                        
+
                         <div class="detalle-section" style="grid-column: 1 / -1;">
                           <h4 class="detalle-section-title">C. Registro Histórico</h4>
                           <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;">
@@ -411,35 +430,35 @@ onMounted(() => {
                         <h4 class="detalle-section-title">D. Inventario de Documentos</h4>
                         <div class="documentos-grid">
                           <div class="documento-item">
-                            <span :class="selectedEquipo.documentacion?.hoja_vida ? 'check-icon' : 'x-icon'">{{ selectedEquipo.documentacion?.hoja_vida ? '<AppIcon name="check" size="16" />' : '<AppIcon name="close" size="16" />' }}</span>
+                            <span :class="selectedEquipo.documentacion?.hoja_vida ? 'check-icon' : 'x-icon'">{{ selectedEquipo.documentacion?.hoja_vida ? '✅' : '❌' }}</span>
                             <span>Hoja de Vida</span>
                           </div>
                           <div class="documento-item">
-                            <span :class="selectedEquipo.documentacion?.registro_importacion ? 'check-icon' : 'x-icon'">{{ selectedEquipo.documentacion?.registro_importacion ? '<AppIcon name="check" size="16" />' : '<AppIcon name="close" size="16" />' }}</span>
+                            <span :class="selectedEquipo.documentacion?.registro_importacion ? 'check-icon' : 'x-icon'">{{ selectedEquipo.documentacion?.registro_importacion ? '✅' : '❌' }}</span>
                             <span>Registro Importación</span>
                           </div>
                           <div class="documento-item">
-                            <span :class="selectedEquipo.documentacion?.manual_operacion ? 'check-icon' : 'x-icon'">{{ selectedEquipo.documentacion?.manual_operacion ? '<AppIcon name="check" size="16" />' : '<AppIcon name="close" size="16" />' }}</span>
+                            <span :class="selectedEquipo.documentacion?.manual_operacion ? 'check-icon' : 'x-icon'">{{ selectedEquipo.documentacion?.manual_operacion ? '✅' : '❌' }}</span>
                             <span>Manual Operación (Esp)</span>
                           </div>
                           <div class="documento-item">
-                            <span :class="selectedEquipo.documentacion?.manual_servicio ? 'check-icon' : 'x-icon'">{{ selectedEquipo.documentacion?.manual_servicio ? '<AppIcon name="check" size="16" />' : '<AppIcon name="close" size="16" />' }}</span>
+                            <span :class="selectedEquipo.documentacion?.manual_servicio ? 'check-icon' : 'x-icon'">{{ selectedEquipo.documentacion?.manual_servicio ? '✅' : '❌' }}</span>
                             <span>Manual Servicio</span>
                           </div>
                           <div class="documento-item">
-                            <span :class="selectedEquipo.documentacion?.guia_rapida ? 'check-icon' : 'x-icon'">{{ selectedEquipo.documentacion?.guia_rapida ? '<AppIcon name="check" size="16" />' : '<AppIcon name="close" size="16" />' }}</span>
+                            <span :class="selectedEquipo.documentacion?.guia_rapida ? 'check-icon' : 'x-icon'">{{ selectedEquipo.documentacion?.guia_rapida ? '✅' : '❌' }}</span>
                             <span>Guía Rápida</span>
                           </div>
                           <div class="documento-item">
-                            <span class="x-icon"><AppIcon name="close" size="16" /></span>
+                            <span class="x-icon">❌</span>
                             <span>Instructivo Manejo</span>
                           </div>
                           <div class="documento-item">
-                            <span :class="selectedEquipo.documentacion?.protocolo_mto_preventivo ? 'check-icon' : 'x-icon'">{{ selectedEquipo.documentacion?.protocolo_mto_preventivo ? '<AppIcon name="check" size="16" />' : '<AppIcon name="close" size="16" />' }}</span>
+                            <span :class="selectedEquipo.documentacion?.protocolo_mto_preventivo ? 'check-icon' : 'x-icon'">{{ selectedEquipo.documentacion?.protocolo_mto_preventivo ? '✅' : '❌' }}</span>
                             <span>Protocolo Mto Prev</span>
                           </div>
                           <div class="documento-item">
-                            <span :class="selectedEquipo.documentacion?.frecuencia_metrologica ? 'check-icon' : 'x-icon'">{{ selectedEquipo.documentacion?.frecuencia_metrologica ? '<AppIcon name="check" size="16" />' : '<AppIcon name="close" size="16" />' }}</span>
+                            <span :class="selectedEquipo.documentacion?.frecuencia_metrologica ? 'check-icon' : 'x-icon'">{{ selectedEquipo.documentacion?.frecuencia_metrologica ? '✅' : '❌' }}</span>
                             <span>Frecuencia Metrológica</span>
                           </div>
                         </div>
@@ -451,12 +470,13 @@ onMounted(() => {
                       <div class="detalle-grid">
                         <div class="detalle-section">
                           <h4 class="detalle-section-title">E. Info Metrológica Administrativa</h4>
-                          <div class="detalle-item"><span class="detalle-label">Requiere Mantenimiento:</span><span class="detalle-value">{{ selectedEquipo.informacion_metrologica?.requiere_mantenimiento ? '<AppIcon name="check" size="16" /> Sí' : 'No' }}</span></div>
+                          <div class="detalle-item"><span class="detalle-label">Requiere Mantenimiento:</span><span class="detalle-value">{{ selectedEquipo.informacion_metrologica?.requiere_mantenimiento ? '✅ Sí' : 'No' }}</span></div>
                           <div class="detalle-item"><span class="detalle-label">Frecuencia:</span><span class="detalle-value">{{ selectedEquipo.informacion_metrologica?.frecuencia_mantenimiento }}</span></div>
                           <div class="detalle-item"><span class="detalle-label">Último Mantenimiento:</span><span class="detalle-value">{{ formatFecha(selectedEquipo.informacion_metrologica?.ultimo_mantenimiento) }}</span></div>
                           <div class="detalle-item"><span class="detalle-label">Próximo Mantenimiento:</span><span class="detalle-value">{{ formatFecha(selectedEquipo.informacion_metrologica?.fecha_proximo_mantenimiento_calculada) }}</span></div>
                           <div class="detalle-item"><span class="detalle-label">Estado Mantenimiento:</span><span class="detalle-value"><strong>{{ selectedEquipo.informacion_metrologica?.estado_mantenimiento || 'N/A' }}</strong></span></div>
-                          <div class="detalle-item"><span class="detalle-label">Requiere Calibración:</span><span class="detalle-value">{{ selectedEquipo.informacion_metrologica?.requiere_calibracion ? '<AppIcon name="check" size="16" /> Sí' : 'No' }}</span></div>
+                          <div class="detalle-item"><span class="detalle-label">Requiere Calibración:</span><span class="detalle-value">{{ selectedEquipo.informacion_metrologica?.requiere_calibracion ? '✅ Sí' : 'No' }}</span></div>
+                          <div class="detalle-item"><span class="detalle-label">Requiere Calificación:</span><span class="detalle-value">{{ selectedEquipo.informacion_metrologica?.requiere_calificacion ? '✅ Sí' : 'No' }}</span></div>
                         </div>
                         <div class="detalle-section">
                           <h4 class="detalle-section-title">F. Info Metrológica Técnica</h4>
@@ -465,6 +485,19 @@ onMounted(() => {
                           <div class="detalle-item"><span class="detalle-label">Rango de Trabajo:</span><span class="detalle-value">{{ selectedEquipo.informacion_metrologica?.rango_trabajo }}</span></div>
                           <div class="detalle-item"><span class="detalle-label">Resolución:</span><span class="detalle-value">{{ selectedEquipo.informacion_metrologica?.resolucion }}</span></div>
                           <div class="detalle-item"><span class="detalle-label">Error Máximo:</span><span class="detalle-value">{{ selectedEquipo.informacion_metrologica?.error_maximo }}</span></div>
+                        </div>
+                        
+                        <div class="detalle-section" style="grid-column: 1 / -1;">
+                          <h4 class="detalle-section-title">G. Condiciones de Funcionamiento</h4>
+                          <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px;">
+                            <div class="detalle-item"><span class="detalle-label">Voltaje:</span><span class="detalle-value">{{ selectedEquipo.condiciones_funcionamiento?.voltaje || 'N/A' }}</span></div>
+                            <div class="detalle-item"><span class="detalle-label">Corriente:</span><span class="detalle-value">{{ selectedEquipo.condiciones_funcionamiento?.corriente || 'N/A' }}</span></div>
+                            <div class="detalle-item"><span class="detalle-label">Humedad Relativa:</span><span class="detalle-value">{{ selectedEquipo.condiciones_funcionamiento?.humedad_relativa || 'N/A' }}</span></div>
+                            <div class="detalle-item"><span class="detalle-label">Temperatura:</span><span class="detalle-value">{{ selectedEquipo.condiciones_funcionamiento?.temperatura || 'N/A' }}</span></div>
+                            <div class="detalle-item"><span class="detalle-label">Dimensiones:</span><span class="detalle-value">{{ selectedEquipo.condiciones_funcionamiento?.dimensiones || 'N/A' }}</span></div>
+                            <div class="detalle-item"><span class="detalle-label">Peso:</span><span class="detalle-value">{{ selectedEquipo.condiciones_funcionamiento?.peso || 'N/A' }}</span></div>
+                            <div class="detalle-item" style="grid-column: span 2;"><span class="detalle-label">Otros:</span><span class="detalle-value">{{ selectedEquipo.condiciones_funcionamiento?.otros || 'N/A' }}</span></div>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -492,11 +525,17 @@ onMounted(() => {
                             </thead>
                             <tbody>
                               <tr v-for="traslado in trasladosCache.get(equipo.id)" :key="traslado.id">
-                                <td>{{ traslado.fecha_display }}</td>
-                                <td>{{ traslado.sede_origen_nombre }} / {{ traslado.ubicacion_origen_nombre }}</td>
-                                <td>{{ traslado.sede_destino_nombre }} / {{ traslado.ubicacion_destino_nombre }}</td>
+                                <td>{{ formatFecha(traslado.fecha_traslado) }}</td>
+                                <td style="text-align: left;">
+                                  <div style="font-weight: 600; font-size: 14px;">{{ traslado.sede_origen_nombre }}</div>
+                                  <div style="font-size: 12px; color: #616161;">{{ formatUbicacion(traslado.ubicacion_origen_nombre) }}</div>
+                                </td>
+                                <td style="text-align: left;">
+                                  <div style="font-weight: 600; font-size: 14px;">{{ traslado.sede_destino_nombre }}</div>
+                                  <div style="font-size: 12px; color: #616161;">{{ formatUbicacion(traslado.ubicacion_destino_nombre) }}</div>
+                                </td>
                                 <td>{{ traslado.justificacion }}</td>
-                                <td>{{ traslado.usuario_registro }}</td>
+                                <td>{{ traslado.responsable_nombre || 'N/A' }}</td>
                               </tr>
                             </tbody>
                           </table>
@@ -539,6 +578,16 @@ onMounted(() => {
                             </tbody>
                           </table>
                           <p v-else style="padding: 20px; color: #666;">No hay mantenimientos registrados.</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Tab Content: Anotaciones -->
+                    <div v-show="activeTab === 'anotaciones'" class="detalle-content active">
+                      <div class="detalle-section" style="width: 100%;">
+                        <h4 class="detalle-section-title">H. Anotaciones y Observaciones</h4>
+                        <div class="detalle-item" style="display: block;">
+                          <div class="detalle-value" style="white-space: pre-wrap; background: #f9f9f9; padding: 15px; border-radius: 8px; border: 1px solid #eee; min-height: 100px;">{{ selectedEquipo.anotaciones || 'Sin anotaciones registradas para este equipo.' }}</div>
                         </div>
                       </div>
                     </div>

@@ -3,7 +3,7 @@
     <div class="modal-content">
       <div class="modal-header">
         <h2>Eliminar Ubicación</h2>
-        <button class="modal-close" @click="handleClose"><AppIcon name="close" size="16" /></button>
+        <button class="modal-close" @click="handleClose">❌</button>
       </div>
       
       <div class="modal-body">
@@ -26,7 +26,6 @@
           <div class="info-section">
             <p><strong>Ubicación a eliminar:</strong> {{ ubicacion?.nombre }}</p>
             <p><strong>Sede:</strong> {{ getSedeNombre(ubicacion?.sede) }}</p>
-            <p><strong>Responsable:</strong> {{ ubicacion?.responsable || 'Sin responsable' }}</p>
             
             <div class="stat-item-safe">
               <span class="stat-label">Equipos asignados:</span>
@@ -74,7 +73,7 @@ const props = defineProps({
 const emit = defineEmits(['close', 'deleted'])
 
 const { deleteUbicacion, sedes } = useSedesUbicaciones()
-const { showSuccess, showError } = useNotifications()
+const notifications = useNotifications()
 
 const loading = ref(false)
 const errors = ref({})
@@ -110,7 +109,7 @@ async function handleDelete() {
     loading.value = true
     await deleteUbicacion(props.ubicacion.id)
     
-    showSuccess(UBICACION_CONSTANTS.MESSAGES.DELETE_SUCCESS)
+    notifications.success(UBICACION_CONSTANTS.MESSAGES.DELETE_SUCCESS)
     emit('deleted')
     emit('close')
   } catch (error) {
@@ -121,7 +120,7 @@ async function handleDelete() {
                         error.response?.data?.message || 
                         UBICACION_CONSTANTS.MESSAGES.DELETE_ERROR
     
-    showError(errorMessage)
+    notifications.error(errorMessage)
     errors.value.submit = errorMessage
   } finally {
     loading.value = false

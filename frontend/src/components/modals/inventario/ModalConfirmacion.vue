@@ -26,7 +26,7 @@ const props = defineProps({
   },
   title: {
     type: String,
-    default: '<AppIcon name="check" size="16" /> Operación Exitosa'
+    default: '✅ Operación Exitosa'
   },
   message: {
     type: String,
@@ -34,7 +34,7 @@ const props = defineProps({
   },
   icon: {
     type: String,
-    default: '<AppIcon name="check" size="16" />'
+    default: '✅'
   }
 })
 

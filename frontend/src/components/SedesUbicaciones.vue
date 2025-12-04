@@ -30,7 +30,7 @@ const {
 } = useSedesUbicaciones()
 
 const { toggleRow: toggleSede, isExpanded } = useAccordion()
-const { showSuccess, showError } = useNotifications()
+const notifications = useNotifications()
 
 // Estado local para expansión de ubicaciones (para evitar conflictos con useAccordion)
 const expandedUbicaciones = ref(new Set())
@@ -96,6 +96,13 @@ function handleEditarUbicacion(ubicacion) {
 }
 
 function handleEliminarUbicacion(ubicacion) {
+  if (ubicacion.num_equipos > 0) {
+    notifications.warning(
+      `No se puede eliminar "${ubicacion.nombre}". Tiene ${ubicacion.num_equipos} equipo(s) asignado(s). Por favor, traslade los equipos primero.`,
+      5000
+    )
+    return
+  }
   modalEliminarUbicacion.open(ubicacion)
 }
 
@@ -125,7 +132,7 @@ function handleTrasladarEquipo(equipo) {
 async function handleSaveTraslado(formData) {
   try {
     await trasladosAPI.create(formData)
-    showSuccess('Traslado registrado exitosamente')
+    notifications.success('Traslado registrado exitosamente')
     modalCrearTraslado.close()
     
     // Recargar equipos de la ubicación origen
@@ -138,7 +145,7 @@ async function handleSaveTraslado(formData) {
     fetchSedes()
   } catch (error) {
     console.error('Error al guardar traslado:', error)
-    showError('Error al registrar el traslado')
+    notifications.error('Error al registrar el traslado')
   }
 }
 
@@ -150,6 +157,18 @@ function getSedeIdFromModal() {
 
 <template>
   <div class="sedes-container">
+    <!-- Notifications Toast Container -->
+    <div class="notifications-container">
+      <div 
+        v-for="notification in notifications.notifications.value" 
+        :key="notification.id"
+        class="notification-toast"
+        :class="`notification-${notification.type}`"
+      >
+        {{ notification.message }}
+      </div>
+    </div>
+
     <!-- Header -->
     <div class="page-header">
       <div>
@@ -240,11 +259,6 @@ function getSedeIdFromModal() {
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="meta-icon"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg>
                         <span>{{ ubicacion.num_equipos }} equipos</span>
                       </div>
-                      <span class="separator">•</span>
-                      <div class="meta-item">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="meta-icon"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-                        <span>{{ ubicacion.responsable || 'Sin responsable' }}</span>
-                      </div>
                     </div>
                   </div>
                   <div class="ubicacion-actions">
@@ -252,7 +266,14 @@ function getSedeIdFromModal() {
                       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
                       Editar
                     </button>
-                    <button class="btn btn-danger btn-sm" @click.stop="handleEliminarUbicacion(ubicacion)" :disabled="ubicacion.num_equipos > 0">
+                    <button 
+                      class="btn btn-danger btn-sm" 
+                      :class="{ 'btn-disabled': ubicacion.num_equipos > 0 }"
+                      @click.stop="handleEliminarUbicacion(ubicacion)"
+                      :title="ubicacion.num_equipos > 0 
+                        ? `No se puede eliminar: tiene ${ubicacion.num_equipos} equipo(s) asignado(s)` 
+                        : 'Eliminar'"
+                    >
                       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
                       Eliminar
                     </button>
@@ -280,7 +301,7 @@ function getSedeIdFromModal() {
                       </thead>
                       <tbody>
                         <tr v-for="equipo in equiposPorUbicacion[ubicacion.id]" :key="equipo.id">
-                          <td style="text-align: center;"><strong style="font-family: monospace; font-size: 14px;">{{ equipo.codigo_interno }}</strong></td>
+                          <td style="text-align: center;"><strong style="font-size: 14px;">{{ equipo.codigo_interno }}</strong></td>
                           <td>
                             <div class="equipo-name-cell">
                               <span class="equipo-name" style="font-size: 14px;">{{ equipo.nombre_equipo }}</span>
@@ -354,7 +375,7 @@ function getSedeIdFromModal() {
       :show="modalEliminarUbicacion.isOpen.value"
       :ubicacion="modalEliminarUbicacion.data.value"
       @close="modalEliminarUbicacion.close()" 
-      @deleted="modalEliminarUbicacion.close()"
+      @deleted="fetchSedes"
     />
 
     <!-- Modal Traslado -->
@@ -714,5 +735,63 @@ function getSedeIdFromModal() {
 .equipo-brand {
   font-size: 11px;
   color: #888;
+}
+
+/* Disabled button styles */
+.btn-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: auto !important;
+}
+
+/* Notifications Toast */
+.notifications-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.notification-toast {
+  padding: 15px 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  font-weight: 500;
+  min-width: 300px;
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(400px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.notification-success {
+  background: #4caf50;
+  color: white;
+}
+
+.notification-error {
+  background: #f44336;
+  color: white;
+}
+
+.notification-warning {
+  background: #ff9800;
+  color: white;
+}
+
+.notification-info {
+  background: #2196f3;
+  color: white;
 }
 </style>

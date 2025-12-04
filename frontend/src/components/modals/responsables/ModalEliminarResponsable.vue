@@ -3,7 +3,7 @@
     <div class="modal-content modal-small">
       <div class="modal-header">
         <h2>Confirmar Eliminación</h2>
-        <button class="modal-close" @click="$emit('close')"><AppIcon name="close" size="16" /></button>
+        <button class="modal-close" @click="$emit('close')">❌</button>
       </div>
       
       <div class="modal-body">

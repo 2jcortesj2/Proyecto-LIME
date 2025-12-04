@@ -131,8 +131,8 @@ function getProximoMantenimientoDisplay(equipo) {
   <div class="equipos-proximos-container">
     <div class="page-header">
       <div>
-        <h2 class="page-title"><AppIcon name="clock" size="16" /> Próximos de Revisión</h2>
-        <div class="breadcrumb">Inicio / Mantenimientos / Próximos de Revisión</div>
+        <h2 class="page-title" style="margin: 0;"><AppIcon name="clock" size="16" /> Próximos de Revisión</h2>
+        <div class="breadcrumb" style="margin-top: 5px;">Inicio / Mantenimientos / Próximos de Revisión</div>
       </div>
     </div>
 
@@ -181,23 +181,22 @@ function getProximoMantenimientoDisplay(equipo) {
       </div>
 
       <!-- Filter Controls -->
-      <div class="filter-controls">
-        <div class="month-filter">
-          <label for="months-filter">Mostrar equipos:</label>
-          <select id="months-filter" v-model="monthsFilter" class="filter-select">
+      <div class="filter-controls" style="display: flex; gap: 15px; margin-bottom: 25px; align-items: center;">
+        <div class="month-filter" style="display: flex; align-items: center; gap: 10px;">
+          <label for="months-filter" style="margin: 0; white-space: nowrap; font-size: 14px;">Mostrar equipos:</label>
+          <select id="months-filter" v-model="monthsFilter" class="filter-select" style="width: 180px;">
             <option v-for="opt in OPCIONES_FILTRO_MESES" :key="opt.value" :value="opt.value">
               {{ opt.label }}
             </option>
           </select>
         </div>
-        <div class="search-container-inline">
-          <input 
-            v-model="searchQuery" 
-            type="text" 
-            class="search-input" 
-            placeholder="Buscar por código, nombre, marca, modelo, sede o ubicación..."
-          >
-        </div>
+        <input 
+          v-model="searchQuery" 
+          type="text" 
+          class="search-input" 
+          placeholder="Buscar por código, nombre, marca, modelo, sede o ubicación..."
+          style="flex: 1;"
+        >
       </div>
 
       <!-- Table -->
@@ -241,7 +240,7 @@ function getProximoMantenimientoDisplay(equipo) {
       <!-- Empty state -->
       <div v-else class="empty-state">
         <div class="empty-state-content">
-          <div class="empty-icon"><AppIcon name="check" size="16" /></div>
+          <div class="empty-icon">✅</div>
           <h3>No hay equipos próximos a revisión</h3>
           <p>No hay equipos que requieran mantenimiento en los próximos {{ monthsFilter }} meses.</p>
           <p class="empty-hint">Intenta aumentar el rango de meses usando el filtro arriba.</p>

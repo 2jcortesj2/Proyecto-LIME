@@ -312,12 +312,12 @@ async function searchEquipos() {
 
   searchTimeout = setTimeout(async () => {
     try {
-      console.log('<AppIcon name="search" size="16" /> Buscando equipos con:', equipoSearchTerm.value)
+      console.log('🔍 Buscando equipos con:', equipoSearchTerm.value)
       const response = await equiposService.search(equipoSearchTerm.value)
-      console.log('<AppIcon name="check" size="16" /> Equipos encontrados:', response)
+      console.log('✅ Equipos encontrados:', response)
       equiposFound.value = Array.isArray(response) ? response : []
     } catch (err) {
-      console.error('<AppIcon name="close" size="16" /> Error buscando equipos:', err)
+      console.error('❌ Error buscando equipos:', err)
       equiposFound.value = []
     } finally {
       isSearching.value = false

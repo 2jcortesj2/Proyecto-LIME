@@ -3,7 +3,7 @@
     <div class="modal-content">
       <div class="modal-header">
         <h2>Nueva Ubicación</h2>
-        <button class="modal-close" @click="handleClose"><AppIcon name="close" size="16" /></button>
+        <button class="modal-close" @click="handleClose">❌</button>
       </div>
       
       <div class="modal-body">
@@ -40,19 +40,6 @@
             <span v-if="errors.nombre" class="error-text">{{ errors.nombre }}</span>
           </div>
 
-          <div class="form-group">
-            <label class="form-label">Responsable</label>
-            <select 
-              v-model="formData.responsable" 
-              class="form-select"
-            >
-              <option value="">Sin responsable asignado</option>
-              <option v-for="responsable in responsables" :key="responsable.id" :value="responsable.id">
-                {{ responsable.nombre_completo }} - {{ responsable.rol }}
-              </option>
-            </select>
-            <span class="helper-text">Opcional</span>
-          </div>
 
           <div class="form-actions">
             <button type="button" class="btn btn-cancel" @click="handleClose" :disabled="loading">
@@ -90,7 +77,6 @@ const { showSuccess, showError } = useNotifications()
 const formData = ref({
   nombre: '',
   sede: props.sedeId || '',
-  responsable: '',
   estado: true
 })
 
@@ -118,7 +104,6 @@ function resetForm() {
   formData.value = {
     nombre: '',
     sede: props.sedeId || '',
-    responsable: '',
     estado: true
   }
   clearErrors()
@@ -140,13 +125,7 @@ async function handleSubmit() {
   try {
     loading.value = true
     
-    // Preparar datos (convertir responsable vacío a null)
-    const dataToSend = {
-      ...formData.value,
-      responsable: formData.value.responsable || null
-    }
-    
-    await createUbicacion(dataToSend)
+    await createUbicacion(formData.value)
     
     showSuccess(UBICACION_CONSTANTS.MESSAGES.CREATE_SUCCESS)
     emit('created')

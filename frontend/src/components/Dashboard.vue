@@ -155,7 +155,7 @@ function formatDate(dateString) {
       </div>
 
       <!-- Alerts -->
-      <div class="alert alert-danger" @click="navigateToPage('Equipos Pendientes')" v-if="stats.vencidos > 0">
+      <div class="alert alert-danger" @click="navigateToPage('Realizar Revisión')" v-if="stats.vencidos > 0">
         <span style="font-size: 20px;"><AppIcon name="alert" size="16" /></span>
         <div>
           <strong>Atención:</strong> Hay {{ stats.vencidos }} {{ stats.vencidos === 1 ? 'equipo' : 'equipos' }} con revisión pendiente.
@@ -163,7 +163,7 @@ function formatDate(dateString) {
         </div>
       </div>
 
-      <div class="alert alert-warning" @click="navigateToPage('Equipos Pendientes')" v-if="stats.proximos > 0">
+      <div class="alert alert-warning" @click="navigateToPage('Proximos de Revision')" v-if="stats.proximos > 0">
         <span style="font-size: 20px;"><AppIcon name="alert" size="16" /></span>
         <div>
           <strong>Próximas revisiones:</strong> {{ stats.proximos }} {{ stats.proximos === 1 ? 'equipo requiere' : 'equipos requieren' }} revisión pronto.

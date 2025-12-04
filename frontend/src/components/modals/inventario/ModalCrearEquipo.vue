@@ -13,6 +13,7 @@
           <div class="tab" :class="{ active: activeTab === 4 }" @click="activeTab = 4">4. Documentos</div>
           <div class="tab" :class="{ active: activeTab === 5 }" @click="activeTab = 5">5. Metrología</div>
           <div class="tab" :class="{ active: activeTab === 6 }" @click="activeTab = 6">6. Condiciones</div>
+          <div class="tab" :class="{ active: activeTab === 7 }" @click="activeTab = 7">7. Anotaciones</div>
         </div>
 
         <!-- TAB 1: INFO GENERAL -->
@@ -301,6 +302,16 @@
               <label class="form-label">Frecuencia Anual Calibración</label>
               <input type="number" class="form-input" v-model="form.frecuencia_calibracion" placeholder="Ej: 1, 2, 4" min="0">
             </div>
+            <div class="form-group">
+              <div class="checkbox-group">
+                <input type="checkbox" class="checkbox-input" id="reqCalif" v-model="form.requiere_calificacion">
+                <label for="reqCalif" class="form-label" style="margin: 0;">Requiere Calificación</label>
+              </div>
+            </div>
+            <div class="form-group" v-if="form.requiere_calificacion">
+              <label class="form-label">Frecuencia Anual Calificación</label>
+              <input type="number" class="form-input" v-model="form.frecuencia_calificacion" placeholder="Ej: 1, 2, 4" min="0">
+            </div>
             <div class="form-group" v-if="form.requiere_calibracion">
               <label class="form-label">Tipo de Calibración</label>
               <input type="text" class="form-input" v-model="form.tipo_calibracion" placeholder="Ej: Calificación, Verificación">
@@ -368,6 +379,17 @@
             <div class="form-group full-width">
               <label class="form-label">Otras Condiciones</label>
               <textarea class="form-textarea" v-model="form.otros" placeholder="Ej: Frecuencia eléctrica, presión, etc."></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 7: ANOTACIONES -->
+        <div v-show="activeTab === 7" class="tab-content active">
+          <h4 class="section-title"><AppIcon name="file-text" size="16" /> H. Anotaciones y Observaciones</h4>
+          <div class="form-grid">
+            <div class="form-group full-width">
+              <label class="form-label">Anotaciones Generales</label>
+              <textarea class="form-textarea" v-model="form.anotaciones" placeholder="Ingrese aquí cualquier observación adicional sobre el equipo..." style="min-height: 150px;"></textarea>
             </div>
           </div>
         </div>
@@ -480,6 +502,8 @@ const createEmptyForm = () => ({
   frecuencia_mantenimiento: null,
   requiere_calibracion: false,
   frecuencia_calibracion: null,
+  requiere_calificacion: false,
+  frecuencia_calificacion: null,
   tipo_calibracion: '',
   magnitud: '',
   rango_equipo: '',
@@ -494,7 +518,10 @@ const createEmptyForm = () => ({
   potencia: '',
   dimensiones: '',
   peso: '',
-  otros: ''
+  otros: '',
+
+  // Tab 7 - Anotaciones
+  anotaciones: ''
 })
 
 const form = ref(createEmptyForm())

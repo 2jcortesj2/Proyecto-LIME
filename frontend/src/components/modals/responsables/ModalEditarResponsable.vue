@@ -3,7 +3,7 @@
     <div class="modal-content">
       <div class="modal-header">
         <h2>Editar Responsable</h2>
-        <button class="modal-close" @click="$emit('close')"><AppIcon name="close" size="16" /></button>
+        <button class="modal-close" @click="$emit('close')">❌</button>
       </div>
       
       <div class="modal-body">

@@ -31,7 +31,7 @@ class UbicacionViewSet(viewsets.ModelViewSet):
     
     def destroy(self, request, *args, **kwargs):
         """
-        Elimina una ubicación solo si no tiene equipos asignados
+        Desactiva una ubicación (soft delete) solo si no tiene equipos asignados
         """
         ubicacion = self.get_object()
         
@@ -40,10 +40,16 @@ class UbicacionViewSet(viewsets.ModelViewSet):
         if num_equipos > 0:
             return Response(
                 {
-                    'error': 'No se puede eliminar una ubicación que tiene equipos asignados',
+                    'error': 'No se puede desactivar una ubicación que tiene equipos asignados',
                     'num_equipos': num_equipos
                 },
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        return super().destroy(request, *args, **kwargs)
+        # Soft delete - cambiar estado a False
+        ubicacion.estado = False
+        ubicacion.save()
+        return Response(
+            {'message': 'Ubicación desactivada correctamente'},
+            status=status.HTTP_200_OK
+        )

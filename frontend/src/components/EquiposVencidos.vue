@@ -121,8 +121,8 @@ function getProximoMantenimientoDisplay(equipo) {
   <div class="equipos-vencidos-container">
     <div class="page-header">
       <div>
-        <h2 class="page-title"><AppIcon name="alert" size="16" /> Realizar Revisión</h2>
-        <div class="breadcrumb">Inicio / Mantenimientos / Realizar Revisión</div>
+        <h2 class="page-title" style="margin: 0;"><AppIcon name="alert" size="16" /> Realizar Revisión</h2>
+        <div class="breadcrumb" style="margin-top: 5px;">Inicio / Mantenimientos / Realizar Revisión</div>
       </div>
     </div>
 
@@ -184,14 +184,14 @@ function getProximoMantenimientoDisplay(equipo) {
       <table v-if="equiposVencidos.length > 0">
         <thead>
           <tr>
-            <th>Código</th>
-            <th>Equipo</th>
-            <th>Registro INVIMA</th>
-            <th>Riesgo</th>
-            <th>Sede / Ubicación</th>
-            <th>Último Mant.</th>
-            <th>Próximo Mant.</th>
-            <th>Acciones</th>
+            <th style="width: 8%;">Código</th>
+            <th style="width: 18%;">Equipo</th>
+            <th style="width: 12%;">Registro INVIMA</th>
+            <th style="width: 6%;">Riesgo</th>
+            <th style="width: 15%;">Sede / Ubicación</th>
+            <th style="width: 10%;">Último Mant.</th>
+            <th style="width: 10%;">Próximo Mant.</th>
+            <th style="width: 21%;">Acciones</th>
           </tr>
         </thead>
         <tbody>
@@ -210,7 +210,7 @@ function getProximoMantenimientoDisplay(equipo) {
             <td>{{ formatFecha(eq.informacion_metrologica?.ultimo_mantenimiento) }}</td>
             <td><strong style="color: #f44336;">{{ getProximoMantenimientoDisplay(eq) }}</strong></td>
             <td>
-              <div style="display: flex; gap: 10px;">
+              <div style="display: flex; gap: 10px; justify-content: center;">
                 <button class="btn-action btn-completar" @click="completarMantenimiento(eq)" title="Marcar como completado">
                   Completar
                 </button>
@@ -226,7 +226,7 @@ function getProximoMantenimientoDisplay(equipo) {
       <!-- Empty state -->
       <div v-else class="empty-state">
         <div class="empty-state-content">
-          <div class="empty-icon"><AppIcon name="check" size="16" /></div>
+          <div class="empty-icon">✅</div>
           <h3>¡Excelente! No hay equipos que requieran revisión inmediata</h3>
           <p>Todos los equipos están al día con su mantenimiento programado.</p>
         </div>
