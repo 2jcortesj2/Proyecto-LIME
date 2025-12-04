@@ -120,23 +120,6 @@ onMounted(() => {
       >
         <AppIcon name="user" size="16" /> Responsables
       </div>
-      
-      <div class="divider"></div>
-      
-      <div 
-        class="menu-item" 
-        :class="{ active: currentPage === 'Reportes' }"
-        @click="changePage('Reportes')"
-      >
-        <AppIcon name="trending-up" size="16" /> Reportes
-      </div>
-      <div 
-        class="menu-item" 
-        :class="{ active: currentPage === 'Configuración' }"
-        @click="changePage('Configuración')"
-      >
-        <AppIcon name="settings" size="16" /> Configuración
-      </div>
     </nav>
   </aside>
 </template>
