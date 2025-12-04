@@ -1,7 +1,5 @@
 /**
  * Índice de servicios - Exporta todos los servicios desde un solo lugar
-/**
- * Índice de servicios - Exporta todos los servicios desde un solo lugar
  * Uso: import { equiposService, trasladosService } from '@/services'
  */
 
