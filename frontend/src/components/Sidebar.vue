@@ -121,6 +121,14 @@ onMounted(() => {
         <AppIcon name="user" size="16" /> Responsables
       </div>
     </nav>
+    
+    <!-- Marca de agua -->
+    <div class="watermark">
+      <p class="watermark-title">Desarrollado por:</p>
+      <p class="watermark-name">Juliana González</p>
+      <p class="watermark-name">Juan Artunduaga</p>
+      <p class="watermark-name">Juan Cortés</p>
+    </div>
   </aside>
 </template>
 
@@ -132,6 +140,8 @@ onMounted(() => {
   box-shadow: 2px 0 10px rgba(0, 0, 0, 0.05);
   overflow-y: auto;
   max-height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 /* Custom scrollbar styling */
@@ -157,6 +167,10 @@ onMounted(() => {
 .sidebar {
   scrollbar-width: thin;
   scrollbar-color: rgba(0, 102, 51, 0.35) rgba(0, 0, 0, 0.03);
+}
+
+nav {
+  flex: 1;
 }
 
 .menu-item {
@@ -241,5 +255,29 @@ onMounted(() => {
 .count-badge.warning {
   background: #fff3e0;
   color: #ef6c00;
+}
+
+.watermark {
+  padding: 20px 25px;
+  text-align: center;
+  border-top: 1px solid #e0e0e0;
+  margin-top: auto;
+  background: linear-gradient(to bottom, transparent, rgba(0, 102, 51, 0.02));
+}
+
+.watermark-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(0, 102, 51, 0.7);
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.watermark-name {
+  font-size: 12px;
+  color: rgba(0, 102, 51, 0.5);
+  margin: 4px 0;
+  font-weight: 400;
 }
 </style>
